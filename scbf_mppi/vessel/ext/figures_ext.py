@@ -119,28 +119,37 @@ def fig_V10():
     res = load("vessel_V10_filter")
     order = ["MPPI (no barrier)", "SCBF-MPPI (barrier in the sampler)", "SCBF-MPPI + IS",
              "MPPI + CBF-QP filter", "MPPI + chance CBF-QP filter", "SCBF-MPPI + CBF-QP filter"]
-    fig, axes = plt.subplots(1, 3, figsize=(14.6, 5.4))
+    short = {"MPPI (no barrier)": "MPPI, no barrier",
+             "SCBF-MPPI (barrier in the sampler)": "barrier in the SAMPLER (the paper)",
+             "SCBF-MPPI + IS": "sampler + IS correction",
+             "MPPI + CBF-QP filter": "barrier on the OUTPUT (CBF-QP)",
+             "MPPI + chance CBF-QP filter": "output, chance-constrained",
+             "SCBF-MPPI + CBF-QP filter": "sampler AND output filter"}
+    fig, axes = plt.subplots(1, 3, figsize=(17.0, 5.6))
     for col, sk in enumerate(["A", "B"]):
         ax = axes[col]
+        rows_ = []
         for a in order:
             name = next((k for k, _ in _rows(res) if k.startswith(sk + " ") and k.endswith(a)), None)
             if name is None:
                 continue
             blk = res[name]
             t, n = _touched(blk)
-            x = _m(blk, "ttf")
-            y = t / n
-            ax.scatter([x], [y], s=110, color=_ctrl_colour(a), zorder=3,
-                       marker="s" if "filter" in a else "o",
-                       edgecolor=COL["ink"], linewidth=0.7)
-            ax.annotate(a.replace("SCBF-MPPI", "SCBF").replace(" (barrier in the sampler)", " sampler")
-                        .replace(" (no barrier)", ""), (x, y), textcoords="offset points",
-                        xytext=(7, 5), fontsize=8.8, color=COL["ink"])
-        ax.set_xlabel("time to the goal [s]   (conservatism)")
-        ax.set_ylabel("seeds that touched a circle")
-        ax.set_title(("A  gust + 0.5 m/s unknown current" if sk == "A" else "B  crossing ferry"),
+            rows_.append((a, t, n, blk["summary"]["reached_frac"], _m(blk, "ttf"), _m(blk, "min_h")))
+        ys = np.arange(len(rows_))[::-1]
+        ax.barh(ys, [r[1] for r in rows_], height=0.6, alpha=0.92,
+                color=[_ctrl_colour(r[0]) for r in rows_], edgecolor=COL["ink"], linewidth=0.6)
+        ax.set_yticks(ys)
+        ax.set_yticklabels([short.get(r[0], r[0]) for r in rows_], fontsize=9.5)
+        ax.set_xlabel("seeds that touched a circle (of 30)")
+        ax.set_xlim(0, max(max(r[1] for r in rows_), 6) * 2.9)
+        ax.set_title(("A  gust + 0.5 m/s unknown current — the model is WRONG" if sk == "A"
+                      else "B  crossing ferry — the model is RIGHT"),
                      fontsize=11.5, color=COL["ink"])
-        ax.margins(0.22)
+        for y, r in zip(ys, rows_):
+            ax.text(r[1], y, f"  {r[1]}  ·  {r[4]:.0f} s  ·  {int(round(r[3]*r[2]))}/{r[2]} reached"
+                             f"  ·  {r[5]:+.1f} m",
+                    fontsize=8.3, va="center", color=COL["ink"])
     ax = axes[2]
     tim = res.get("_timing", {})
     labs = [k for k in tim if k != "control interval s"]
@@ -148,8 +157,8 @@ def fig_V10():
     ys = np.arange(len(labs))[::-1]
     ax.barh(ys, vals, color=[_ctrl_colour(l) for l in labs], alpha=0.9, height=0.6)
     ax.axvline(tim.get("control interval s", 1.0), color=COL["var"], lw=1.4, ls="--")
-    ax.text(tim.get("control interval s", 1.0), len(labs) - 0.3, " control interval",
-            color=COL["var"], fontsize=9, va="top")
+    ax.text(tim.get("control interval s", 1.0) * 0.94, -0.45, "1 s control interval  ",
+            color=COL["var"], fontsize=9, va="bottom", ha="right")
     ax.set_yticks(ys)
     ax.set_yticklabels([l.replace("SCBF-MPPI", "SCBF") for l in labs], fontsize=9)
     ax.set_xscale("log")
@@ -157,9 +166,10 @@ def fig_V10():
     ax.set_title("what the architecture costs", fontsize=11.5, color=COL["ink"])
     for y, v in zip(ys, vals):
         ax.text(v, y, f"  {v*1000:.0f} ms", fontsize=8.8, va="center", color=COL["ink"])
-    fig.suptitle("V10  the same barrier, in the sampler or on the output", fontsize=12.5,
-                 color=COL["ink"], y=0.99)
-    fig.tight_layout(rect=(0, 0, 1, 0.955))
+    fig.suptitle("V10  the same second-order barrier, put in the sampler or on the output — "
+                 "each row: seeds touching · time to goal · seeds reaching the goal · closest approach",
+                 fontsize=11.8, color=COL["ink"], y=0.985)
+    fig.tight_layout(rect=(0, 0, 1, 0.945))
     fig.savefig(os.path.join(FIG, "fig_V10_filter.png"), dpi=200)
     plt.close(fig)
 

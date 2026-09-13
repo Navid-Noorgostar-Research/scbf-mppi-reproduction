@@ -145,11 +145,17 @@ class CBFQPFilter:
         self._v = v
         self._s = s
 
-    def __call__(self, x, t, u_ref):
-        """x: (6,) measured state, t: absolute time, u_ref: (3,) the controller's input.  -> (u, info)"""
+    def __call__(self, x, t, u_ref, current=None):
+        """x: (6,) measured state, t: absolute time, u_ref: (3,) the controller's input.  -> (u, info)
+
+        `current` is what the filter BELIEVES the water current to be.  It is None for every configuration
+        of V10, which is the point of that experiment: a per-instant certificate built on a barrier
+        derivative that is wrong by n.c is worth nothing, and V10 measures how much nothing.  V10b feeds it
+        the observer's estimate from vessel/ext/observer.py and measures how much of the loss that recovers.
+        """
         x = np.asarray(x, float)
         u_ref = np.asarray(u_ref, float)
-        a_tau, b, h, psi1 = self.H.rows(x[None], t)             # a in tau coordinates
+        a_tau, b, h, psi1 = self.H.rows(x[None], t, current=current)     # a in tau coordinates
         a_tau = a_tau[0]
         b = b[0]                                                # (J,3), (J,)
         tight = self.z * np.linalg.norm(a_tau * self.sig_d[None, :], axis=-1) if self.z else np.zeros(self.J)
@@ -213,7 +219,14 @@ class FilteredController:
     def plan(self, x0):
         t_now = self.inner.t                           # absolute time of THIS control instant
         u_ref = self.inner.plan(x0)
-        u, info = self.filt(x0, t_now, u_ref)
+        # the filter is evaluated at whatever the inner controller believes about the water current, which
+        # is (0, 0) unless an observer has been switched on -- see vessel/ext/observer.py
+        cur = None
+        fn = getattr(self.inner, "_barrier_current", None)
+        if fn is not None:
+            c = fn()
+            cur = c if (c[0] or c[1]) else None
+        u, info = self.filt(x0, t_now, u_ref, current=cur)
         self.last = dict(self.inner.last)
         self.last.update(info)
         return u

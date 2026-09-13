@@ -207,6 +207,46 @@ def V10_timing():
     return out
 
 
+def V10b(runs, procs):
+    """Does an estimate of the current repair the output filter?
+
+    V10 shows the CBF-QP filter matching the sampler when the model is right (crossing ferry) and failing
+    badly when it is not (23 of 30 seeds touching against the sampler's 9 under an unknown 0.5 m/s current).
+    The diagnosis is that a filter is a ONE-INSTANT certificate: it enforces psi1dot + alpha2 psi1 >= 0 using
+    a barrier derivative that is wrong by n . c, and unlike the sampler it has no fifteen-second horizon of
+    cost to fall back on.  If that diagnosis is right, giving the filter the observer's estimate should
+    recover most of the loss, and giving it the true current should recover all of it.  This experiment is
+    the test of that prediction, which is the honest way round: the prediction was written down first.
+
+    Scenario A only, because that is where the unmodelled current is.
+    """
+    ek = ("filter_active", "filter_dU", "filter_slack", "filter_failed")
+    cfgs = [
+        dict(name="MPPI + CBF-QP filter | no estimate", kind="mppi_filter", filter=dict(delta=None),
+             **SCEN_A, obs_mode="off", audit=True, extra_keys=ek),
+        dict(name="MPPI + CBF-QP filter | estimate in the filter only", kind="mppi_filter",
+             filter=dict(delta=None), **SCEN_A, obs_mode="barrier", audit=True, extra_keys=ek),
+        dict(name="MPPI + CBF-QP filter | estimate in the rollouts and the filter", kind="mppi_filter",
+             filter=dict(delta=None), **SCEN_A, obs_mode="both", audit=True, extra_keys=ek),
+        dict(name="MPPI + CBF-QP filter | true current known (oracle)", kind="mppi_filter",
+             filter=dict(delta=None), **SCEN_A, obs_mode="both", oracle=True, audit=True, extra_keys=ek),
+        dict(name="MPPI + chance CBF-QP filter | estimate in both", kind="mppi_filter",
+             filter=dict(delta=0.003), **SCEN_A, obs_mode="both", audit=True, extra_keys=ek),
+        dict(name="SCBF-MPPI (sampler) | estimate in both, for reference", kind="scbf",
+             **SCEN_A, obs_mode="both", audit=True, extra_keys=()),
+    ]
+    res = run_configs_ext(cfgs, runs, procs)
+    res["_note"] = (
+        "The filter is evaluated at whatever the inner controller believes the current to be, so "
+        "obs_mode='barrier' gives the estimate to the FILTER only (the rollouts stay blind) and "
+        "obs_mode='both' gives it to both.  Compare against V10's 'A ... | MPPI + CBF-QP filter' row, which "
+        "is the same configuration with no estimate.  hdot_err_mean is the model error the estimate removes; "
+        "it is the quantity to compare across rows, because the touching counts also move with the "
+        "operating point.")
+    save("vessel_V10b_filter_observer", res)
+    return res
+
+
 def V11(runs, procs):
     """An unmodelled current versus the chance constraint's nominal delta, and what an observer buys.
 
@@ -290,6 +330,8 @@ def summary_text():
          ("astern_frac", "astern_frac_strong", "collision_rate", "ttf", "min_h", "path_length")),
         ("V10 sampler vs output filter", "vessel_V10_filter",
          ("collision_rate", "ttf", "min_h", "mean_speed", "path_length", "filter_active_mean", "filter_dU_mean")),
+        ("V10b does an estimate repair the filter?", "vessel_V10b_filter_observer",
+         ("collision_rate", "ttf", "min_h", "hdot_err_mean", "cert_false_frac", "filter_active_mean")),
         ("V11 unmodelled current", "vessel_V11_observer",
          ("cert_false_frac", "cert_false_frac_near", "collision_rate", "min_h", "obs_err_final", "obs_settle_s")),
         ("V12 ESS-targeted temperature", "vessel_V12_ess",
@@ -332,6 +374,8 @@ if __name__ == "__main__":
             V9(a.runs, a.procs)
         elif e == "V10":
             V10(a.runs, a.procs)
+        elif e == "V10b":
+            V10b(a.runs, a.procs)
         elif e == "V11":
             V11(a.runs, a.procs)
         elif e == "V12":
