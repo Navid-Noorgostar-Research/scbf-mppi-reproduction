@@ -66,9 +66,10 @@ def fig_V9():
     ctrls = ["MPPI", "SCBF-MPPI", "SCBF-MPPI + IS"]
     variants = [("no heading term", COL["muted"]), ("heading to goal w=400", COL["std"]),
                 ("astern penalty w=2000", COL["is"])]
-    fig, axes = plt.subplots(3, 2, figsize=(13.0, 10.4))
-    metrics = [("astern_frac", "fraction of the run spent going astern", "{:.2f}"),
-               ("touched", "seeds that touched a circle (of 30)", "{:.0f}"),
+    fig, axes = plt.subplots(4, 2, figsize=(13.2, 13.4))
+    metrics = [("astern_frac", "fraction of the run\nspent going astern", "{:.2f}"),
+               ("touched", "seeds that touched\na circle (of 30)", "{:.0f}"),
+               ("reached", "seeds that reached\nthe goal (of 30)", "{:.0f}"),
                ("ttf", "time to the goal [s]", "{:.0f}")]
     for col, (sk, stitle) in enumerate(scen):
         for row, (key, ylab, fmt) in enumerate(metrics):
@@ -86,26 +87,30 @@ def fig_V9():
                     if key == "touched":
                         t, n = _touched(blk)
                         ys.append(t); los.append(t); his.append(t)
+                    elif key == "reached":
+                        n = len(blk["runs"])
+                        t = int(round(blk["summary"]["reached_frac"] * n))
+                        ys.append(t); los.append(t); his.append(t)
                     else:
                         ys.append(_m(blk, key)); lo, hi = _ci(blk, key); los.append(lo); his.append(hi)
                 ax.bar(xs, ys, width=w * 0.92, color=vcol, alpha=0.9,
                        label=vname if (row == 0 and col == 0) else None)
-                if key != "touched":
+                if key not in ("touched", "reached"):
                     ax.errorbar(xs, ys, yerr=[np.array(ys) - np.array(los), np.array(his) - np.array(ys)],
                                 fmt="none", ecolor=COL["ink"], elinewidth=1.0, capsize=2.5)
-                for x, y in zip(xs, ys):
-                    ax.text(x, y, " " + fmt.format(y), rotation=90, ha="center", va="bottom",
+                for x, y, hi in zip(xs, ys, his):       # label above the interval, not inside it
+                    ax.text(x, max(y, hi), "  " + fmt.format(y), rotation=90, ha="center", va="bottom",
                             fontsize=8.5, color=COL["ink"])
             ax.set_xticks(range(len(ctrls)))
             ax.set_xticklabels(ctrls, fontsize=10)
-            ax.set_ylabel(ylab, fontsize=10)
-            ax.margins(y=0.22)
+            ax.set_ylabel(ylab, fontsize=9.5)
+            ax.margins(y=0.30)
             if row == 0:
                 ax.set_title(f"{sk}  {stitle}", fontsize=11.5, color=COL["ink"])
     axes[0, 0].legend(loc="upper left", fontsize=9.5, ncol=1)
     fig.suptitle("V9  the vessel cost has no heading term, so the boats run astern — does adding one change "
                  "the comparison?", fontsize=12.5, color=COL["ink"], y=0.995)
-    fig.tight_layout(rect=(0, 0, 1, 0.975))
+    fig.tight_layout(rect=(0, 0, 1, 0.982))
     fig.savefig(os.path.join(FIG, "fig_V9_heading.png"), dpi=200)
     plt.close(fig)
 
