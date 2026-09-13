@@ -1,0 +1,20 @@
+{
+ "per_problem_median_s": {
+  "sdp_literal_clarabel": 0.007084850003593601,
+  "socp_std_clarabel": 0.005254100004094653,
+  "socp_var_clarabel": 0.00566709999111481,
+  "sdp_literal_solver_only": 0.00013925
+ },
+ "n_sdp_ok": 60,
+ "closed_form_batch500_s": 0.0016570149993640371,
+ "algorithm1_cycle_K500_T20_with_literal_SDP_s": 70.84850003593601,
+ "algorithm1_cycle_K500_T20_solver_only_s": 1.3925,
+ "algorithm1_cycle_K200_T20_with_literal_SDP_s": 28.339400014374405,
+ "algorithm1_cycle_K500_T20_with_SOCP_s": 52.54100004094653,
+ "scbf_mppi_cycle_K500_closed_form_s": 0.040168339997762814,
+ "mppi_cycle_K500_s": 0.0011513300007209182,
+ "mppi_cycle_K5000_s": 0.013207739999052137,
+ "machine": "AMD64",
+ "cpu_count": 16,
+ "note": "single core, cvxpy + Clarabel, numpy vectorised rollouts"
+}

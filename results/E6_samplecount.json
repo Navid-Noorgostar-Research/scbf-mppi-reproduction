@@ -1,0 +1,50 @@
+{
+ "MPPI": {
+  "E1_as_sum_K500": 0.0005045258815130551,
+  "E1_as_mean": 1.0090517630261103e-06,
+  "Var_dv": 0.9923663097346213,
+  "Var_dom": 2.2817095078803193,
+  "E[S]": 2311.7466260862566,
+  "N2_with_sum_and_Var_dv": "inf",
+  "N2_with_mean_and_Var_dv": "inf",
+  "N2_with_sum_and_Var_dom": "inf",
+  "N2_with_mean_and_Var_dom": "inf",
+  "exp_2ES_over_lambda": 1.0142320547350045e+304
+ },
+ "SCBF-var": {
+  "E1_as_sum_K500": 5.401111341421301e-15,
+  "E1_as_mean": 1.0802222682842598e-17,
+  "Var_dv": 0.6023387694217812,
+  "Var_dom": 2.2817095078803193,
+  "E[S]": 183.27635335192255,
+  "N2_with_sum_and_Var_dv": "inf",
+  "N2_with_mean_and_Var_dv": "inf",
+  "N2_with_sum_and_Var_dom": "inf",
+  "N2_with_mean_and_Var_dom": "inf",
+  "exp_2ES_over_lambda": 1.5553131652401212e+159
+ },
+ "SCBF-std": {
+  "E1_as_sum_K500": 2.3989222022066032e-123,
+  "E1_as_mean": 4.797844404413206e-126,
+  "Var_dv": 30.349712433077965,
+  "Var_dom": 2.2817095078803193,
+  "E[S]": 1514.066406890281,
+  "N2_with_sum_and_Var_dv": "inf",
+  "N2_with_mean_and_Var_dv": "inf",
+  "N2_with_sum_and_Var_dom": "inf",
+  "N2_with_mean_and_Var_dom": "inf",
+  "exp_2ES_over_lambda": 1.0142320547350045e+304
+ },
+ "N1_paper_constant": 1475.5517816455742,
+ "N1_standard_hoeffding": 737.7758908227871,
+ "paper_table_II": {
+  "MPPI": {
+   "N1": 1476,
+   "N2": 2973
+  },
+  "SCBF-MPPI": {
+   "N1": 1476,
+   "N2": 584
+  }
+ }
+}

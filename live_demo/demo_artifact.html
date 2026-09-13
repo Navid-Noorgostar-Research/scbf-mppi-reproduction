@@ -1,0 +1,1446 @@
+<title>Path Integral Safety Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F4F7F9; --surface:#FFFFFF; --ink:#1B2732; --muted:#5B6B78; --line:#D9E0E6; --water0:#DCE9F1; --water1:#EEF4F8; --wall:#20303C; --grid:rgba(32,48,60,0.07);
+  --mppi:#1B8AA6; --scbf:#5B4FB0; --var:#C2482A; --is:#2E7D4F; --det:#9C6A12; --printed:#1B8AA6; --accent:#1B8AA6; --focus:#F2A900; --active:#E08A00;
+  --good:#2E7D4F; --bad:#C2482A; --obst:#8A9BA8; --obstcore:#3A4A57; --goal:#1B2732;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; } }
+:root[data-theme="dark"]{ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45;padding:16px 16px 32px}
+h1{font-size:20px;font-weight:600;margin:0 0 2px;letter-spacing:-0.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 14px;font-size:13px;max-width:78ch}
+.wrap{max-width:1320px;margin:0 auto}
+.grid{display:grid;grid-template-columns:250px minmax(0,1fr) 300px;gap:14px}
+@media (max-width:1000px){ .grid{grid-template-columns:1fr} }
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.panel h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+label{display:block;font-size:12.5px;color:var(--ink);margin:8px 0 3px}
+select,button,input[type=number]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+button{cursor:pointer;font-weight:500}
+button.primary{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+button.story{border-color:var(--accent);color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.row{display:flex;gap:8px;margin-top:8px} .row button{flex:1}
+.val{float:right;color:var(--muted);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px}
+canvas.main{width:100%;height:auto;display:block;border-radius:8px;background:var(--water1)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.stat{padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .n{font-size:11px;color:var(--muted);margin-top:1px}
+.stat.wide{grid-column:1 / -1}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0 0;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:4px;border-radius:2px;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:6px}
+th,td{text-align:left;padding:3px 5px;border-bottom:1px solid var(--line);vertical-align:top} th{color:var(--muted);font-weight:500;font-size:11px}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.checks label{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12.5px;cursor:pointer}
+.checks input{accent-color:var(--accent);margin:0}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-top:6px}
+.toggles label{display:flex;align-items:center;gap:6px;font-size:12px;margin:3px 0;cursor:pointer}
+.toggles input{accent-color:var(--accent);margin:0}
+.spark{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.spark canvas{width:100%;height:56px;display:block;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.spark .k,.instcard .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.inst{display:grid;gap:10px;margin-top:10px}
+.instcard{border:1px solid var(--line);border-radius:8px;padding:8px 10px 6px;background:var(--surface)}
+.instcard .k{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.instcard canvas{width:100%;display:block}
+#rv{height:214px} #tg{height:186px}
+.rvtext{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+.rvtext b{color:var(--ink);font-weight:500}
+select.mini{width:auto;padding:1px 6px;font-size:11px;text-transform:none;letter-spacing:0;border-radius:5px}
+.replay{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+.replay input{flex:1}
+kbd{font-family:"IBM Plex Mono",monospace;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+progress{width:100%;height:8px;margin-top:6px}
+.rank{font-family:"IBM Plex Mono",monospace;color:var(--muted)}
+.cvwrap{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;line-height:1.35;box-shadow:0 4px 14px rgba(0,0,0,.14);max-width:260px;z-index:2}
+.tip b{font-weight:600}
+.tip .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.caption{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);max-width:84%;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.28);pointer-events:none;z-index:3}
+.caption .eb{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:2px}
+.caption b{font-weight:600}
+@media (prefers-reduced-motion: reduce){ * { transition:none !important } }
+</style>
+<div class="wrap">
+  <h1>Path Integral Safety Bench</h1>
+  <p class="sub">MPPI with and without the stochastic-CBF proposal of Tao et al. (CDC 2022) — on the paper's own corridor and on the ISD research vessel <em>Solgenia</em> (published model). Every cycle's sampled rollouts are drawn, opacity by weight, amber where the barrier chance constraint binds. Race up to four controllers on the same seed and the same disturbance; put an unknown current or a gust on the water; look inside one cycle at the row the filter is working on; watch the thrusters against their limits; replay any finished run.</p>
+  <div class="grid">
+    <div class="panel">
+      <h2>Scene</h2>
+      <select id="scene" aria-label="Scene">
+        <option value="corridor">Corridor (the paper's unicycle)</option>
+        <option value="static">Solgenia — moored obstacles</option>
+        <option value="crossing">Solgenia — crossing ferry</option>
+      </select>
+      <label for="mode">Mode</label>
+      <select id="mode" aria-label="Mode"><option value="single">Single run</option><option value="race">Race (same seed and disturbance)</option></select>
+      <div id="singlectrl"><label for="ctrl">Controller</label><select id="ctrl" aria-label="Controller"></select></div>
+      <div id="racectrl" hidden><label>Controllers in the race (2–4)</label><div class="checks" id="racechecks"></div></div>
+      <label for="K">Samples K <span class="val" id="Kv">500</span></label>
+      <input type="range" id="K" min="100" max="1000" step="50" value="500">
+      <label for="noise">Process noise <span class="val" id="noisev">×1.0</span></label>
+      <input type="range" id="noise" min="0" max="3" step="0.1" value="1">
+      <div id="vesselctrl">
+        <label for="dist">Disturbance model</label>
+        <select id="dist" aria-label="Disturbance model"><option value="white">white force noise (the paper's assumption)</option><option value="ou">gust — coloured, 5 s correlation (OU)</option><option value="none">none — deterministic plant</option></select>
+        <label for="cur">Unknown current <span class="val" id="curv">off</span></label>
+        <input type="range" id="cur" min="0" max="1" step="0.1" value="0">
+        <label for="curdir">Current sets towards <span class="val" id="curdirv">S</span></label>
+        <input type="range" id="curdir" min="0" max="7" step="1" value="6">
+      </div>
+      <label for="delta">Chance level 1−δ <span class="val" id="deltav">0.997</span></label>
+      <input type="range" id="delta" min="0" max="3" step="1" value="0">
+      <label for="seed">Seed <span class="val" id="seedv">1</span></label>
+      <input type="range" id="seed" min="0" max="29" step="1" value="1">
+      <label for="speed">Playback <span class="val" id="speedv">1× real time</span></label>
+      <input type="range" id="speed" min="0" max="3" step="1" value="1">
+      <div class="row"><button class="primary" id="run">Run</button><button id="stepb">Step</button><button id="reset">Reset</button></div>
+      <div class="row"><button id="story" class="story">▶ Play the story (about a minute)</button></div>
+      <div class="row"><button id="batch">Batch: 20 seeds</button></div>
+      <progress id="prog" value="0" max="1" hidden></progress>
+      <h2 style="margin-top:14px">Show</h2>
+      <div class="toggles">
+        <label><input type="checkbox" id="t_fan" checked>rollout fan</label>
+        <label><input type="checkbox" id="t_act" checked>constraint binding</label>
+        <label><input type="checkbox" id="t_halo" checked>barrier fronts</label>
+        <label><input type="checkbox" id="t_ghost" checked>ghosts of last runs</label>
+        <label><input type="checkbox" id="t_wake" checked>wake</label>
+        <label><input type="checkbox" id="t_grid" checked>grid</label>
+        <label><input type="checkbox" id="t_cur" checked>current field</label>
+        <label><input type="checkbox" id="t_follow">follow the boat (2×)</label>
+        <label><input type="checkbox" id="t_pause">pause on collision</label>
+        <label><input type="checkbox" id="t_inspect" checked>sample inspector</label>
+      </div>
+      <p class="note" id="scenenote"></p>
+      <p class="note"><kbd>space</kbd> run/pause · <kbd>s</kbd> step · <kbd>r</kbd> reset · <kbd>f</kbd> follow · <kbd>esc</kbd> leave the story</p>
+      <p class="note" id="enginenote"></p>
+    </div>
+    <div class="panel">
+      <h2 id="canvastitle">Corridor</h2>
+      <div class="cvwrap"><canvas id="cv" class="main" width="1200" height="620" aria-label="Simulation view"></canvas><div id="tip" class="tip" hidden></div><div id="caption" class="caption" hidden></div></div>
+      <div class="legend" id="legend"></div>
+      <div class="replay" id="replaybox" hidden><span>replay</span><input type="range" id="replay" min="0" max="0" value="0"><span id="replayt">0 s</span></div>
+      <div class="spark">
+        <div><div class="k">min h over time</div><canvas id="sp_h" width="520" height="112"></canvas></div>
+        <div><div class="k">effective sample size over time</div><canvas id="sp_e" width="520" height="112"></canvas></div>
+      </div>
+      <div class="inst">
+        <div class="instcard"><div class="k"><span>Inside this cycle — the row the filter works on at t = 0, in units of its nominal spread</span><select id="rvsel" class="mini" aria-label="Row view controller" hidden></select></div><canvas id="rv" width="1300" height="428"></canvas><div class="rvtext" id="rvtext"></div></div>
+        <div class="instcard" id="tgcard"><div class="k"><span>Thrust — azimuth thruster inside its 700 N disk · bow thruster against its speed cap</span><span id="tgnote" style="text-transform:none;letter-spacing:0"></span></div><canvas id="tg" width="1300" height="372"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 id="rightHead">This run</h2>
+      <div id="singlestats" class="stats">
+        <div class="stat"><div class="k">time</div><div class="v" id="s_t">0</div></div>
+        <div class="stat"><div class="k">collision steps</div><div class="v" id="s_c">0</div></div>
+        <div class="stat"><div class="k">min h</div><div class="v" id="s_h">–</div></div>
+        <div class="stat"><div class="k">ESS</div><div class="v" id="s_e">–</div></div>
+        <div class="stat"><div class="k">constraint active</div><div class="v" id="s_a">–</div><div class="n" id="s_a_n"></div></div>
+        <div class="stat"><div class="k">var kept</div><div class="v" id="s_v">–</div><div class="n" id="s_v_n"></div></div>
+        <div class="stat wide"><div class="k">delivered Pr(a·u ≥ b) on active pairs</div><div class="v" id="s_p">–</div><div class="n" id="s_p_n"></div></div>
+        <div class="stat wide"><div class="k">status</div><div class="v" id="s_s" style="font-size:14px">idle</div></div>
+      </div>
+      <div id="racestats" hidden><table id="lb"><thead><tr><th>#</th><th>controller</th><th class="num">coll</th><th class="num">min h</th><th class="num">t</th><th class="num">ESS</th><th class="num">binds</th></tr></thead><tbody id="lbb"></tbody></table><p class="note">Ranked by collision steps, then time to goal (estimated from the remaining distance while a run is still going). Same seed → identical disturbance realisation for every controller (common random numbers). <em>binds</em> = share of sample-timesteps on which the barrier chance constraint binds; for MPPI and det. MPPI it would bind — nothing filters. Det. MPPI: ESS and binds averaged over its 4 inner iterations (125 samples each).</p></div>
+      <h2 style="margin-top:14px">Last runs <span class="val" id="histn"></span></h2>
+      <table id="ht"><thead><tr><th></th><th>run</th><th class="num">coll</th><th class="num">min h</th><th class="num">t</th></tr></thead><tbody id="htb"><tr><td colspan="5" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr></tbody></table>
+      <div class="row"><button id="clearhist">Clear history</button></div>
+      <h2 style="margin-top:14px">Batch (this scene, this controller)</h2>
+      <table id="bt"><thead><tr><th>metric</th><th class="num">mean</th><th class="num">±95 %</th></tr></thead><tbody id="btb"><tr><td colspan="3" style="color:var(--muted)">run a batch to fill</td></tr></tbody></table>
+      <p class="note">Batch = 20 seeds of this configuration in the browser (the Python package uses 30 seeds and reports bootstrap intervals; the JavaScript core agrees with it within those intervals — see the README).</p>
+    </div>
+  </div>
+</div>
+<script id="simjs">
+/* sim.js — simulation core of the live demo (runs in the browser and in Node for cross-validation).
+   Ports of the Python package scbf_mppi (corridor: env.py, dynamics.py, scbf.py, mppi.py, simulate.py) and
+   scbf_mppi.vessel (solgenia.py, harbour.py, solver_nd.py [single row exact; several rows: sequential sweeps],
+   controllers.py, simulate.py).  The reported numbers come from the Python package; this core is for visualisation. */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) module.exports = factory();
+  else root.SIM = factory();
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- RNG (seeded)
+  function Rng(seed) { this.s = (seed >>> 0) || 1; this.spare = null; }
+  Rng.prototype.u = function () {              // mulberry32
+    let t = (this.s += 0x6D2B79F5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  Rng.prototype.n = function () {              // standard normal (Box–Muller)
+    if (this.spare !== null) { const v = this.spare; this.spare = null; return v; }
+    let u1 = 0; while (u1 < 1e-12) u1 = this.u();
+    const u2 = this.u(), r = Math.sqrt(-2 * Math.log(u1)), th = 2 * Math.PI * u2;
+    this.spare = r * Math.sin(th); return r * Math.cos(th);
+  };
+  const Z997 = 2.7477813; // Phi^{-1}(0.997)
+  function normPpf(p) { // Acklam's rational approximation, |err| < 1.2e-9
+    const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+    const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+    const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+    const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+    const pl = 0.02425, ph = 1 - pl; let q, r;
+    if (p < pl) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p <= ph) { q = p - 0.5; r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+    q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+
+  // ================================================================ CORRIDOR (the paper's example)
+  const CDT = 0.05;
+  function Corridor(printed) { this.printed = !!printed; this.alpha = 1.0; }
+  Corridor.prototype.w = function (x) { return this.printed ? Math.sin(x) : Math.sin(Math.PI * x / 2); };
+  Corridor.prototype.dw = function (x) { return this.printed ? Math.cos(x) : (Math.PI / 2) * Math.cos(Math.PI * x / 2); };
+  Corridor.prototype.d2w = function (x) { return this.printed ? -Math.sin(x) : -((Math.PI / 2) ** 2) * Math.sin(Math.PI * x / 2); };
+  Corridor.prototype.minh = function (x, y) { const w = this.w(x); return Math.min(y - w, w + this.alpha - y); };
+
+  function corridorMakeController(env, kind, opt) {
+    // kind: mppi | scbf_var | scbf_std | scbf_is | det ; opt: {K,T,lam,sv,som,sigma,delta,seed,umax}
+    const K = opt.K, T = opt.T, lam = opt.lam, sv = opt.sv, som = opt.som, sigEnv = opt.sigma;
+    const rng = new Rng(opt.seed * 7919 + 17);
+    const z = normPpf(1 - opt.delta), alpha = z;
+    const goal = [4, 0.5], penalty = 1000;
+    const isDet = kind === "det", isScbf = kind.startsWith("scbf");
+    const form = kind === "scbf_var" ? "variance" : "std", isCorr = kind === "scbf_is";
+    const iters = 4, shrink = 0.5, M = 125;
+    const Kact = isDet ? M : K;
+    const U = new Float64Array(T * 2);                 // nominal plan
+    const Rv = lam / (sv * sv), Rom = lam / (som * som);
+    const umax = opt.umax || null;
+    const S = new Float64Array(Kact), w = new Float64Array(Kact);
+    const traj = new Float32Array(Kact * (T + 1) * 2);  // xy of every sample (for drawing)
+    const eps = new Float64Array(Kact * T * 2);
+    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0 };
+    const NS = 65;
+    const actFlags = new Uint8Array(Kact * T);          // 1 where the barrier constraint was active for that (sample, step)
+    function clipU(v, om) { if (!umax) return [v, om]; return [Math.max(-umax[0], Math.min(umax[0], v)), Math.max(-umax[1], Math.min(umax[1], om))]; }
+    function rolloutAndCost(x0, sig_v, sig_om, lamUse, detCorr, record) {
+      // draws eps, rolls out, returns S (with control terms); SCBF modifies the draws per timestep.
+      // record: keep the t = 0 row-space picture in st.row0 (all samples share x0 and the nominal mean at t = 0)
+      // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
+      // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the row.
+      const X = new Float64Array(Kact * 3);
+      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; }
+      let nAct = 0, nInf = 0, varSum = 0, satN = 0, satOk = 0;
+      const logq = new Float64Array(Kact);
+      for (let t = 0; t < T; t++) {
+        const ubv = U[2 * t], ubo = U[2 * t + 1];
+        for (let k = 0; k < Kact; k++) {
+          const x = X[3 * k], y = X[3 * k + 1], th = X[3 * k + 2];
+          let ev, eo, m = 0, s = sig_v;
+          const xi_v = rng.n(), xi_o = rng.n();
+          // rows: c1 v >= b1, c2 v >= b2  (omega column is zero)
+          const wx = env.w(x), h1 = y - wx, h2 = wx + env.alpha - y;
+          const c1 = Math.sin(th) - env.dw(x) * Math.cos(th), c2 = -c1;
+          const ito1 = 0.5 * sigEnv * sigEnv * (-env.d2w(x));
+          const b1 = -h1 - ito1, b2 = -h2 + ito1;
+          // active?  (m = 0, s = s0) feasible for both rows?
+          const penNom = form === "std" ? z * Math.abs(c1) * sig_v : alpha * c1 * c1 * sig_v * sig_v;
+          const r1n = b1 + penNom - c1 * ubv, r2n = b2 + penNom - c2 * ubv;
+          let lo = -Infinity, hi = Infinity, zeroOk = true;
+          function bounds(c, r) { if (c > 1e-12) lo = Math.max(lo, r / c); else if (c < -1e-12) hi = Math.min(hi, r / c); else if (r > 0) zeroOk = false; }
+          bounds(c1, r1n); bounds(c2, r2n);
+          const active = !(zeroOk && lo <= 0 && hi >= 0 && lo <= hi);
+          actFlags[k * T + t] = active ? 1 : 0;
+          if (active) nAct++;
+          if (record && t === 0 && k === 0) { // the more violated of the two wall rows, by nominal z-score along the row
+            const s1 = Math.abs(c1) * sig_v, zs1 = s1 > 1e-12 ? (c1 * ubv - b1) / s1 : (c1 * ubv - b1), zs2 = s1 > 1e-12 ? (c2 * ubv - b2) / s1 : (c2 * ubv - b2);
+            const one = zs1 <= zs2;
+            st.row0 = { dim: 1, a: one ? c1 : c2, b: one ? b1 : b2, ubar: ubv, sig: sig_v, mu: 0, s: sig_v, active: active, form: form, z: z, alpha: alpha, name: one ? "lower wall" : "upper wall", filtered: isScbf,
+              rows: [{ a: c1, b: b1, name: "lower wall", h: h1 }, { a: c2, b: b2, name: "upper wall", h: h2 }], jSel: one ? 0 : 1 };
+          }
+          if (isScbf) {
+            if (active) {
+              let best = Infinity, bm = 0, bs = sig_v, feasAny = false;
+              for (let j = 0; j < NS; j++) {
+                const sj = sig_v * j / (NS - 1);
+                const pen = form === "std" ? z * Math.abs(c1) * sj : alpha * c1 * c1 * sj * sj;
+                let lo2 = -Infinity, hi2 = Infinity, zok = true;
+                const rr1 = b1 + pen - c1 * ubv, rr2 = b2 + pen - c2 * ubv;
+                if (c1 > 1e-12) lo2 = Math.max(lo2, rr1 / c1); else if (c1 < -1e-12) hi2 = Math.min(hi2, rr1 / c1); else if (rr1 > 0) zok = false;
+                if (c2 > 1e-12) lo2 = Math.max(lo2, rr2 / c2); else if (c2 < -1e-12) hi2 = Math.min(hi2, rr2 / c2); else if (rr2 > 0) zok = false;
+                const feas = zok && lo2 <= hi2;
+                let mj;
+                if (feas) mj = Math.min(Math.max(0, lo2), hi2);
+                else mj = isFinite(lo2) && isFinite(hi2) ? 0.5 * (lo2 + hi2) : (isFinite(lo2) ? lo2 : (isFinite(hi2) ? hi2 : 0));
+                const cost = Math.abs(mj) + (sig_v - sj) + (feas ? 0 : 1e6);
+                if (cost < best) { best = cost; bm = mj; bs = sj; feasAny = feasAny || feas; }
+              }
+              if (!feasAny) nInf++;
+              m = bm; s = bs;
+            }
+            varSum += (s * s) / (sig_v * sig_v);
+            if (record && t === 0 && k === 0) { st.row0.mu = m; st.row0.s = s; }
+            ev = m + s * xi_v; eo = sig_om * xi_o;
+            if (isCorr) {
+              const sfl = Math.max(s, 1e-9);
+              logq[k] += (-0.5 * (ev / sig_v) ** 2 - Math.log(sig_v)) - (-0.5 * ((ev - m) / sfl) ** 2 - Math.log(sfl));
+            }
+          } else { ev = sig_v * xi_v; eo = sig_om * xi_o; varSum += 1; }
+          // delivered satisfaction on the drawn control (tolerance for boundary ties) — every controller
+          const uv = ubv + ev;
+          const ok = (c1 * uv >= b1 - 1e-7 * (1 + Math.abs(b1))) && (c2 * uv >= b2 - 1e-7 * (1 + Math.abs(b2)));
+          if (active) { satN++; if (ok) satOk++; }
+          eps[(k * T + t) * 2] = ev; eps[(k * T + t) * 2 + 1] = eo;
+          let [v, om] = clipU(ubv + ev, ubo + eo);
+          const xn = x + v * Math.cos(th) * CDT, yn = y + v * Math.sin(th) * CDT, thn = th + om * CDT;
+          X[3 * k] = xn; X[3 * k + 1] = yn; X[3 * k + 2] = thn;
+          traj[(k * (T + 1) + t + 1) * 2] = xn; traj[(k * (T + 1) + t + 1) * 2 + 1] = yn;
+          // running cost
+          const dx = xn - goal[0], dy = yn - goal[1];
+          const inside = env.minh(xn, yn) > 0;
+          S[k] += dx * dx + dy * dy + (inside ? 0 : penalty);
+          if (!isDet) S[k] += ubv * Rv * ev + 0.5 * ubv * ubv * Rv + ubo * Rom * eo + 0.5 * ubo * ubo * Rom;
+        }
+      }
+      // terminal cost + det correction
+      for (let k = 0; k < Kact; k++) {
+        const xn = X[3 * k], yn = X[3 * k + 1]; const dx = xn - goal[0], dy = yn - goal[1];
+        S[k] += dx * dx + dy * dy;
+        if (isDet) { let c = 0; for (let t = 0; t < T; t++) c += eps[(k * T + t) * 2] / (sig_v * sig_v) * U[2 * t] + eps[(k * T + t) * 2 + 1] / (sig_om * sig_om) * U[2 * t + 1]; S[k] += lamUse * c; }
+      }
+      st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
+      if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which the row binds, per horizon step
+      return logq;
+    }
+    function weightsUpdate(lamUse, logq) {
+      let smin = Infinity; for (let k = 0; k < Kact; k++) if (S[k] < smin) smin = S[k];
+      let lmax = -Infinity; for (let k = 0; k < Kact; k++) { w[k] = -(S[k] - smin) / lamUse + (logq ? logq[k] : 0); if (w[k] > lmax) lmax = w[k]; }
+      let sum = 0; for (let k = 0; k < Kact; k++) { w[k] = Math.exp(w[k] - lmax); sum += w[k]; }
+      let s2 = 0, wmax = 0; for (let k = 0; k < Kact; k++) { w[k] /= sum; s2 += w[k] * w[k]; if (w[k] > wmax) wmax = w[k]; }
+      st.ess = 1 / s2; st.wmax = wmax;
+      for (let t = 0; t < T; t++) { let dv = 0, dom = 0; for (let k = 0; k < Kact; k++) { dv += w[k] * eps[(k * T + t) * 2]; dom += w[k] * eps[(k * T + t) * 2 + 1]; } U[2 * t] += dv; U[2 * t + 1] += dom; if (umax) { const c = clipU(U[2 * t], U[2 * t + 1]); U[2 * t] = c[0]; U[2 * t + 1] = c[1]; } }
+    }
+    return {
+      plan: function (x0) {
+        if (isDet) {
+          // diagnostics are averaged over the inner iterations (equal numbers of (sample, step) pairs); ESS is the mean over
+          // iterations, as in the Python package; the fan / flags shown are those of the last iteration
+          let aAct = 0, aVar = 0, aSat = 0, nSat = 0, aEss = 0;
+          for (let j = 0; j < iters; j++) { const beta = Math.pow(shrink, j); rolloutAndCost(x0, beta * sv, beta * som, beta * beta * lam, true, j === 0); weightsUpdate(beta * beta * lam, null);
+            aAct += st.act; aVar += st.var; if (!isNaN(st.sat)) { aSat += st.sat; nSat++; } aEss += st.ess; }
+          st.act = aAct / iters; st.var = aVar / iters; st.sat = nSat ? aSat / nSat : NaN; st.ess = aEss / iters;
+        } else { const lq = rolloutAndCost(x0, sv, som, lam, false, true); weightsUpdate(lam, isCorr ? lq : null); }
+        const u0 = [U[0], U[1]]; st.u0 = u0.slice();
+        for (let t = 0; t < T - 1; t++) { U[2 * t] = U[2 * t + 2]; U[2 * t + 1] = U[2 * t + 3]; } U[2 * T - 2] = 0; U[2 * T - 1] = 0;
+        return u0;
+      },
+      traj: traj, w: w, act: actFlags, K: Kact, T: T, stats: st, kind: kind
+    };
+  }
+
+  function corridorEpisode(kind, opt, onStep) {
+    // opt: {K,T,lam,sv,som,sigma,delta,seed,maxSteps,umax}; returns metrics; onStep(k, x, ctrl) optional (returns false to stop)
+    const env = new Corridor(false);
+    const c = corridorMakeController(env, kind, opt);
+    const rng = new Rng(10000 + opt.seed);
+    let x = [0, 0.5, 0]; const maxSteps = opt.maxSteps || 250; const sig = opt.sigma;
+    let outside = 0, minh = Infinity, ttf = maxSteps, reached = false, essSum = 0, actSum = 0, varSum = 0, satSum = 0, satN = 0, n = 0;
+    const path = [[x[0], x[1]]];
+    for (let k = 0; k < maxSteps; k++) {
+      const u = c.plan(x);
+      essSum += c.stats.ess; actSum += c.stats.act; varSum += c.stats.var; if (!isNaN(c.stats.sat)) { satSum += c.stats.sat; satN++; }
+      let [v, om] = u; if (opt.umax) { v = Math.max(-opt.umax[0], Math.min(opt.umax[0], v)); om = Math.max(-opt.umax[1], Math.min(opt.umax[1], om)); }
+      x = [x[0] + v * Math.cos(x[2]) * CDT + sig * Math.sqrt(CDT) * rng.n(), x[1] + v * Math.sin(x[2]) * CDT + sig * Math.sqrt(CDT) * rng.n(), x[2] + om * CDT + sig * Math.sqrt(CDT) * rng.n()];
+      n++; const h = env.minh(x[0], x[1]); if (h < minh) minh = h; if (h < 0) outside++;
+      path.push([x[0], x[1]]);
+      if (onStep && onStep(k, x, c) === false) break;
+      if (Math.hypot(x[0] - 4, x[1] - 0.5) < 0.15) { ttf = k + 1; reached = true; break; }
+    }
+    return { collision_rate: outside / n, collided: outside > 0, min_h: minh, ttf: ttf, reached: reached, ess: essSum / n, activation: actSum / n, var_ratio: varSum / n, sat_active: satN ? satSum / satN : NaN, steps: n, path: path };
+  }
+
+  // ================================================================ VESSEL (Solgenia, ISD)
+  const SG = {
+    m: 3100, J: 21179, X_du: -155.42, Y_dv: -1070, N_dv: -3328, Y_dr: -1008,
+    X_u: -84.01, Y_v: -795.58, N_v: -958.4, N_r: -5319.88, Y_r: -896.11,
+    X_uu: -46.73, Y_vv: 0, N_vv: -234.94, Y_rr: -149.38, N_rr: 0, X_rr: -312.21, X_vr: 434.41, Y_uv: 395.0, Y_ur: -368.2, N_ur: 392.76, N_uv: -138.5,
+    Y_vr: 70.39, Y_rv: 24.09, N_vr: -85.67, N_rv: 14.09,
+    L_AT: 2.9, L_BT: 3.7, F_AT_MAX: 0.63 * (2000 / 60) ** 2, F_BT_MAX0: 0.055 * (4000 / 60) ** 2, D_BT: 0.62, DT: 0.25, DTC: 1.0, LOA: 8.5, BEAM: 2.2
+  };
+  // M = M_RB + M_A (xg = 0): [[m - X_du, 0, 0],[0, m - Y_dv, -Y_dr],[0, -N_dv, J]]
+  const Mm = [[SG.m - SG.X_du, 0, 0], [0, SG.m - SG.Y_dv, -SG.Y_dr], [0, -SG.N_dv, SG.J]];
+  function inv3(A) { const [a, b, c] = A[0], [d, e, f] = A[1], [g, h, i] = A[2]; const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    return [[(e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det], [(f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det], [(d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det]]; }
+  const Minv = inv3(Mm);
+  const Balloc = [[1, 0, 0], [0, 1, 1], [0, -SG.L_AT, SG.L_BT]];   // tau = B u, u = (X_AT, Y_AT, F_BT)
+  function bowCap(u) { return SG.F_BT_MAX0 * Math.exp(-SG.D_BT * u * u); }
+  function clipInputs(u, x) { const mag = Math.hypot(u[0], u[1]); const s = mag > SG.F_AT_MAX ? SG.F_AT_MAX / mag : 1; const cap = bowCap(x[3]); return [u[0] * s, u[1] * s, Math.max(-cap, Math.min(cap, u[2]))]; }
+  function cd(nu) { // C_RB nu + N(nu)
+    const u = nu[0], v = nu[1], r = nu[2], p = SG;
+    const crb0 = -p.m * r * v, crb1 = p.m * r * u, crb2 = 0;
+    const n1 = -p.X_u * u - p.X_uu * Math.abs(u) * u + p.X_vr * v * r + p.X_rr * r * r;
+    const n2 = -p.Y_v * v - p.Y_r * r - p.Y_vv * Math.abs(v) * v + p.Y_ur * u * r + p.Y_uv * u * v - p.Y_rr * Math.abs(r) * r - p.Y_vr * Math.abs(v) * r - p.Y_rv * Math.abs(r) * v;
+    const n3 = -p.N_r * r - p.N_v * v - p.N_rr * Math.abs(r) * r + p.N_uv * u * v + p.N_ur * u * r - p.N_vv * Math.abs(v) * v - p.N_vr * Math.abs(v) * r - p.N_rv * Math.abs(r) * v;
+    return [crb0 + n1, crb1 + n2, crb2 + n3];
+  }
+  function fnu(nu) { const c = cd(nu); return [-(Minv[0][0] * c[0] + Minv[0][1] * c[1] + Minv[0][2] * c[2]), -(Minv[1][0] * c[0] + Minv[1][1] * c[1] + Minv[1][2] * c[2]), -(Minv[2][0] * c[0] + Minv[2][1] * c[1] + Minv[2][2] * c[2])]; }
+  function drift(x, uc, taud, cur) { // uc already clipped; taud disturbance force or null; cur current [cx, cy]
+    const psi = x[2], u = x[3], v = x[4], r = x[5], c = Math.cos(psi), s = Math.sin(psi);
+    const tau = [uc[0] + (taud ? taud[0] : 0), uc[1] + uc[2] + (taud ? taud[1] : 0), -SG.L_AT * uc[1] + SG.L_BT * uc[2] + (taud ? taud[2] : 0)];
+    const q = cd([u, v, r]); const t0 = tau[0] - q[0], t1 = tau[1] - q[1], t2 = tau[2] - q[2];
+    return [c * u - s * v + (cur ? cur[0] : 0), s * u + c * v + (cur ? cur[1] : 0), r,
+      Minv[0][0] * t0 + Minv[0][1] * t1 + Minv[0][2] * t2, Minv[1][0] * t0 + Minv[1][1] * t1 + Minv[1][2] * t2, Minv[2][0] * t0 + Minv[2][1] * t1 + Minv[2][2] * t2];
+  }
+  function stepVesselSubs(x, u, dt, taud, cur, sigmaF, rng, nsub) {
+    // like stepVessel, but returns [x_next, [sub-step states...]] (positions after every RK4 sub-step)
+    nsub = nsub || Math.max(1, Math.round(dt / SG.DT)); const h = dt / nsub; const uc = clipInputs(u, x); let xn = x.slice(); const subs = [];
+    for (let i = 0; i < nsub; i++) {
+      const k1 = drift(xn, uc, taud, cur); const x2 = xn.map((v, j) => v + 0.5 * h * k1[j]);
+      const k2 = drift(x2, uc, taud, cur); const x3 = xn.map((v, j) => v + 0.5 * h * k2[j]);
+      const k3 = drift(x3, uc, taud, cur); const x4 = xn.map((v, j) => v + h * k3[j]);
+      const k4 = drift(x4, uc, taud, cur);
+      xn = xn.map((v, j) => v + h / 6 * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]));
+      if (sigmaF && rng) { const f = [sigmaF[0] * rng.n() * Math.sqrt(h), sigmaF[1] * rng.n() * Math.sqrt(h), sigmaF[2] * rng.n() * Math.sqrt(h)];
+        xn[3] += Minv[0][0] * f[0] + Minv[0][1] * f[1] + Minv[0][2] * f[2]; xn[4] += Minv[1][0] * f[0] + Minv[1][1] * f[1] + Minv[1][2] * f[2]; xn[5] += Minv[2][0] * f[0] + Minv[2][1] * f[1] + Minv[2][2] * f[2]; }
+      subs.push(xn.slice());
+    }
+    xn[2] = ((xn[2] + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    return [xn, subs];
+  }
+  function stepVesselOU(x, u, dt, taud, cur, sF, tauc, rng) {
+    // one control interval under an Ornstein-Uhlenbeck force disturbance (correlation time tauc, stationary std sF), exact
+    // sub-step update; returns [x_next, sub-states, taud_next] — the same arithmetic and RNG order as vesselEpisode's "ou" branch
+    const nsub = Math.max(1, Math.round(dt / SG.DT)), h = dt / nsub; const subs = []; let td = taud.slice(); let xn = x;
+    for (let i = 0; i < nsub; i++) { xn = stepVessel(xn, u, h, td, cur, null, null, 1); subs.push(xn); const ef = Math.exp(-h / tauc), sq = Math.sqrt(1 - ef * ef); td = [td[0] * ef + sF[0] * sq * rng.n(), td[1] * ef + sF[1] * sq * rng.n(), td[2] * ef + sF[2] * sq * rng.n()]; }
+    return [xn, subs, td];
+  }
+  function stepVessel(x, u, dt, taud, cur, sigmaF, rng, nsub) {
+    nsub = nsub || Math.max(1, Math.round(dt / SG.DT)); const h = dt / nsub; const uc = clipInputs(u, x); let xn = x.slice();
+    for (let i = 0; i < nsub; i++) {
+      const k1 = drift(xn, uc, taud, cur); const x2 = xn.map((v, j) => v + 0.5 * h * k1[j]);
+      const k2 = drift(x2, uc, taud, cur); const x3 = xn.map((v, j) => v + 0.5 * h * k2[j]);
+      const k3 = drift(x3, uc, taud, cur); const x4 = xn.map((v, j) => v + h * k3[j]);
+      const k4 = drift(x4, uc, taud, cur);
+      xn = xn.map((v, j) => v + h / 6 * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]));
+      if (sigmaF && rng) { const f = [sigmaF[0] * rng.n() * Math.sqrt(h), sigmaF[1] * rng.n() * Math.sqrt(h), sigmaF[2] * rng.n() * Math.sqrt(h)];
+        xn[3] += Minv[0][0] * f[0] + Minv[0][1] * f[1] + Minv[0][2] * f[2]; xn[4] += Minv[1][0] * f[0] + Minv[1][1] * f[1] + Minv[1][2] * f[2]; xn[5] += Minv[2][0] * f[0] + Minv[2][1] * f[1] + Minv[2][2] * f[2]; }
+    }
+    xn[2] = ((xn[2] + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    return xn;
+  }
+  function harbour(scenario, a1, a2) {
+    const obs = [{ c: [40, 8], R: 12, w: [0, 0], name: "moored boat" }, { c: [72, -12], R: 14, w: [0, 0], name: "barge" }, { c: [92, 14], R: 11, w: [0, 0], name: "buoy field" }];
+    if (scenario === "crossing") obs.push({ c: [66, -3 * 22], R: 25, w: [0, 3], name: "ferry (3 m/s)" });
+    return { obs: obs, goal: [120, 0], goalR: 5, rEgo: 5, a1: a1 == null ? 0.1 : a1, a2: a2 == null ? 0.4 : a2 };
+  }
+  function obsCenter(o, t) { return [o.c[0] + o.w[0] * t, o.c[1] + o.w[1] * t]; }
+  function minH(H, x, t) { let m = Infinity; for (const o of H.obs) { const c = obsCenter(o, t); const h = Math.hypot(x[0] - c[0], x[1] - c[1]) - o.R; if (h < m) m = h; } return m; }
+  function rowsHOCBF(H, x, t) { // returns [{a:[3] in u-coordinates, b, h, psi1}] per obstacle
+    const psi = x[2], nu = [x[3], x[4], x[5]], c = Math.cos(psi), s = Math.sin(psi);
+    const pdot = [c * nu[0] - s * nu[1], s * nu[0] + c * nu[1]]; const f = fnu(nu); const out = [];
+    for (const o of H.obs) {
+      const cc = obsCenter(o, t); const rel = [x[0] - cc[0], x[1] - cc[1]]; const d = Math.max(Math.hypot(rel[0], rel[1]), 1e-6); const n = [rel[0] / d, rel[1] / d];
+      const h = d - o.R; const vrel = [pdot[0] - o.w[0], pdot[1] - o.w[1]]; const hdot = n[0] * vrel[0] + n[1] * vrel[1]; const psi1 = hdot + H.a1 * h;
+      const termN = (vrel[0] * vrel[0] + vrel[1] * vrel[1] - hdot * hdot) / d;
+      const nR2 = [n[0] * c + n[1] * s, -n[0] * s + n[1] * c];        // n^T R2
+      const Snu = [-nu[1], nu[0]]; const termRot = (nR2[0] * Snu[0] + nR2[1] * Snu[1]) * nu[2];
+      const termF = nR2[0] * f[0] + nR2[1] * f[1];
+      const atau = [nR2[0] * Minv[0][0] + nR2[1] * Minv[1][0], nR2[0] * Minv[0][1] + nR2[1] * Minv[1][1], nR2[0] * Minv[0][2] + nR2[1] * Minv[1][2]]; // n^T R2 Minv_xy (1x3 in tau)
+      const a = [atau[0] * Balloc[0][0] + atau[1] * Balloc[1][0] + atau[2] * Balloc[2][0], atau[0] * Balloc[0][1] + atau[1] * Balloc[1][1] + atau[2] * Balloc[2][1], atau[0] * Balloc[0][2] + atau[1] * Balloc[1][2] + atau[2] * Balloc[2][2]];
+      const b = -(termN + termRot + termF + H.a1 * hdot + H.a2 * psi1);
+      out.push({ a: a, b: b, h: h, psi1: psi1 });
+    }
+    return out;
+  }
+  // ---- per-sample chance-constraint problem (paper eq. (7)/(8)) — a port of the package's solver_nd.solve_rows_nd:
+  //   one active row: exact closed form (std form: shrink to s* = clip(slack/z, 0, s_nom), then the l1-cheapest mean
+  //   shift; variance form: the same 65-point grid as the package);  two or more rows active, or a row violated by the
+  //   single-row solution: the joint candidate solve of the package (Frobenius-minimal factor update for candidate
+  //   target stds, exact l1-minimal mean shift over ALL rows by LP vertex enumeration, local refinement).
+  function makeL1(A, tol) { // min ||mu||_1  s.t.  A mu >= r  for a fixed A (J x 3) and many r: vertex enumeration as in solver_nd.l1_min_shift
+    tol = tol || 1e-9; const J = A.length;
+    const pairs = []; for (const [i, k] of [[0, 1], [0, 2], [1, 2]]) for (let j = 0; j < J; j++) for (let l = j + 1; l < J; l++) { // two coordinates, two tight rows: 2x2 systems, fixed per sample
+      const m00 = A[j][i], m01 = A[j][k], m10 = A[l][i], m11 = A[l][k]; const det = m00 * m11 - m01 * m10; if (Math.abs(det) > 1e-14) pairs.push({ i, k, j, l, m00, m01, m10, m11, det }); }
+    const triples = []; if (J >= 3) for (let j = 0; j < J; j++) for (let l = j + 1; l < J; l++) for (let q = l + 1; q < J; q++) { // three coordinates, three tight rows
+      const M = [A[j], A[l], A[q]]; const det = M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+      if (Math.abs(det) > 1e-18) triples.push({ j, l, q, Mi: inv3(M) }); }
+    return function (r) {
+      let best = Infinity, b0 = 0, b1 = 0, b2 = 0, found = false;
+      function consider(m0, m1, m2) { // cost first (strictly better than the incumbent), then feasibility on every row
+        const c = Math.abs(m0) + Math.abs(m1) + Math.abs(m2); if (!(c < best)) return;
+        for (let j = 0; j < J; j++) { const v = A[j][0] * m0 + A[j][1] * m1 + A[j][2] * m2; if (v - r[j] < -tol * (1 + Math.abs(r[j]))) return; }
+        best = c; b0 = m0; b1 = m1; b2 = m2; found = true;
+      }
+      consider(0, 0, 0);
+      for (let i = 0; i < 3; i++) { // one coordinate, one tight row
+        let lo = -Infinity, hi = Infinity;
+        for (let j = 0; j < J; j++) { const ai = A[j][i]; if (ai > tol) lo = Math.max(lo, r[j] / ai); else if (ai < -tol) hi = Math.min(hi, r[j] / ai); }
+        if (lo <= hi) { const val = Math.min(Math.max(0, lo), hi); if (isFinite(val)) consider(i === 0 ? val : 0, i === 1 ? val : 0, i === 2 ? val : 0); }
+      }
+      for (const p of pairs) { const x = (r[p.j] * p.m11 - p.m01 * r[p.l]) / p.det, y = (p.m00 * r[p.l] - p.m10 * r[p.j]) / p.det; if (isFinite(x) && isFinite(y)) { if (p.i === 0) consider(x, p.k === 1 ? y : 0, p.k === 2 ? y : 0); else consider(0, x, y); } }
+      for (const t of triples) { const Mi = t.Mi, r0 = r[t.j], r1 = r[t.l], r2 = r[t.q]; const m0 = Mi[0][0] * r0 + Mi[0][1] * r1 + Mi[0][2] * r2, m1 = Mi[1][0] * r0 + Mi[1][1] * r1 + Mi[1][2] * r2, m2 = Mi[2][0] * r0 + Mi[2][1] * r1 + Mi[2][2] * r2; if (isFinite(m0) && isFinite(m1) && isFinite(m2)) consider(m0, m1, m2); }
+      return { mu: [b0, b1, b2], ok: found };
+    };
+  }
+  function pinvSym(G) { // Moore-Penrose inverse of a small symmetric PSD matrix (Jacobi eigen-decomposition; cut-off 1e-15 of the largest eigenvalue, as numpy.linalg.pinv)
+    const m = G.length; const A = G.map(r => r.slice()); const V = []; for (let i = 0; i < m; i++) { V.push(new Array(m).fill(0)); V[i][i] = 1; }
+    for (let sweep = 0; sweep < 60; sweep++) {
+      let off = 0; for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) off += A[i][j] * A[i][j];
+      if (off < 1e-300) break;
+      for (let p = 0; p < m; p++) for (let q = p + 1; q < m; q++) {
+        if (Math.abs(A[p][q]) < 1e-300) continue;
+        const theta = (A[q][q] - A[p][p]) / (2 * A[p][q]); const t = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1)); const c = 1 / Math.sqrt(t * t + 1), s = t * c;
+        for (let k = 0; k < m; k++) { const akp = A[k][p], akq = A[k][q]; A[k][p] = c * akp - s * akq; A[k][q] = s * akp + c * akq; }
+        for (let k = 0; k < m; k++) { const apk = A[p][k], aqk = A[q][k]; A[p][k] = c * apk - s * aqk; A[q][k] = s * apk + c * aqk; }
+        for (let k = 0; k < m; k++) { const vkp = V[k][p], vkq = V[k][q]; V[k][p] = c * vkp - s * vkq; V[k][q] = s * vkp + c * vkq; }
+      }
+    }
+    let lmax = 0; for (let i = 0; i < m; i++) lmax = Math.max(lmax, Math.abs(A[i][i]));
+    const out = []; for (let i = 0; i < m; i++) out.push(new Array(m).fill(0));
+    for (let i = 0; i < m; i++) { const lam = A[i][i]; if (Math.abs(lam) <= 1e-15 * lmax || lam <= 0) continue; for (let a = 0; a < m; a++) for (let b = 0; b < m; b++) out[a][b] += V[a][i] * V[b][i] / lam; }
+    return out;
+  }
+  const PRODUCT_CACHE = {};
+  function product(nv, m) { // itertools.product(range(nv), repeat=m): the first index changes slowest (cached)
+    const key = nv + "," + m; if (PRODUCT_CACHE[key]) return PRODUCT_CACHE[key];
+    const out = []; const total = Math.pow(nv, m); for (let g = 0; g < total; g++) { const c = new Array(m); let v = g; for (let q = m - 1; q >= 0; q--) { c[q] = v % nv; v = Math.floor(v / nv); } out.push(c); } return PRODUCT_CACHE[key] = out;
+  }
+  function uniq(vals) { const out = []; for (const v of vals) if (out.indexOf(v) < 0) out.push(v); return out; }   // first occurrence of every value, in order
+  function solveJoint(ubar, rows, act, s0, z, alpha, form) { // solver_nd._solve_joint for ONE sample; act: boolean per row (the rows to solve jointly)
+    const J = rows.length; const idxAct = []; for (let j = 0; j < J; j++) if (act[j]) idxAct.push(j); const m = idxAct.length;
+    const Aa = idxAct.map(j => rows[j].a); const W = Aa.map(a => [a[0] * s0[0], a[1] * s0[1], a[2] * s0[2]]); const Wn = W.map(w => Math.hypot(w[0], w[1], w[2]));
+    const G = Aa.map(a => Aa.map(b => a[0] * b[0] + a[1] * b[1] + a[2] * b[2])); const Ginv = pinvSym(G);
+    const slack = idxAct.map((j, q) => Aa[q][0] * ubar[0] + Aa[q][1] * ubar[1] + Aa[q][2] * ubar[2] - rows[j].b);
+    const fStar = slack.map((sl, q) => form === "std" ? Math.min(Math.max(sl / (z * Math.max(Wn[q], 1e-12)), 0), 1) : Math.min(Math.max(Math.sqrt(Math.max(sl, 0) / (alpha * Math.max(Wn[q], 1e-12) ** 2)), 0), 1));
+    const Aall = rows.map(r => r.a), ball = rows.map(r => r.b); const au = Aall.map(a => a[0] * ubar[0] + a[1] * ubar[1] + a[2] * ubar[2]); const l1 = makeL1(Aall);
+    // Delta = Aa^T Ginv V with V_l = (F_l - 1) W_l:  Delta = sum_l (F_l - 1) C_l ⊗ W_l  where C_l = sum_q Aa_q Ginv[q][l]  (fixed per sample)
+    const C = []; for (let l = 0; l < m; l++) { const c = [0, 0, 0]; for (let q = 0; q < m; q++) { const g = Ginv[q][l]; c[0] += Aa[q][0] * g; c[1] += Aa[q][1] * g; c[2] += Aa[q][2] * g; } C.push(c); }
+    const D = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], P = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], rreq = new Array(J);
+    function evalF(F) { // one candidate: target-std fractions per active row -> cost, mu (P and Delta are left in P / D)
+      for (let i = 0; i < 3; i++) { D[i][0] = 0; D[i][1] = 0; D[i][2] = 0; }
+      for (let l = 0; l < m; l++) { const f = F[l] - 1; if (f === 0) continue; const w0 = f * W[l][0], w1 = f * W[l][1], w2 = f * W[l][2]; for (let i = 0; i < 3; i++) { const c = C[l][i]; D[i][0] += c * w0; D[i][1] += c * w1; D[i][2] += c * w2; } }
+      for (let i = 0; i < 3; i++) { P[i][0] = D[i][0]; P[i][1] = D[i][1]; P[i][2] = D[i][2]; P[i][i] += s0[i]; }
+      for (let j = 0; j < J; j++) { const a = Aall[j]; let v = 0; for (let i = 0; i < 3; i++) { const t = P[0][i] * a[0] + P[1][i] * a[1] + P[2][i] * a[2]; v += t * t; } const sd = Math.sqrt(Math.max(v, 0)); rreq[j] = ball[j] + (form === "std" ? z * sd : alpha * sd * sd) - au[j]; }
+      const sh = l1(rreq); if (!sh.ok) return { cost: Infinity, mu: sh.mu };
+      let fro = 0; for (let i = 0; i < 3; i++) fro += D[i][0] * D[i][0] + D[i][1] * D[i][1] + D[i][2] * D[i][2];
+      return { cost: Math.abs(sh.mu[0]) + Math.abs(sh.mu[1]) + Math.abs(sh.mu[2]) + Math.sqrt(fro), mu: sh.mu };
+    }
+    let bestCost = Infinity, bestMu = null, bestP = null, fBest = null;
+    // candidates per active row {0, f*, 1, f*/2}; identical candidates give identical costs, so only the first occurrence of each
+    // distinct value per row is kept — the same sequence of distinct combinations, in the same order, as the package's argmin sees
+    const lists = fStar.map(f => uniq([0, f, 1, 0.5 * f])); const F = new Array(m);
+    const scan = (lsts) => { const nv = Math.max(...lsts.map(l => l.length)); let first = true, bc = Infinity, bm = null, bp = null, bf = null;
+      for (const combo of product(nv, m)) { let ok = true; for (let q = 0; q < m; q++) { if (combo[q] >= lsts[q].length) { ok = false; break; } F[q] = lsts[q][combo[q]]; } if (!ok) continue;
+        const e = evalF(F); if (first || e.cost < bc) { first = false; bc = e.cost; bm = e.mu; bp = [P[0].slice(), P[1].slice(), P[2].slice()]; bf = F.slice(); } }
+      return { cost: bc, mu: bm, P: bp, F: bf }; };
+    const r1 = scan(lists); bestCost = r1.cost; bestMu = r1.mu; bestP = r1.P; fBest = r1.F;
+    const refine = { 1: 9, 2: 5, 3: 3, 4: 3 }[m] || 3;
+    if (refine > 1) { const h = 1 / 6; const grid = []; for (let i = 0; i < refine; i++) grid.push(-h + 2 * h * i / (refine - 1));
+      const lists2 = fBest.map(fb => uniq(grid.map(g => Math.min(Math.max(fb + g, 0), 1))));
+      const r2 = scan(lists2); if (r2.cost < bestCost) { bestCost = r2.cost; bestMu = r2.mu; bestP = r2.P; } }
+    return { mu: bestMu, P: bestP, ok: isFinite(bestCost), cost: bestCost };
+  }
+  function solveRows(ubar, rows, s0, z, alpha, form) {
+    const n = 3, J = rows.length; let mu = [0, 0, 0]; let P = [[s0[0], 0, 0], [0, s0[1], 0], [0, 0, s0[2]]];
+    // rows active at the nominal proposal, and the most violated one (first minimum, as numpy's argmin)
+    const margin0 = new Array(J); let jstar = 0, nAct = 0;
+    for (let j = 0; j < J; j++) { const a = rows[j].a; const wn = Math.hypot(a[0] * s0[0], a[1] * s0[1], a[2] * s0[2]); const pen = form === "std" ? z * wn : alpha * wn * wn;
+      margin0[j] = a[0] * ubar[0] + a[1] * ubar[1] + a[2] * ubar[2] - rows[j].b - pen; if (margin0[j] < 0) nAct++; if (margin0[j] < margin0[jstar]) jstar = j; }
+    const a = rows[jstar].a, b = rows[jstar].b; const an = Math.hypot(a[0], a[1], a[2]);
+    const wn = Math.hypot(a[0] * s0[0], a[1] * s0[1], a[2] * s0[2]);           // std of a·du under P0 (w = P0^T a = s0 ∘ a)
+    const active = margin0[jstar] < 0, zeroRow = an < 1e-12;
+    let sOpt = wn, rOpt = 0, sNom = wn, detRatio = 1;
+    if (active && !zeroRow) {
+      const slack = a[0] * ubar[0] + a[1] * ubar[1] + a[2] * ubar[2] - b; const amax = Math.max(Math.abs(a[0]), Math.abs(a[1]), Math.abs(a[2]));
+      if (form === "std") { sOpt = Math.min(Math.max(slack / z, 0), wn); rOpt = Math.max(z * sOpt - slack, 0); }
+      else { let best = Infinity; const NS = 65; for (let g = 0; g < NS; g++) { const sg_ = wn * g / (NS - 1); const r = alpha * sg_ * sg_ - slack; const cost = (wn - sg_) / an + Math.max(r, 0) / amax; if (cost < best) { best = cost; sOpt = sg_; rOpt = Math.max(r, 0); } } }
+      let istar = 0; for (let i = 1; i < n; i++) if (Math.abs(a[i]) > Math.abs(a[istar])) istar = i;
+      if (Math.abs(a[istar]) > 1e-12) mu[istar] += rOpt / a[istar];
+      const shrink = wn > 1e-12 ? 1 - sOpt / Math.max(wn, 1e-12) : 0; const w = [a[0] * s0[0], a[1] * s0[1], a[2] * s0[2]];
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) P[i][j] -= shrink * a[i] * w[j] / (an * an);   // rank-one shrink along the row
+      detRatio = wn > 1e-12 ? sOpt / wn : 1;                                                                   // |det P| / det P0 (matrix determinant lemma)
+    }
+    let infeasible = zeroRow && b > 0, residual = false; const multi = nAct >= 2;
+    if (J > 1 && !zeroRow) {
+      // rows violated by the single-row solution (a mean shift can cross another row) join the active set
+      let anyViol = false; const jointRows = new Array(J);
+      for (let j = 0; j < J; j++) { const aj = rows[j].a; let v = 0; for (let i = 0; i < n; i++) { let t = 0; for (let l = 0; l < n; l++) t += P[l][i] * aj[l]; v += t * t; } const sd = Math.sqrt(Math.max(v, 0)); const pen = form === "std" ? z * sd : alpha * sd * sd;
+        const mg = aj[0] * (ubar[0] + mu[0]) + aj[1] * (ubar[1] + mu[1]) + aj[2] * (ubar[2] + mu[2]) - rows[j].b - pen; const viol = mg < -1e-9 * (1 + Math.abs(rows[j].b)); if (viol) anyViol = true; jointRows[j] = (margin0[j] < 0) || viol; }
+      if (multi || anyViol) {
+        const jr = solveJoint(ubar, rows, jointRows, s0, z, alpha, form);
+        if (jr.ok) { mu = jr.mu; P = jr.P; let v = 0; for (let i = 0; i < n; i++) { let t = 0; for (let l = 0; l < n; l++) t += P[l][i] * a[l]; v += t * t; } sOpt = Math.sqrt(v); sNom = wn;
+          const d = P[0][0] * (P[1][1] * P[2][2] - P[1][2] * P[2][1]) - P[0][1] * (P[1][0] * P[2][2] - P[1][2] * P[2][0]) + P[0][2] * (P[1][0] * P[2][1] - P[1][1] * P[2][0]); detRatio = Math.abs(d) / (s0[0] * s0[1] * s0[2]); }
+        else { residual = true; infeasible = true; }
+      }
+    }
+    return { mu: mu, P: P, active: active, sFirst: sOpt, sNomFirst: sNom, infeasible: infeasible, multi: multi ? 1 : 0, detRatio: detRatio, jFirst: active ? jstar : -1, residual: residual };
+  }
+  function vesselMakeController(H, kind, opt) {
+    // kind: mppi | scbf | scbf_is | scbf_var | printed | det ; opt: {K,T,lam,s0,delta,seed}
+    const K = opt.K, T = opt.T, lam = opt.lam, s0 = opt.s0, dt = SG.DTC;
+    const rng = new Rng(opt.seed * 7919 + 101);
+    const z = normPpf(1 - opt.delta), alpha = z;
+    const isDet = kind === "det", isScbf = kind === "scbf" || kind === "scbf_is" || kind === "scbf_var" || kind === "printed";
+    const form = kind === "scbf_var" ? "variance" : "std", isCorr = kind === "scbf_is", printed = kind === "printed";
+    const iters = 4, shrink = 0.5, M = 125; const Kact = isDet ? M : K;
+    const U = []; for (let t = 0; t < T; t++) U.push([0, 0, 0]);
+    const R = [lam / (s0[0] * s0[0]), lam / (s0[1] * s0[1]), lam / (s0[2] * s0[2])];
+    const S = new Float64Array(Kact), w = new Float64Array(Kact);
+    const traj = new Float32Array(Kact * (T + 1) * 2); const eps = new Float64Array(Kact * T * 3);
+    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, multi: 0, clip: 0 };
+    const penalty = 20000, vmax = 2.5, wv = 2000;
+    const actFlags = new Uint8Array(Kact * T);          // 1 where a barrier row was active for that (sample, step)
+    let tnow = 0;
+    function nominalActive(rows, ub, sig) {
+      // would the unmodified proposal N(0, diag(sig^2)) violate the chance constraint on any row?  (margin < 0)
+      for (const r of rows) { const a = r.a; const wn = Math.hypot(a[0] * sig[0], a[1] * sig[1], a[2] * sig[2]); const pen = form === "std" ? z * wn : alpha * wn * wn;
+        if (a[0] * ub[0] + a[1] * ub[1] + a[2] * ub[2] - r.b - pen < 0) return true; }
+      return false;
+    }
+    function rowsFor(x, tabs) {
+      if (!printed) return rowsHOCBF(H, x, tabs);
+      const rows = []; const psi = x[2], c = Math.cos(psi), s_ = Math.sin(psi); const pd = [c * x[3] - s_ * x[4], s_ * x[3] + c * x[4]];
+      for (const o of H.obs) { const cc = obsCenter(o, tabs); const rel = [x[0] - cc[0], x[1] - cc[1]]; const d = Math.max(Math.hypot(rel[0], rel[1]), 1e-6); const nn = [rel[0] / d, rel[1] / d]; const h = d - o.R; const hdot = nn[0] * (pd[0] - o.w[0]) + nn[1] * (pd[1] - o.w[1]); rows.push({ a: [0, 0, 0], b: -(hdot + alpha * h) }); }
+      return rows;
+    }
+    function rolloutAndCost(x0, sig, lamUse, record) {
+      // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
+      // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the rows.
+      // record: keep the t = 0 row-space picture (most violated row by nominal z-score) in st.row0
+      const X = []; for (let k = 0; k < Kact; k++) { X.push(x0.slice()); S[k] = 0; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; }
+      let nAct = 0, nInf = 0, nMulti = 0, nClip = 0, varSum = 0, satN = 0, satOk = 0; const logq = new Float64Array(Kact);
+      for (let t = 0; t < T; t++) {
+        const tabs = tnow + dt * t; const ub = U[t];
+        for (let k = 0; k < Kact; k++) {
+          const x = X[k]; let e, active;
+          const xi = [rng.n(), rng.n(), rng.n()];
+          const rows = rowsFor(x, tabs);
+          let res = null;
+          if (isScbf) {
+            res = solveRows(ub, rows, sig, z, alpha, form);
+            active = res.active;
+            if (res.infeasible) nInf++; nMulti += res.multi;
+            varSum += res.sNomFirst > 1e-12 ? (res.sFirst / res.sNomFirst) ** 2 : 1;
+            e = [res.mu[0] + res.P[0][0] * xi[0] + res.P[0][1] * xi[1] + res.P[0][2] * xi[2], res.mu[1] + res.P[1][0] * xi[0] + res.P[1][1] * xi[1] + res.P[1][2] * xi[2], res.mu[2] + res.P[2][0] * xi[0] + res.P[2][1] * xi[1] + res.P[2][2] * xi[2]];
+            if (isCorr) { const ratio = Math.max(res.detRatio, 1e-6);
+              const lq = -0.5 * (xi[0] * xi[0] + xi[1] * xi[1] + xi[2] * xi[2]) - Math.log(ratio); const lp = -0.5 * ((e[0] / sig[0]) ** 2 + (e[1] / sig[1]) ** 2 + (e[2] / sig[2]) ** 2); logq[k] += lp - lq; }
+          } else { e = [sig[0] * xi[0], sig[1] * xi[1], sig[2] * xi[2]]; active = nominalActive(rows, ub, sig); varSum += 1; }
+          if (record && t === 0 && k === 0) {
+            let best = null, bz = Infinity;
+            // the row shown: the one the filter swept first when it acted; otherwise the most violated by nominal z-score
+            if (res && res.jFirst >= 0) best = { r: rows[res.jFirst], j: res.jFirst };
+            else rows.forEach((r, j) => { const sa = Math.hypot(r.a[0] * sig[0], r.a[1] * sig[1], r.a[2] * sig[2]); const m = r.a[0] * ub[0] + r.a[1] * ub[1] + r.a[2] * ub[2] - r.b; const zsc = sa > 1e-12 ? m / sa : m; if (zsc < bz) { bz = zsc; best = { r: r, j: j }; } });
+            const r = best.r;
+            st.row0 = { dim: 3, a: r.a.slice(), b: r.b, ubar: ub.slice(), sig: sig.slice(), mu: res ? res.mu.slice() : [0, 0, 0], P: res ? res.P.map(row => row.slice()) : [[sig[0], 0, 0], [0, sig[1], 0], [0, 0, sig[2]]], active: active, multi: res ? res.multi : 0, form: form, z: z, alpha: alpha, h: r.h, psi1: r.psi1, name: H.obs[best.j].name, filtered: isScbf, printed: printed,
+              rows: rows.map((rr, jj) => ({ a: rr.a.slice(), b: rr.b, name: H.obs[jj].name, h: rr.h })), jSel: best.j, solverRow: (res && res.jFirst >= 0) ? res.jFirst : -1 };
+          }
+          actFlags[k * T + t] = active ? 1 : 0;
+          if (active) nAct++;
+          const uu = [ub[0] + e[0], ub[1] + e[1], ub[2] + e[2]]; const uc = clipInputs(uu, x);
+          if (Math.abs(uc[0] - uu[0]) + Math.abs(uc[1] - uu[1]) + Math.abs(uc[2] - uu[2]) > 1e-9) nClip++;
+          if (active) { // delivered satisfaction of every row by the clipped draw
+            let ok = true; for (const r of rows) { if (r.a[0] * uc[0] + r.a[1] * uc[1] + r.a[2] * uc[2] < r.b - 1e-7 * (1 + Math.abs(r.b))) { ok = false; break; } }
+            satN++; if (ok) satOk++;
+          }
+          eps[(k * T + t) * 3] = e[0]; eps[(k * T + t) * 3 + 1] = e[1]; eps[(k * T + t) * 3 + 2] = e[2];
+          const xn = stepVessel(x, uu, dt, null, null, null, null);
+          X[k] = xn; traj[(k * (T + 1) + t + 1) * 2] = xn[0]; traj[(k * (T + 1) + t + 1) * 2 + 1] = xn[1];
+          const dx = xn[0] - H.goal[0], dy = xn[1] - H.goal[1]; const over = Math.max(Math.abs(xn[3]) - vmax, 0);
+          S[k] += dx * dx + dy * dy + wv * over * over + (minH(H, xn, tabs + dt) < 0 ? penalty : 0);
+          if (!isDet) S[k] += ub[0] * R[0] * e[0] + 0.5 * ub[0] * ub[0] * R[0] + ub[1] * R[1] * e[1] + 0.5 * ub[1] * ub[1] * R[1] + ub[2] * R[2] * e[2] + 0.5 * ub[2] * ub[2] * R[2];
+        }
+      }
+      for (let k = 0; k < Kact; k++) { const xn = X[k]; const dx = xn[0] - H.goal[0], dy = xn[1] - H.goal[1]; S[k] += dx * dx + dy * dy;
+        if (isDet) { let c = 0; for (let t = 0; t < T; t++) for (let i = 0; i < 3; i++) c += eps[(k * T + t) * 3 + i] / (sig[i] * sig[i]) * U[t][i]; S[k] += lamUse * c; } }
+      st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.multi = nMulti / (Kact * T); st.clip = nClip / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
+      if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which a row binds, per horizon step
+      return logq;
+    }
+    function weightsUpdate(lamUse, logq, x0) {
+      let smin = Infinity; for (let k = 0; k < Kact; k++) if (S[k] < smin) smin = S[k];
+      let lmax = -Infinity; for (let k = 0; k < Kact; k++) { w[k] = -(S[k] - smin) / lamUse + (logq ? logq[k] : 0); if (w[k] > lmax) lmax = w[k]; }
+      let sum = 0; for (let k = 0; k < Kact; k++) { w[k] = Math.exp(w[k] - lmax); sum += w[k]; }
+      let s2 = 0; for (let k = 0; k < Kact; k++) { w[k] /= sum; s2 += w[k] * w[k]; } st.ess = 1 / s2;
+      for (let t = 0; t < T; t++) { const d = [0, 0, 0]; for (let k = 0; k < Kact; k++) for (let i = 0; i < 3; i++) d[i] += w[k] * eps[(k * T + t) * 3 + i]; const raw = [U[t][0] + d[0], U[t][1] + d[1], U[t][2] + d[2]]; if (t === 0) st.u0raw = raw.slice(); U[t] = clipInputs(raw, x0); }
+      st.u0 = U[0].slice(); st.bowCap = bowCap(x0[3]);
+    }
+    return {
+      plan: function (x0) {
+        if (isDet) { let aAct = 0, aVar = 0, aSat = 0, nSat = 0, aEss = 0;
+          for (let j = 0; j < iters; j++) { const beta = Math.pow(shrink, j); rolloutAndCost(x0, [beta * s0[0], beta * s0[1], beta * s0[2]], beta * beta * lam, j === 0); weightsUpdate(beta * beta * lam, null, x0);
+            aAct += st.act; aVar += st.var; if (!isNaN(st.sat)) { aSat += st.sat; nSat++; } aEss += st.ess; }
+          st.act = aAct / iters; st.var = aVar / iters; st.sat = nSat ? aSat / nSat : NaN; st.ess = aEss / iters; }   // averaged over the 4 iterations (ESS as in the Python package)
+        else { const lq = rolloutAndCost(x0, s0, lam, true); weightsUpdate(lam, isCorr ? lq : null, x0); }
+        const u0 = U[0].slice(); for (let t = 0; t < T - 1; t++) U[t] = U[t + 1]; U[T - 1] = U[T - 1].slice(); tnow += dt; return u0;
+      },
+      reset: function () { tnow = 0; for (let t = 0; t < T; t++) U[t] = [0, 0, 0]; },
+      traj: traj, w: w, act: actFlags, K: Kact, T: T, stats: st, kind: kind
+    };
+  }
+  function vesselEpisode(kind, opt, onStep) {
+    // opt: {scenario, K,T,lam,s0,delta,seed, disturbance: white|ou|none, sF:[3], tauc, current:[2], maxTime}
+    const H = harbour(opt.scenario, opt.a1, opt.a2); const c = vesselMakeController(H, kind, opt); c.reset();
+    const rng = new Rng(10000 + opt.seed); const dt = SG.DTC; const maxSteps = Math.round((opt.maxTime || 150) / dt);
+    let x = [0, 0, 0, 1.5, 0, 0]; let taud = [0, 0, 0]; const sF = opt.sF || [120, 300, 400], tauc = opt.tauc || 5, cur = opt.current || null;
+    let outside = 0, minh = Infinity, ttf = maxSteps * dt, reached = false, n = 0, essSum = 0, actSum = 0, varSum = 0, multiSum = 0, satSum = 0, satN = 0; const path = [[0, 0]];
+    for (let k = 0; k < maxSteps; k++) {
+      const u = c.plan(x); essSum += c.stats.ess; actSum += c.stats.act; varSum += c.stats.var; multiSum += c.stats.multi; if (!isNaN(c.stats.sat)) { satSum += c.stats.sat; satN++; }
+      let subs;
+      if (opt.disturbance === "white") [x, subs] = stepVesselSubs(x, u, dt, null, cur, [sF[0] * Math.sqrt(2 * tauc), sF[1] * Math.sqrt(2 * tauc), sF[2] * Math.sqrt(2 * tauc)], rng);
+      else if (opt.disturbance === "ou") [x, subs, taud] = stepVesselOU(x, u, dt, taud, cur, sF, tauc, rng);
+      else [x, subs] = stepVesselSubs(x, u, dt, null, cur, null, null);
+      // collisions and min h are evaluated at every RK4 sub-step (0.25 s), as in the Python package
+      n++; let h = Infinity; for (let i = 0; i < subs.length; i++) { const hi = minH(H, subs[i], k * dt + (i + 1) * dt / subs.length); if (hi < h) h = hi; }
+      if (h < minh) minh = h; if (h < 0) outside++; path.push([x[0], x[1]]);
+      if (onStep && onStep(k, x, c, H, taud) === false) break;
+      if (Math.hypot(x[0] - H.goal[0], x[1] - H.goal[1]) < H.goalR) { ttf = (k + 1) * dt; reached = true; break; }
+    }
+    return { collision_rate: outside / n, collided: outside > 0, min_h: minh, ttf: ttf, reached: reached, ess: essSum / n, activation: actSum / n, var_ratio: varSum / n, multi: multiSum / n, sat_active: satN ? satSum / satN : NaN, steps: n, path: path };
+  }
+
+  return { Rng, normPpf, Corridor, corridorMakeController, corridorEpisode, CDT, SG, harbour, obsCenter, minH, rowsHOCBF, solveRows, stepVessel, stepVesselSubs, stepVesselOU, clipInputs, bowCap, vesselMakeController, vesselEpisode };
+});
+
+</script>
+<script id="engjs">
+// The simulation engine: owns the controllers and plants, steps every runner in lockstep and returns plain-data frames.
+// The same code runs inside a Web Worker (so the page never freezes while 500 rollouts are planned) or, if workers are
+// unavailable, on the main thread.
+function makeEngine(SIM){
+  let st = null;
+  function makeRunner(kind, o, sc){
+    if (sc==="corridor"){ const env = new SIM.Corridor(false); const c = SIM.corridorMakeController(env, kind, o);
+      return {kind, c, env, rng:new SIM.Rng(10000+o.seed), x:[0,0.5,0], prev:[0,0.5,0], subs:null, outside:0, minh:Infinity, done:false, ttf:null, reached:false, taud:[0,0,0], gust:null, planned:false}; }
+    const H = SIM.harbour(o.scenario); const c = SIM.vesselMakeController(H, kind, o); c.reset();
+    return {kind, c, H, rng:new SIM.Rng(10000+o.seed), x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], subs:null, outside:0, minh:Infinity, done:false, ttf:null, reached:false, taud:[0,0,0], gust:null, planned:false};
+  }
+  function stepRunner(r, s){
+    const c = r.c; let hStep;
+    if (s.sc==="corridor"){
+      const u = c.plan(r.x); const dt = SIM.CDT, sig = s.o.sigma;
+      r.prev = r.x.slice();
+      r.x = [r.x[0]+u[0]*Math.cos(r.x[2])*dt+sig*Math.sqrt(dt)*r.rng.n(), r.x[1]+u[0]*Math.sin(r.x[2])*dt+sig*Math.sqrt(dt)*r.rng.n(), r.x[2]+u[1]*dt+sig*Math.sqrt(dt)*r.rng.n()];
+      r.subs = null; r.thr = null;
+      hStep = r.env.minh(r.x[0], r.x[1]); r.minh = Math.min(r.minh, hStep); if (hStep<0) r.outside++;
+      const k1 = s.k + 1;
+      if (Math.hypot(r.x[0]-4, r.x[1]-0.5) < 0.15) { r.done = true; r.reached = true; r.ttf = k1; } else if (k1 >= s.o.maxSteps) { r.done = true; r.ttf = null; }
+    } else {
+      const u = c.plan(r.x); const dt = SIM.SG.DTC; const sF = s.o.sF; const cur = s.o.current; const dist = s.o.disturbance;
+      r.prev = r.x.slice();
+      let subs;
+      if (dist==="white") [r.x, subs] = SIM.stepVesselSubs(r.x, u, dt, null, cur, [sF[0]*Math.sqrt(2*s.o.tauc), sF[1]*Math.sqrt(2*s.o.tauc), sF[2]*Math.sqrt(2*s.o.tauc)], r.rng);
+      else if (dist==="ou") { r.gust = r.taud.slice(); [r.x, subs, r.taud] = SIM.stepVesselOU(r.x, u, dt, r.taud, cur, sF, s.o.tauc, r.rng); }   // r.gust: the force acting as this interval begins
+      else [r.x, subs] = SIM.stepVesselSubs(r.x, u, dt, null, cur, null, null);
+      r.subs = subs; r.thr = {u0: c.stats.u0.slice(), raw: c.stats.u0raw.slice(), cap: c.stats.bowCap, clip: c.stats.clip, speed: r.prev[3]};
+      const k1 = s.k + 1; let hm = Infinity;
+      for (let j=0;j<subs.length;j++){ const h = SIM.minH(r.H, subs[j], s.k*dt + (j+1)*dt/subs.length); hm = Math.min(hm, h); }
+      hStep = hm; r.minh = Math.min(r.minh, hm); if (hm<0) r.outside++;
+      if (Math.hypot(r.x[0]-r.H.goal[0], r.x[1]-r.H.goal[1]) < r.H.goalR) { r.done = true; r.reached = true; r.ttf = k1*dt; } else if (k1*dt >= s.o.maxTime) { r.done = true; r.ttf = null; }
+    }
+    r.planned = true; return hStep;
+  }
+  function snapshotFan(c){ // top-60 rollouts of this cycle, with the binding flags, for drawing and replay
+    const K = c.K, T = c.T, n = Math.min(60, K); const idx = Array.from({length:K}, (_,i)=>i).sort((a,b)=>c.w[b]-c.w[a]).slice(0,n);
+    const xy = new Float32Array(n*(T+1)*2), fl = new Uint8Array(n*T), wt = new Float32Array(n);
+    idx.forEach((i,j)=>{ xy.set(c.traj.subarray(i*(T+1)*2, (i+1)*(T+1)*2), j*(T+1)*2); fl.set(c.act.subarray(i*T, (i+1)*T), j*T); wt[j] = c.w[i]; });
+    return {n, T, xy, fl, wt};
+  }
+  return {
+    init(cfg){ st = {sc: cfg.sc, o: cfg.o, k: 0, runners: cfg.kinds.map(k => makeRunner(k, cfg.o, cfg.sc))}; return true; },
+    step(){
+      const s = st; const out = [];
+      for (const r of s.runners){
+        if (r.done){ out.push({stepped:false, outside:r.outside, minh:r.minh, done:true, reached:r.reached, ttf:r.ttf, x:r.x.slice()}); continue; }
+        const outBefore = r.outside; const hStep = stepRunner(r, s); const c = r.c;
+        out.push({stepped:true, x:r.x.slice(), prev:r.prev.slice(), subs:r.subs ? r.subs.map(v=>v.slice()) : null, hStep, outside:r.outside, minh:r.minh, done:r.done, reached:r.reached, ttf:r.ttf, hit: r.outside > outBefore,
+          stats:{ess:c.stats.ess, act:c.stats.act, vr:c.stats.var, sat:c.stats.sat}, row0:c.stats.row0, prof: c.stats.actProfile ? Array.from(c.stats.actProfile) : null, thr:r.thr || null, gust: r.gust ? r.gust.slice() : null, fan: snapshotFan(c)});
+      }
+      s.k++; return {k: s.k, runners: out};
+    },
+    batch(kind, o, N, onProgress){ const rs = []; for (let i=0;i<N;i++){ const oo = Object.assign({}, o, {seed:i}); const r = o.sv ? SIM.corridorEpisode(kind, oo) : SIM.vesselEpisode(kind, oo); delete r.path; rs.push(r); if (onProgress) onProgress(i+1); } return rs; }
+  };
+}
+if (typeof window !== "undefined") window.makeEngine = makeEngine;
+</script>
+<script>
+(function(){
+  const SIM = window.SIM;
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d");
+  if (!ctx.roundRect) ctx.roundRect = function(x,y,w,h){ this.rect(x,y,w,h); };
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const rgba = (hex, a) => { const h = hex.replace("#",""); const v = h.length===3 ? h.split("").map(c=>c+c).join("") : h; const n = parseInt(v, 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; };
+  const CTRLS = {
+    corridor: [["mppi","MPPI (baseline)"],["scbf_var","SCBF-MPPI as printed (variance form)"],["scbf_std","SCBF-MPPI corrected (std form)"],["scbf_is","SCBF-MPPI + IS correction"],["det","Det. MPPI 4×125 (Homburger et al.)"]],
+    vessel:   [["mppi","MPPI (baseline)"],["printed","SCBF as printed, rel. degree 1 (no effect)"],["scbf","SCBF-MPPI, second-order barrier"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_var","SCBF-MPPI, variance form as printed"],["det","Det. MPPI 4×125 (Homburger et al.)"]]
+  };
+  const SHORT = {mppi:"MPPI", scbf_var:"SCBF as printed", scbf_std:"SCBF corrected", scbf_is:"SCBF + IS", det:"Det. MPPI", scbf:"SCBF-MPPI", printed:"as printed (rd 1)"};
+  const COLOR = {mppi:"--mppi", scbf_var:"--var", scbf_std:"--scbf", scbf_is:"--is", det:"--det", scbf:"--scbf", printed:"--printed"};
+  const NOTES = {
+    corridor: "Unicycle, Δt = 0.05 s, horizon 20, λ = 1, Σ₀ = diag(1.0², 1.5²). σ ×1.0 = 0.1, the level at which the paper's Table I reproduces (σ = I as stated leaves the corridor with probability 1).",
+    static: "Solgenia (8.5 m, 3.1 t), published model, forces as inputs, 1 s control interval, 15 s horizon, Σ₀ = diag(350², 350², 120²) N². Noise ×1.0 = force noise of intensity s_F√(2τ_c), s_F = (120 N, 300 N, 400 N m); the gust is the same intensity, coloured. The current is added to the plant only — the controller's model does not know it (experiment V3). Circles = obstacle + 5 m ego radius. Dashed fronts: ψ₁ = dh/dt + α₁h = 0 at the velocity the controller believes; dotted: the true one.",
+    crossing: "As the moored scene plus the group's Experiment-III ferry: R = 25 m, 3 m/s, crossing the track at x = 66 m around t = 22 s."
+  };
+  const DELTAS = [0.003, 0.05, 0.2, 0.5];
+  const DIRS = [["E",0],["NE",45],["N",90],["NW",135],["W",180],["SW",225],["S",270],["SE",315]];
+  const STORY_SEED = 26;  // crossing race, white noise ×1.0: det. MPPI touches a circle at t = 38 s and MPPI at t = 44 s, the two barrier variants do not (stable under 1e-9 perturbations of x0, robust.log); over the 30 seeds MPPI touches in 18, SCBF-MPPI in 8, + IS in 2, det. MPPI in 23 (story_scan.json)
+  const isScbfKind = k => k.startsWith("scbf") || k === "printed";
+  let state = null, running = false, rafId = null, lastTs = 0, acc = 0;
+  let hover = null;              // {r, j}: the inspected rollout
+  let history = [];              // finished runs: {sc, scenario, kind, seed, path, coll, minh, ttf, reached, K, noise, cur, dist}
+  let replayFrames = null;       // frames of the last finished run for the scrubber
+  let cam = {cx:0, cy:0, init:false};
+  let story = null;
+  const col = kind => css(COLOR[kind] || "--scbf");
+  function sceneKind(){ return $("scene").value === "corridor" ? "corridor" : "vessel"; }
+  function fillCtrls(){
+    const sel = $("ctrl"); const cur = sel.value; sel.innerHTML = "";
+    for (const [v,l] of CTRLS[sceneKind()]) { const o = document.createElement("option"); o.value = v; o.textContent = l; sel.appendChild(o); }
+    if ([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+    const rc = $("racechecks"); rc.innerHTML = "";
+    const def = sceneKind()==="corridor" ? ["mppi","scbf_var","scbf_is","det"] : ["mppi","scbf","scbf_is","det"];
+    for (const [v,l] of CTRLS[sceneKind()]) { const lab = document.createElement("label"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.value = v; cb.checked = def.includes(v); cb.addEventListener("change", ()=>{ const n = rc.querySelectorAll("input:checked").length; if (n > 4) { cb.checked = false; } reset(); }); lab.appendChild(cb); const sw = document.createElement("i"); sw.className = "sw"; sw.style.background = col(v); lab.appendChild(sw); lab.appendChild(document.createTextNode(l)); rc.appendChild(lab); }
+    $("scenenote").textContent = NOTES[$("scene").value];
+    $("vesselctrl").hidden = sceneKind()!=="vessel"; $("tgcard").hidden = sceneKind()!=="vessel";
+  }
+  function raceKinds(){ return [...$("racechecks").querySelectorAll("input:checked")].map(c=>c.value).slice(0,4); }
+  function opts(){
+    const K = +$("K").value, seed = +$("seed").value, delta = DELTAS[+$("delta").value], mult = +$("noise").value;
+    if (sceneKind()==="corridor") return {K, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1*mult, delta, seed, maxSteps:250, mult};
+    const dist = $("dist").value; const cs = +$("cur").value; const dir = DIRS[+$("curdir").value]; const ang = dir[1]*Math.PI/180;
+    return {scenario:$("scene").value, K, T:15, lam:300, s0:[350,350,120], delta, seed, disturbance: (mult>0 && dist!=="none") ? dist : "none", sF:[120*mult,300*mult,400*mult], tauc:5, maxTime:150, mult, current: cs>0 ? [cs*Math.cos(ang), cs*Math.sin(ang)] : null, curSpeed: cs, curDir: dir[0]};
+  }
+  // ---------------------------------------------------------------- the engine: a Web Worker when the page may create one, the main thread otherwise
+  const WORKER_GLUE = `
+    var ENG = makeEngine(self.SIM);
+    self.onmessage = function(e){ var m = e.data;
+      try {
+        if (m.cmd === "init"){ ENG.init(m.cfg); self.postMessage({id:m.id, cmd:"ready"}); }
+        else if (m.cmd === "step"){ var f = ENG.step(); var tr = []; f.runners.forEach(function(r){ if (r.fan){ tr.push(r.fan.xy.buffer, r.fan.fl.buffer, r.fan.wt.buffer); } }); self.postMessage({id:m.id, cmd:"frame", frame:f}, tr); }
+        else if (m.cmd === "batch"){ var rs = ENG.batch(m.kind, m.o, m.N, function(i){ self.postMessage({id:m.id, cmd:"progress", i:i}); }); self.postMessage({id:m.id, cmd:"results", results:rs}); }
+      } catch (err) { self.postMessage({id:m.id, cmd:"error", message:String(err && err.message || err)}); }
+    };`;
+  function inThreadEngine(){
+    const eng = makeEngine(SIM);
+    return { kind:"main thread", init: cfg => new Promise(res => res(eng.init(cfg))), step: () => new Promise(res => res(eng.step())),   // a throw becomes a rejection
+      batch: (kind, o, N, onp) => new Promise((res, rej) => { const rs = []; let i = 0; (function next(){ try { const oo = Object.assign({}, o, {seed:i}); const r = o.sv ? SIM.corridorEpisode(kind, oo) : SIM.vesselEpisode(kind, oo); delete r.path; rs.push(r); i++; if (onp) onp(i); } catch (e) { rej(e); return; } if (i<N) setTimeout(next, 0); else res(rs); })(); }) };
+  }
+  function workerEngine(){
+    let w; try { const src = document.getElementById("simjs").textContent + "\n" + document.getElementById("engjs").textContent + "\n" + WORKER_GLUE; w = new Worker(URL.createObjectURL(new Blob([src], {type:"text/javascript"}))); } catch (e) { return null; }
+    const waiters = {}; let seq = 0;
+    w.onmessage = e => { const m = e.data; const cb = waiters[m.id]; if (!cb) return; if (m.cmd==="progress"){ if (cb.prog) cb.prog(m.i); return; } delete waiters[m.id]; if (m.cmd==="error") cb.rej(new Error(m.message)); else cb.res(m.frame || m.results || true); };
+    w.onerror = e => { for (const id in waiters){ waiters[id].rej(new Error("worker failed")); delete waiters[id]; } engineFailed(); };
+    const send = (msg, prog) => new Promise((res, rej) => { const id = ++seq; waiters[id] = {res, rej, prog}; w.postMessage(Object.assign({id}, msg)); });
+    const terminate = () => { for (const id in waiters){ const cb = waiters[id]; delete waiters[id]; try { cb.rej(new Error("worker terminated")); } catch(e){} } w.terminate(); };   // settle every pending call
+    return { kind:"worker", init: cfg => send({cmd:"init", cfg}), step: () => send({cmd:"step"}), batch: (kind, o, N, onp) => send({cmd:"batch", kind, o, N}, onp), terminate };
+  }
+  let engine = null, engineGen = 0;
+  function engineFailed(){ // the worker died or a call failed: continue on the main thread with a fresh state
+    if (engine && engine.kind==="worker"){ try { engine.terminate(); } catch(e){} engine = inThreadEngine(); $("enginenote").textContent = "simulation on the main thread"; }
+    if (state){ state.inflight = false; state.pending = null; } if (state) reset(); }
+  function bootEngine(){
+    const we = workerEngine();
+    if (!we){ engine = inThreadEngine(); return Promise.resolve(); }
+    engine = we;
+    return new Promise(res => { let done = false; const t = setTimeout(()=>{ if (!done){ done = true; try { we.terminate(); } catch(e){} engine = inThreadEngine(); res(); } }, 2500);
+      we.init({sc:"corridor", o:{K:100, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1, delta:0.003, seed:0, maxSteps:250, mult:1}, kinds:["mppi"]}).then(()=>{ if (!done){ done = true; clearTimeout(t); res(); } }).catch(()=>{ if (!done){ done = true; clearTimeout(t); engine = inThreadEngine(); res(); } }); });
+  }
+  // ---------------------------------------------------------------- state on the main thread: shells of every runner, filled from the engine's frames
+  function shellRunner(kind, o, sc){
+    if (sc==="corridor"){ const env = new SIM.Corridor(false); return {kind, env, x:[0,0.5,0], prev:[0,0.5,0], path:[[0,0.5]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, thr:null, prof:null, fan:null}; }
+    const H = SIM.harbour(o.scenario); return {kind, H, x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], path:[[0,0]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, thr:null, prof:null, fan:null};
+  }
+  function newState(){
+    const o = opts(); const sc = sceneKind(); const mode = $("mode").value;
+    const kinds = mode==="race" ? (raceKinds().length>=2 ? raceKinds() : [$("ctrl").value]) : [$("ctrl").value];
+    const runners = kinds.map(k => shellRunner(k, o, sc));
+    const st = {sc, mode, o, kinds, runners, k:0, done:false, frames:[], H: runners[0].H || null, env: runners[0].env || null, lastHits: [], gen: ++engineGen, ready:false, inflight:false, pending:null, stepQueue:0};
+    engine.init({sc, o, kinds}).then(()=>{ if (state !== st) return; st.ready = true; if (running || st.stepQueue > 0) requestStep(); }).catch(()=>{ engineFailed(); });
+    return st;
+  }
+  function applyFrame(f){
+    const s = state; if (hover) { hover = null; $("tip").hidden = true; }
+    f.runners.forEach((fr, i) => { const r = s.runners[i];
+      if (fr.stepped){ r.prev = fr.prev; r.x = fr.x; r.subs = fr.subs; r.path.push([fr.x[0], fr.x[1]]); r.hmin.push(fr.hStep); r.ess.push(fr.stats.ess); r.act.push(fr.stats.act); r.vr.push(fr.stats.vr); r.sat.push(fr.stats.sat);
+        r.row0 = fr.row0; r.thr = fr.thr; r.gust = fr.gust; r.prof = fr.prof; r.fan = fr.fan; r.planned = true; }
+      r.outside = fr.outside; r.minh = fr.minh; r.done = fr.done; r.reached = fr.reached; r.ttf = fr.ttf; });
+    s.k = f.k; s.lastHits = s.runners.filter((r,i)=>f.runners[i].hit);
+    if ($("t_pause").checked && running && s.lastHits.length) s.pauseHit = true;
+    s.frames.push({k: s.k, x: s.runners.map(r=>r.x.slice()), fan: s.runners.map((r,i)=> f.runners[i].stepped ? r.fan : null), row0: s.runners.map(r=>r.row0), prof: s.runners.map(r=>r.prof), thr: s.runners.map(r=>r.thr), gust: s.runners.map(r=>r.gust ? r.gust.slice() : null),
+      st: s.runners.map(r=>({out:r.outside, minh:r.minh, ess:r.ess[r.ess.length-1], act:r.act[r.act.length-1], vr:r.vr[r.vr.length-1], sat:r.sat.length?r.sat[r.sat.length-1]:NaN, done:r.done, reached:r.reached, ttf:r.ttf, dist:goalDist(r, s)}))});
+    if (story) storyOnStep(s);
+    if (s.runners.every(r=>r.done)) finishRun();
+  }
+  function requestStep(){
+    const s = state; if (!s || s.done || s.pending || s.inflight || !s.ready || batchRunning) return;
+    s.inflight = true; const gen = s.gen;
+    engine.step().then(f => { if (!state || state.gen !== gen) return; state.inflight = false; state.pending = f;
+        if (!running && state.stepQueue > 0){ state.stepQueue--; applyPending(); updateStats(); draw(1); if (state.stepQueue > 0 && !state.done) requestStep(); } },   // Step button: every click advances one step, in order
+      ()=>{ if (state && state.gen === gen) engineFailed(); });   // only a rejected engine call counts as an engine failure
+  }
+  function applyPending(){ const s = state; if (!s || !s.pending) return; const f = s.pending; s.pending = null; applyFrame(f); if (!s.done && !s.pauseHit && running) requestStep(); }   // keep one step computed ahead while running
+  function stepOnce(){ const s = state; if (!s || s.done) return; if (s.pending){ applyPending(); updateStats(); draw(1); if (s.stepQueue > 0) requestStep(); } else { s.stepQueue++; requestStep(); } }
+  function finishRun(){
+    const s = state; s.done = true; running = false; $("run").textContent = "Run";
+    for (const r of s.runners) {
+      history.unshift({sc:s.sc, scenario:s.o.scenario||"corridor", kind:r.kind, seed:s.o.seed, K:s.o.K, mult:s.o.mult, path:r.path.slice(), coll:r.outside, minh:r.minh, ttf:r.ttf, reached:r.reached, mode:s.mode, cur:s.o.curSpeed||0, curDir:s.o.curDir||"", dist:s.o.disturbance||"white"});
+    }
+    history = history.slice(0, 4);
+    replayFrames = s.frames; $("replaybox").hidden = false; $("replay").max = String(s.frames.length-1); $("replay").value = $("replay").max; setReplayLabel();
+    renderHistory(); updateStats(); draw(1);
+    if (story) storyOnFinish(s);
+  }
+  // ---------------------------------------------------------------- animation loop: frames arrive from the engine one step ahead; the boat is interpolated between them
+  function loop(ts){
+    if (!running) return;
+    const sp = [0.5, 1, 3, 10][+$("speed").value]; const s = state;
+    const stepDur = (s.sc==="corridor" ? 50 : 1000) / sp;     // ms of wall time per simulation step
+    if (!lastTs) lastTs = ts; acc += ts - lastTs; lastTs = ts; acc = Math.min(acc, 1.5*stepDur);
+    let stepped = false;
+    if (!s.pending && !s.inflight) requestStep();
+    while (acc >= stepDur && s.pending && !s.done && !s.pauseHit) { applyPending(); acc -= stepDur; stepped = true; if (!s.pending) break; }
+    if (s.done) { acc = 0; return; }                    // finishRun() has drawn the final state
+    if (s.pauseHit) { s.pauseHit = false; if (story) { stop(); updateStats(); draw(1); storyOnCollision(s); return; }
+      s.pausedMsg = "paused at the first collision"; stop(); updateStats(); draw(1); if (s.mode==="single") $("s_s").textContent = "paused — collision"; return; }
+    if (stepped) updateStats(); draw(Math.min(acc / stepDur, 1));
+    rafId = requestAnimationFrame(loop);
+  }
+  const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : NaN;
+  const easeOut = t => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+  const settle = (frac, span) => easeOut((isFinite(frac) ? frac : 1) / span);   // 0 → 1 over the first `span` of a control interval, then held
+  let fanRamp = 1;
+  function goalDist(r, s){ return s.sc==="corridor" ? Math.hypot(r.x[0]-4, r.x[1]-0.5) : Math.hypot(r.x[0]-r.H.goal[0], r.x[1]-r.H.goal[1]); }
+  // ranking: collision steps, then time to goal — final when finished, estimated (elapsed + distance / cruise speed) while running, last if the time limit hit
+  function rankKey(st, s, tNow){ const tEst = st.done ? (st.reached ? st.ttf : 1e9) : tNow + (s.sc==="corridor" ? st.dist / 1.0 / SIM.CDT : st.dist / 1.5); return [st.out, tEst]; }   // corridor in steps (cruise 1 m/s), vessel in seconds (1.5 m/s)
+  // ---------------------------------------------------------------- stats panels
+  function fmtTime(s, t){ return s.sc==="corridor" ? (t*SIM.CDT).toFixed(2)+" s" : t.toFixed(0)+" s"; }
+  function updateStats(replay){
+    const s = state; if (!s) return;
+    const k = replay ? replay.k : s.k; const tNow = s.sc==="corridor" ? k : k*SIM.SG.DTC;
+    // per-runner view: live values, or the recorded values of the replay frame (means over the run up to that frame)
+    const view = s.runners.map((r,i)=>{ if (!replay) return {out:r.outside, minh:r.minh, ess:r.ess[r.ess.length-1], done:r.done, reached:r.reached, ttf:r.ttf, dist:goalDist(r,s), actM:mean(r.act), vrM:mean(r.vr), satM:mean(r.sat.filter(isFinite)), n:r.act.length};
+      const f = replay.st[i]; const n = Math.min(k, r.act.length); return Object.assign({}, f, {actM:mean(r.act.slice(0,n)), vrM:mean(r.vr.slice(0,n)), satM:mean(r.sat.slice(0,n).filter(isFinite)), n}); });
+    if (s.mode==="single"){
+      const r = s.runners[0], v = view[0]; const isS = isScbfKind(r.kind);
+      $("s_t").textContent = (v.done && v.ttf!==null && !replay) ? fmtTime(s, v.ttf) : fmtTime(s, k);
+      $("s_c").textContent = v.out; $("s_h").textContent = isFinite(v.minh) ? (v.minh>=0?"+":"")+v.minh.toFixed(2)+(s.sc==="corridor"?"":" m") : "–";
+      $("s_e").textContent = isFinite(v.ess) ? v.ess.toFixed(0) : "–";
+      const isP = r.kind==="printed", isD = r.kind==="det"; const detNote = isD ? " · averaged over the 4 inner iterations (125 samples, σ₀·1, ½, ¼, ⅛)" : "";
+      $("s_a").textContent = v.n ? (100*v.actM).toFixed(0)+" %" : "–";
+      $("s_a_n").textContent = isP ? "of sample-timesteps the printed row 0 ≥ b binds — it can never be modified (gain Φ⁻¹(1−δ), the V1 setting), so this share moves with the 1−δ slider while the path stays MPPI's, bit for bit" : (isS ? "of sample-timesteps on which the chance constraint bound and the filter modified the draw" : "of sample-timesteps on which the chance constraint (corrected std form) would bind — nothing filters" + detNote);
+      $("s_v").textContent = v.n ? (100*v.vrM).toFixed(0)+" %" : "–";
+      $("s_v_n").textContent = isS && !isP ? "of Σ₀ left along the active row, averaged over all sample-timesteps (100 % where the constraint is inactive)" : "nothing shrunk — no filter";
+      $("s_p").textContent = isFinite(v.satM) ? v.satM.toFixed(3) : "–";
+      $("s_p_n").textContent = "claimed 1−δ = "+(1-s.o.delta).toFixed(3)+" · "+(isP ? "the printed rows have a = 0: a draw satisfies 0 ≥ b only where b ≤ 0" : (isS ? "fraction of the filtered draws that satisfy every row on the active pairs" : "fraction of the unfiltered draws that satisfy every row on the pairs where it would bind" + detNote));
+      $("s_s").textContent = replay ? "replay · "+fmtTime(s, k) : (s.done ? (r.reached ? "goal reached" : "time limit") : (running ? "running" : (s.k ? "paused" : "ready")));
+    } else {
+      const rows = s.runners.map((r,i)=>({r, v:view[i], key:rankKey(view[i], s, tNow)})).sort((a,b)=> (a.key[0]-b.key[0]) || (a.key[1]-b.key[1]));
+      $("lbb").innerHTML = rows.map(({r,v},j)=>`<tr><td class="rank">${j+1}</td><td><span class="dot" style="background:${col(r.kind)}"></span>${SHORT[r.kind]}${v.done?(v.reached?" ✓":" ✕"):""}</td><td class="num">${v.out}</td><td class="num">${isFinite(v.minh)?v.minh.toFixed(1):"–"}</td><td class="num">${v.done?(v.reached?(s.sc==="corridor"?(v.ttf*SIM.CDT).toFixed(1):v.ttf):"–"):"…"}</td><td class="num">${isFinite(v.ess)?v.ess.toFixed(0):"–"}</td><td class="num">${v.n?(100*v.actM).toFixed(0)+"%":"–"}</td></tr>`).join("");
+      s.leader = rows[0] ? rows[0].r.kind : null;
+    }
+    drawSparks(replay ? k : null);
+  }
+  function renderHistory(){
+    $("histn").textContent = history.length ? history.length+" kept" : "";
+    if (!history.length) { $("htb").innerHTML = '<tr><td colspan="5" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr>'; return; }
+    const distName = {white:"white", ou:"gust", none:"no noise"};
+    $("htb").innerHTML = history.map((h,i)=>`<tr><td><span class="dot" style="background:${col(h.kind)}"></span></td><td>${SHORT[h.kind]}<br><span style="color:var(--muted)">${h.scenario} · seed ${h.seed} · ${h.kind==="det" ? "4×125" : "K "+h.K} · noise ×${h.mult.toFixed(1)}${h.sc==="vessel" ? " · "+(distName[h.dist]||h.dist) : ""}${h.cur ? " · current "+h.cur.toFixed(1)+" m/s "+h.curDir : ""}${h.reached?"":" · not reached"}</span></td><td class="num">${h.coll}</td><td class="num">${isFinite(h.minh)?h.minh.toFixed(1):"–"}</td><td class="num">${h.ttf!==null?(h.sc==="corridor"?(h.ttf*SIM.CDT).toFixed(1):h.ttf):"–"}</td></tr>`).join("");
+  }
+  // ---------------------------------------------------------------- drawing: map, water, scene
+  function makeMap(s, replay){
+    const W = cv.width, H = cv.height;
+    let xmin, xmax, ymin, ymax;
+    if (s.sc==="corridor"){ xmin=-0.3; xmax=4.4; ymin=-1.2; ymax=2.25; } else { xmin=-10; xmax=130; ymin=s.o.scenario==="crossing"?-50:-38; ymax=40; }
+    const scB = Math.min(W/(xmax-xmin), H/(ymax-ymin));
+    if ($("t_follow").checked){
+      const pts = replay ? replay.x : s.runners.map(r=>r.x); const tx = mean(pts.map(p=>p[0])), ty = mean(pts.map(p=>p[1]));
+      if (!cam.init){ cam.cx = tx; cam.cy = ty; cam.init = true; } else { cam.cx += (tx-cam.cx)*0.18; cam.cy += (ty-cam.cy)*0.18; }
+      const sc = scB*2; const vx = W/(2*sc), vy = H/(2*sc);
+      return {sc, X: x => W/2 + (x-cam.cx)*sc, Y: y => H/2 - (y-cam.cy)*sc, xmin: cam.cx-vx, xmax: cam.cx+vx, ymin: cam.cy-vy, ymax: cam.cy+vy, ox:0, oy:0, follow:true};
+    }
+    cam.init = false;
+    const sc = scB; const ox = (W - sc*(xmax-xmin))/2, oy = (H - sc*(ymax-ymin))/2;
+    return {sc, X: x => ox + (x-xmin)*sc, Y: y => oy + (ymax-y)*sc, xmin, xmax, ymin, ymax, ox, oy, follow:false};
+  }
+  function drawWater(m, s, tAbs){
+    const W = cv.width, H = cv.height; const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, css("--water1")); g.addColorStop(1, css("--water0")); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    if ($("t_grid").checked){ ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1; const step = s.sc==="corridor" ? 0.5 : 10;
+      for (let x = Math.ceil(m.xmin/step)*step; x <= m.xmax; x += step){ ctx.beginPath(); ctx.moveTo(m.X(x), m.Y(m.ymin)); ctx.lineTo(m.X(x), m.Y(m.ymax)); ctx.stroke(); }
+      for (let y = Math.ceil(m.ymin/step)*step; y <= m.ymax; y += step){ ctx.beginPath(); ctx.moveTo(m.X(m.xmin), m.Y(y)); ctx.lineTo(m.X(m.xmax), m.Y(y)); ctx.stroke(); }
+      ctx.fillStyle = css("--muted"); ctx.font = "16px IBM Plex Sans, sans-serif"; ctx.textAlign = "left"; ctx.fillText(s.sc==="corridor" ? "grid 0.5" : "grid 10 m", m.ox + 10, H - m.oy - 10); }
+    if (s.sc==="vessel" && s.o.current && $("t_cur").checked) drawCurrentField(m, s, tAbs);
+  }
+  function drawCurrentField(m, s, tAbs){
+    // the water itself moves: a lattice of streaks advected by the current (periodic per axis, so the pattern never jumps)
+    const cur = s.o.current; const sp = Math.hypot(cur[0], cur[1]); const ux = cur[0]/sp, uy = cur[1]/sp;
+    const spacing = 9; const offx = ((cur[0]*tAbs) % spacing + spacing) % spacing, offy = ((cur[1]*tAbs) % spacing + spacing) % spacing;
+    const wx = Math.floor(cur[0]*tAbs/spacing), wy = Math.floor(cur[1]*tAbs/spacing);     // wraps so far: gives every streak a stable identity while it drifts
+    const hash = (i, j) => { let h = (i*374761393 + j*668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const wall = css("--wall"); ctx.save(); ctx.lineCap = "round";
+    for (let gx = Math.floor(m.xmin/spacing)*spacing - spacing; gx <= m.xmax + spacing; gx += spacing)
+      for (let gy = Math.floor(m.ymin/spacing)*spacing - spacing; gy <= m.ymax + spacing; gy += spacing){
+        const h1 = hash(Math.round(gx/spacing) - wx, Math.round(gy/spacing) - wy), h2 = hash(Math.round(gy/spacing) - wy + 977, Math.round(gx/spacing) - wx);
+        if (h1 < 0.35) continue;                                                         // a loose, irregular field rather than a lattice
+        const L = (1.6 + 2.2*h2) * (0.8 + 0.6*sp); const jx = (h2 - 0.5)*spacing*0.6, jy = (h1 - 0.5)*spacing*0.6;
+        const sx = gx + offx + jx, sy = gy + offy + jy; const x0 = sx - ux*L/2, y0 = sy - uy*L/2, x1 = sx + ux*L/2, y1 = sy + uy*L/2;
+        const gr = ctx.createLinearGradient(m.X(x0), m.Y(y0), m.X(x1), m.Y(y1)); gr.addColorStop(0, rgba(wall, 0)); gr.addColorStop(1, rgba(wall, 0.22 + 0.25*h1));
+        ctx.strokeStyle = gr; ctx.lineWidth = 1.8 + 1.4*h2; ctx.beginPath(); ctx.moveTo(m.X(x0), m.Y(y0)); ctx.lineTo(m.X(x1), m.Y(y1)); ctx.stroke();
+      }
+    ctx.restore();
+  }
+  function drawGoal(m, gx, gy){ const x = m.X(gx), y = m.Y(gy); ctx.save(); ctx.strokeStyle = css("--goal"); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x-9,y-9); ctx.lineTo(x+9,y+9); ctx.moveTo(x-9,y+9); ctx.lineTo(x+9,y-9); ctx.stroke(); ctx.restore(); }
+  function drawCorridorScene(m, s){
+    const env = s.env; const xs = []; const x0 = Math.max(-0.3, m.xmin), x1 = Math.min(4.4, m.xmax); for (let i=0;i<=320;i++) xs.push(x0 + (x1-x0)*i/320);
+    // safe set fill
+    ctx.beginPath(); xs.forEach((x,i)=>{ const p=[m.X(x), m.Y(env.w(x)+1)]; i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }); for (let i=xs.length-1;i>=0;i--){ ctx.lineTo(m.X(xs[i]), m.Y(env.w(xs[i]))); } ctx.closePath(); ctx.fillStyle = css("--surface"); ctx.globalAlpha = 0.55; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = css("--wall"); ctx.lineWidth = 3; ctx.lineJoin = "round";
+    for (const off of [0,1]){ ctx.beginPath(); xs.forEach((x,i)=>{ const p=[m.X(x), m.Y(env.w(x)+off)]; i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }); ctx.stroke(); }
+    drawGoal(m, 4, 0.5);
+  }
+  function drawVesselScene(m, s, tAbs){
+    const H = s.H; const obst = css("--obst"), core = css("--obstcore"), wall = css("--wall");
+    for (const o of H.obs){ const c = SIM.obsCenter(o, tAbs); const cx = m.X(c[0]), cy = m.Y(c[1]), R = o.R*m.sc, rc = Math.max(o.R-5,0.5)*m.sc;
+      const g = ctx.createRadialGradient(cx, cy, rc*0.2, cx, cy, R); g.addColorStop(0, core); g.addColorStop(rc/R, core); g.addColorStop(Math.min(rc/R+0.02,1), obst); g.addColorStop(1, obst);
+      ctx.globalAlpha = 0.55; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*Math.PI); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = wall; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*Math.PI); ctx.stroke();
+      if (o.w[0]||o.w[1]){ ctx.strokeStyle = wall; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(m.X(c[0]+o.w[0]*8), m.Y(c[1]+o.w[1]*8)); ctx.stroke(); }
+      ctx.font = "500 18px IBM Plex Sans, sans-serif"; ctx.textAlign = "center"; const tw = ctx.measureText(o.name).width; ctx.fillStyle = css("--surface"); ctx.globalAlpha = 0.85; ctx.fillRect(cx - tw/2 - 6, m.Y(c[1]+o.R) - 28, tw + 12, 24); ctx.globalAlpha = 1; ctx.fillStyle = css("--ink"); ctx.fillText(o.name, cx, m.Y(c[1]+o.R) - 10);
+    }
+    drawGoal(m, H.goal[0], H.goal[1]); ctx.strokeStyle = css("--goal"); ctx.setLineDash([5,5]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(m.X(H.goal[0]), m.Y(H.goal[1]), H.goalR*m.sc, 0, 2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function frontPath(m, c, R, vx, vy, a1){ // the psi1 = 0 locus for relative velocity (vx, vy): d(theta) = R - |v| cos(theta - theta_v) / a1, clipped at R
+    const sp = Math.hypot(vx, vy); if (sp < 0.05) return false; const thv = Math.atan2(vy, vx);
+    ctx.beginPath(); for (let i = 0; i <= 120; i++){ const th = 2*Math.PI*i/120; const d = Math.max(R, R - sp*Math.cos(th - thv)/a1); const px = m.X(c[0] + d*Math.cos(th)), py = m.Y(c[1] + d*Math.sin(th)); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); return true;
+  }
+  function focusIndex(s){ return s.mode==="race" ? rvRunnerIndex(s) : 0; }
+  function drawHalos(m, s, r, tAbs, showTrue){
+    // the psi1 = hdot + a1*h = 0 front of the second-order barrier at the velocity the controller believes (its own model: no current):
+    // with n = (p-c)/|p-c| and v_rel = v_ego - w,  psi1 = n.v_rel + a1 (d - R) = 0  <=>  d(theta) = R - |v_rel| cos(theta - theta_v) / a1  (clipped at R).
+    // Inside the front psi1 < 0 and the row psi1dot + a2 psi1 >= 0 forces recovery; outside it only limits the rate of approach.
+    // With an unknown current the true relative velocity includes it: that front is drawn dotted.
+    if (s.sc!=="vessel" || !isScbfKind(r.kind) || r.kind==="printed") return;
+    const [x,y,psi,u,v] = r.x; const vx = u*Math.cos(psi) - v*Math.sin(psi), vy = u*Math.sin(psi) + v*Math.cos(psi); const H = r.H; const cur = s.o.current;
+    ctx.save(); ctx.lineWidth = 1.6; ctx.strokeStyle = col(r.kind); ctx.fillStyle = col(r.kind); ctx.setLineDash([9,7]);
+    for (const o of H.obs){ const c = SIM.obsCenter(o, tAbs); if (frontPath(m, c, o.R, vx - o.w[0], vy - o.w[1], H.a1)){ ctx.globalAlpha = 0.07; ctx.fill(); ctx.globalAlpha = 0.7; ctx.stroke(); } }
+    if (cur && showTrue){ ctx.setLineDash([2,6]); ctx.lineWidth = 1.5; ctx.globalAlpha = 0.75; for (const o of H.obs){ const c = SIM.obsCenter(o, tAbs); if (frontPath(m, c, o.R, vx + cur[0] - o.w[0], vy + cur[1] - o.w[1], H.a1)) ctx.stroke(); } }
+    ctx.restore();
+  }
+  function drawFan(m, r, snap){
+    const fanOn = $("t_fan").checked; r.fanCache = null; if (!fanOn || !snap) return;
+    const showAct = $("t_act").checked; const base = col(r.kind); const amber = css("--active");
+    const wmax = Math.max(snap.wt[0]||0, 1e-12);
+    ctx.lineWidth = 1.5; ctx.lineCap = "round";
+    const N = snap.n, TT = snap.T;
+    const xy = snap.xy, fl = snap.fl;
+    const offs = new Int32Array(N), foffs = new Int32Array(N), wts = new Float32Array(N);
+    for (let j = 0; j < N; j++){ offs[j] = j*(TT+1)*2; foffs[j] = j*TT; wts[j] = snap.wt[j]; }
+    const hl = (hover && hover.r === r) ? hover.j : -1;
+    for (let j = 0; j < N; j++){
+      if (j === hl) continue;
+      const w = wts[j]; const a = (0.07 + 0.6*w/wmax) * fanRamp; const off = offs[j], foff = foffs[j];
+      for (let t=0;t<TT;t++){ const active = showAct && fl[foff+t]; ctx.strokeStyle = active ? amber : base; ctx.globalAlpha = active ? Math.min(a+0.1,0.9) : a; ctx.beginPath(); ctx.moveTo(m.X(xy[off+t*2]), m.Y(xy[off+t*2+1])); ctx.lineTo(m.X(xy[off+(t+1)*2]), m.Y(xy[off+(t+1)*2+1])); ctx.stroke(); }
+    }
+    if (hl >= 0){ // the inspected rollout: full opacity, wide, with a marker on every binding step
+      const off = offs[hl], foff = foffs[hl]; ctx.globalAlpha = 1; ctx.lineWidth = 3.5;
+      for (let t=0;t<TT;t++){ const active = showAct && fl[foff+t]; ctx.strokeStyle = active ? amber : base; ctx.beginPath(); ctx.moveTo(m.X(xy[off+t*2]), m.Y(xy[off+t*2+1])); ctx.lineTo(m.X(xy[off+(t+1)*2]), m.Y(xy[off+(t+1)*2+1])); ctx.stroke(); }
+      ctx.fillStyle = css("--surface"); ctx.strokeStyle = base; ctx.lineWidth = 2;
+      for (let t=1;t<=TT;t++){ ctx.beginPath(); ctx.arc(m.X(xy[off+t*2]), m.Y(xy[off+t*2+1]), fl[foff+t-1] && showAct ? 4.5 : 3, 0, 2*Math.PI); ctx.fill(); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1; ctx.lineWidth = 1;
+    r.fanCache = {xy, fl, offs, foffs, wts, N, TT, wmax};
+  }
+  function drawPath(m, r, colr, alpha, width, dash){
+    ctx.save(); ctx.strokeStyle = colr; ctx.globalAlpha = alpha; ctx.lineWidth = width; ctx.lineJoin = "round"; ctx.lineCap = "round"; if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); r.path.forEach((p,i)=> i?ctx.lineTo(m.X(p[0]),m.Y(p[1])):ctx.moveTo(m.X(p[0]),m.Y(p[1]))); ctx.stroke(); ctx.restore();
+  }
+  function drawWake(m, r, colr){
+    if (!$("t_wake").checked) return; const P = r.path; const n = Math.min(40, P.length-1); if (n < 2) return;
+    ctx.save(); ctx.lineCap = "round"; ctx.strokeStyle = colr;
+    for (let i = P.length-n; i < P.length-1; i++){ const f = (i-(P.length-n))/n; ctx.globalAlpha = 0.08 + 0.35*f; ctx.lineWidth = 2 + 8*f; ctx.beginPath(); ctx.moveTo(m.X(P[i][0]), m.Y(P[i][1])); ctx.lineTo(m.X(P[i+1][0]), m.Y(P[i+1][1])); ctx.stroke(); }
+    ctx.restore();
+  }
+  const lerpAngle = (a, b, t) => { let d = b - a; d = ((d + Math.PI) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI) - Math.PI; return a + d*t; };
+  function agentState(r, frac){
+    let st = r.x;
+    if (r.subs && isFinite(frac) && frac < 1){ const j = Math.min(Math.floor(frac*r.subs.length), r.subs.length-1); const p0 = j===0 ? r.prev : r.subs[j-1], p1 = r.subs[j]; const g = frac*r.subs.length - j; st = p0.map((v,i)=> i===2 ? lerpAngle(p0[2], p1[2], g) : v + (p1[i]-v)*g); }
+    return st;
+  }
+  function pathForDraw(r, frac, s){ // the path up to the interpolated position of the boat (the last vertex moves with it)
+    if (!isFinite(frac) || frac >= 1 || r.path.length < 2 || r.done) return r.path;
+    const P = r.path.slice(0, -1);
+    if (s.sc==="vessel" && r.subs){ const j = Math.min(Math.floor(frac*r.subs.length), r.subs.length-1); for (let i=0;i<j;i++) P.push([r.subs[i][0], r.subs[i][1]]); }
+    const st = s.sc==="corridor" ? [r.prev[0] + (r.x[0]-r.prev[0])*frac, r.prev[1] + (r.x[1]-r.prev[1])*frac] : agentState(r, frac);
+    P.push([st[0], st[1]]); return P;
+  }
+  function drawGust(m, s, r, st, taud){
+    // the coloured-noise force on the hull (body frame surge, sway) drawn in the world frame: 100 N = 2.5 m
+    if (!taud) return; const f = Math.hypot(taud[0], taud[1]); if (f < 15) return; const psi = st[2]; const fx = Math.cos(psi)*taud[0] - Math.sin(psi)*taud[1], fy = Math.sin(psi)*taud[0] + Math.cos(psi)*taud[1];
+    const L = f/100*2.5; const x0 = st[0], y0 = st[1], x1 = x0 + fx/f*L, y1 = y0 + fy/f*L; const ang = Math.atan2(m.Y(y1)-m.Y(y0), m.X(x1)-m.X(x0));
+    ctx.save(); ctx.strokeStyle = css("--muted"); ctx.fillStyle = css("--muted"); ctx.globalAlpha = 0.85; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(m.X(x0), m.Y(y0)); ctx.lineTo(m.X(x1), m.Y(y1)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.X(x1), m.Y(y1)); ctx.lineTo(m.X(x1) - 11*Math.cos(ang-0.5), m.Y(y1) - 11*Math.sin(ang-0.5)); ctx.lineTo(m.X(x1) - 11*Math.cos(ang+0.5), m.Y(y1) - 11*Math.sin(ang+0.5)); ctx.closePath(); ctx.fill();
+    if (s.mode==="single"){ ctx.font = "15px IBM Plex Sans, sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = css("--ink"); ctx.fillText(`gust ${f.toFixed(0)} N`, m.X(x1) + 8, m.Y(y1) + 5); }
+    ctx.restore();
+  }
+  function drawAgent(m, s, r, frac, colr){
+    if (s.sc==="corridor"){ // interpolate between previous and current state
+      const x0 = r.prev, x1 = r.x; const f = isFinite(frac) ? frac : 1; const x = x0[0] + (x1[0]-x0[0])*f, y = x0[1] + (x1[1]-x0[1])*f, th = lerpAngle(x0[2], x1[2], f);
+      const px = m.X(x), py = m.Y(y); const k = m.follow ? 1.4 : 1; ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.25)"; ctx.shadowBlur = 6; ctx.fillStyle = colr; ctx.strokeStyle = css("--wall"); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px+16*k*Math.cos(th), py-16*k*Math.sin(th)); ctx.lineTo(px+11*k*Math.cos(th+2.5), py-11*k*Math.sin(th+2.5)); ctx.lineTo(px+5*k*Math.cos(th+Math.PI), py-5*k*Math.sin(th+Math.PI)); ctx.lineTo(px+11*k*Math.cos(th-2.5), py-11*k*Math.sin(th-2.5)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); return;
+    }
+    const st = agentState(r, frac);
+    const [x,y,psi] = st; const L = SIM.SG.LOA, B = SIM.SG.BEAM; const hs = m.follow ? 1 : 2; const pts = [[L/2,0],[L/3,B/2],[-L/2,B/2*0.9],[-L/2,-B/2*0.9],[L/3,-B/2]]; const c_ = Math.cos(psi), s_ = Math.sin(psi);
+    ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2; ctx.fillStyle = colr; ctx.strokeStyle = css("--wall"); ctx.lineWidth = 1.5;
+    ctx.beginPath(); pts.forEach((p,i)=>{ const px = x + c_*p[0]*hs - s_*p[1]*hs, py = y + s_*p[0]*hs + c_*p[1]*hs; i?ctx.lineTo(m.X(px),m.Y(py)):ctx.moveTo(m.X(px),m.Y(py)); }); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    // heading line
+    ctx.save(); ctx.strokeStyle = css("--wall"); ctx.globalAlpha = 0.6; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(m.X(x), m.Y(y)); ctx.lineTo(m.X(x + c_*L*0.7*hs), m.Y(y + s_*L*0.7*hs)); ctx.stroke(); ctx.restore();
+  }
+  function drawBadges(m, s, tAbs, replay){
+    // top-right: time (replay / pause note), the leader in race mode; bottom-right: current and disturbance; top-left: hull scale
+    const lines = [(s.sc==="corridor" ? tAbs.toFixed(2) : tAbs.toFixed(0)) + " s" + (replay ? "  · replay" : (s.pausedMsg && !running ? "  · " + s.pausedMsg : ""))];
+    if (s.mode==="race" && s.leader) lines.push("leading: " + SHORT[s.leader]);
+    ctx.save(); ctx.font = "600 22px IBM Plex Sans, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const bw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 24, bh = 16 + 28*lines.length; ctx.fillStyle = css("--surface"); ctx.globalAlpha = 0.86; ctx.beginPath(); ctx.roundRect(cv.width - 14 - bw, 12, bw, bh, 8); ctx.fill(); ctx.globalAlpha = 1;
+    lines.forEach((l,i)=>{ if (i===1){ ctx.font = "500 19px IBM Plex Sans, sans-serif"; ctx.fillStyle = col(s.leader); } else ctx.fillStyle = css("--ink"); ctx.fillText(l, cv.width - 26, 12 + 8 + 14 + 28*i); });
+    ctx.restore();
+    if (s.sc==="vessel"){
+      ctx.save(); ctx.font = "16px IBM Plex Sans, sans-serif"; ctx.fillStyle = css("--muted"); ctx.textAlign = "left"; ctx.fillText(m.follow ? "hull at true scale · camera follows" : "hull drawn at 2× scale", 14, 24); ctx.restore();
+      const parts = []; if (s.o.current) parts.push(`current ${s.o.curSpeed.toFixed(1)} m/s → ${s.o.curDir}`); if (s.o.disturbance==="ou") parts.push("gust: coloured force noise, 5 s"); else if (s.o.disturbance==="none") parts.push("no process noise");
+      if (parts.length){ const txt = parts.join("  ·  "); ctx.save(); ctx.font = "500 18px IBM Plex Sans, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle"; const tw = ctx.measureText(txt).width; const arrow = s.o.current ? 34 : 0; const bw2 = tw + 28 + arrow, x0 = cv.width - 14 - bw2, y0 = cv.height - 14 - 36;
+        ctx.fillStyle = css("--surface"); ctx.globalAlpha = 0.86; ctx.beginPath(); ctx.roundRect(x0, y0, bw2, 36, 8); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = css("--ink"); ctx.fillText(txt, cv.width - 26, y0 + 18);
+        if (s.o.current){ const cx = x0 + 20, cy = y0 + 18; const ang = Math.atan2(-s.o.current[1], s.o.current[0]); ctx.strokeStyle = css("--ink"); ctx.fillStyle = css("--ink"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx - 11*Math.cos(ang), cy - 11*Math.sin(ang)); ctx.lineTo(cx + 9*Math.cos(ang), cy + 9*Math.sin(ang)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 13*Math.cos(ang), cy + 13*Math.sin(ang)); ctx.lineTo(cx + 5*Math.cos(ang+2.4), cy + 5*Math.sin(ang+2.4)); ctx.lineTo(cx + 5*Math.cos(ang-2.4), cy + 5*Math.sin(ang-2.4)); ctx.closePath(); ctx.fill(); }
+        ctx.restore(); }
+    } else if (m.follow){ ctx.save(); ctx.font = "16px IBM Plex Sans, sans-serif"; ctx.fillStyle = css("--muted"); ctx.textAlign = "left"; ctx.fillText("camera follows · 2×", 14, 24); ctx.restore(); }
+  }
+  function draw(frac, replay){
+    const s = state; if (!s) return; const m = makeMap(s, replay); lastMap = m;
+    const dtS = s.sc==="corridor" ? SIM.CDT : SIM.SG.DTC; const tEnd = (replay ? replay.k : s.k) * dtS;
+    const tAbs = replay ? tEnd : Math.max(0, (s.k - 1 + (isFinite(frac) ? frac : 1))) * dtS;   // the scene's clock follows the interpolated boat
+    drawWater(m, s, tAbs);
+    if (s.sc==="corridor") drawCorridorScene(m, s); else drawVesselScene(m, s, tAbs);
+    // ghosts of previous runs (same scene)
+    if ($("t_ghost").checked){ const scen = s.o.scenario||"corridor"; history.filter(h=>h.sc===s.sc && h.scenario===scen).forEach(h=>{ drawPath(m, h, col(h.kind), 0.38, 2.4, [7,7]); }); }
+    // fronts (in replay: at the recorded state of that frame)
+    for (const r of s.runners) r.fanCache = null;
+    if ($("t_halo").checked){ const fi = focusIndex(s); s.runners.forEach((r,i)=>{ const done = replay ? replay.st[i].done : r.done; if (!done) drawHalos(m, s, replay ? {kind:r.kind, x:replay.x[i], H:r.H} : {kind:r.kind, x: s.sc==="vessel" ? agentState(r, frac) : r.x, H:r.H}, tAbs, i===fi); }); }
+    // fans (a new cycle's fan fades in over the first third of the interval)
+    fanRamp = replay ? 1 : 0.4 + 0.6*settle(frac, 0.33);
+    if (replay){ s.runners.forEach((r,i)=>{ if (replay.fan[i]) drawFan(m, r, replay.fan[i]); }); }
+    else for (const r of s.runners) if (r.planned && (!r.done || s.runners.length===1)) drawFan(m, r, r.fan);
+    fanRamp = 1;
+    // paths, wakes, gust arrows, agents
+    if (replay){
+      s.runners.forEach((r,i)=>{ const rr = {path: r.path.slice(0, replay.k+1), x: replay.x[i], prev: replay.x[i], subs: null, kind: r.kind, H: r.H}; drawWake(m, rr, col(r.kind)); drawPath(m, rr, col(r.kind), 0.95, 3.5, r.kind==="printed" ? [10,8] : null); if (s.sc==="vessel" && s.o.disturbance==="ou") drawGust(m, s, r, replay.x[i], replay.gust[i]); drawAgent(m, s, rr, 1, col(r.kind)); });
+    } else {
+      for (const r of s.runners){ const rr = {path: pathForDraw(r, frac, s)}; drawWake(m, rr, col(r.kind)); drawPath(m, rr, col(r.kind), 0.95, 3.5, r.kind==="printed" ? [10,8] : null); }
+      if (s.sc==="vessel" && s.o.disturbance==="ou") for (const r of s.runners) if (!r.done && r.gust) drawGust(m, s, r, agentState(r, frac), r.gust);
+      for (const r of s.runners) drawAgent(m, s, r, frac, col(r.kind));
+    }
+    drawBadges(m, s, tAbs, replay);
+    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac);
+  }
+  function drawSparks(cursorK){
+    const s = state; if (!s) return;
+    for (const [id, key, zeroLine] of [["sp_h","hmin",true],["sp_e","ess",false]]){
+      const c = $(id); const cw = c.clientWidth, ch = c.clientHeight; if (cw && ch && (c.width !== cw*2 || c.height !== ch*2)) { c.width = cw*2; c.height = ch*2; }
+      const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+      const series = s.runners.map(r=>r[key]); const all = series.flat().filter(v=>isFinite(v)); if (!all.length) continue;
+      let lo = Math.min(...all), hi = Math.max(...all); if (zeroLine){ lo = Math.min(lo, -1); hi = Math.max(hi, 1); } if (hi-lo < 1e-9){ hi = lo + 1; }
+      const n = Math.max(...series.map(a=>a.length), 2); const X = i => 10 + (W-20)*i/(n-1), Y = v => Hh-10 - (Hh-20)*(v-lo)/(hi-lo);
+      g.strokeStyle = css("--line"); g.lineWidth = 1; if (zeroLine){ g.setLineDash([3,3]); g.beginPath(); g.moveTo(8, Y(0)); g.lineTo(W-8, Y(0)); g.stroke(); g.setLineDash([]); }
+      s.runners.forEach((r,ri)=>{ const a = r[key]; if (!a.length) return; g.strokeStyle = col(r.kind); g.lineWidth = 3; g.beginPath(); a.forEach((v,i)=> i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v))); g.stroke(); });
+      if (cursorK!=null){ const xc = X(Math.min(cursorK-1, n-1)); g.strokeStyle = css("--ink"); g.globalAlpha = 0.6; g.lineWidth = 2; g.beginPath(); g.moveTo(xc, 4); g.lineTo(xc, Hh-4); g.stroke(); g.globalAlpha = 1; }
+      g.font = "20px IBM Plex Mono, monospace"; g.textAlign = "left"; for (const [txt, y] of [[hi.toFixed(key==="ess"?0:1), 22], [lo.toFixed(key==="ess"?0:1), Hh-6]]){ const tw = g.measureText(txt).width; g.fillStyle = css("--surface"); g.globalAlpha = 0.85; g.fillRect(6, y-17, tw+8, 22); g.globalAlpha = 1; g.fillStyle = css("--muted"); g.fillText(txt, 10, y); }
+    }
+  }
+  // ---------------------------------------------------------------- inside one cycle: the active row along its normal
+  function erf(x){ const t = 1/(1+0.5*Math.abs(x)); const y = 1 - t*Math.exp(-x*x - 1.26551223 + t*(1.00002368 + t*(0.37409196 + t*(0.09678418 + t*(-0.18628806 + t*(0.27886807 + t*(-1.13520398 + t*(1.48851587 + t*(-0.82215223 + t*0.17087277))))))))); return x >= 0 ? y : -y; }
+  const Phi = z => 0.5*(1+erf(z/Math.SQRT2));
+  // Row picture in standardised units: x = (a·u − b)/σ₀ with σ₀ = √(aᵀΣ₀a). Then b sits at 0, the nominal proposal is a unit
+  // Gaussian at z₀ = (a·ū − b)/σ₀, the corrected margin is the constant z = Φ⁻¹(1−δ), the printed one α·σ₀, and the filtered
+  // proposal has mean (a·(ū+μ) − b)/σ₀ and std |Pᵀa|/σ₀ — the same axis for every row, every cycle and both scenes.
+  function rowPick(r0, prevName){
+    if (!r0 || !r0.rows) return r0 ? r0.jSel : 0;
+    if (r0.printed) return r0.jSel;
+    if (r0.filtered && r0.active && r0.solverRow >= 0) return r0.solverRow;          // the row the filter worked on
+    const zs = r0.rows.map(rr => rowZ(r0, rr)); let best = 0; zs.forEach((v,i)=>{ if (v < zs[best]) best = i; });
+    const pi = r0.rows.findIndex(rr => rr.name === prevName); if (pi >= 0 && zs[pi] <= zs[best] + 0.75) return pi;   // hysteresis: keep the shown row while it is nearly as tight
+    return best;
+  }
+  function rowZ(r0, rr){ if (r0.dim===1){ const s0 = Math.abs(rr.a)*r0.sig; return s0 > 1e-12 ? (rr.a*r0.ubar - rr.b)/s0 : (rr.a*r0.ubar - rr.b); } const a = rr.a; const s0 = Math.hypot(a[0]*r0.sig[0], a[1]*r0.sig[1], a[2]*r0.sig[2]); const m0 = a[0]*r0.ubar[0]+a[1]*r0.ubar[1]+a[2]*r0.ubar[2]; return s0 > 1e-12 ? (m0 - rr.b)/s0 : (m0 - rr.b); }
+  function rowStats(r0, j){
+    if (!r0) return null;
+    const rr = (r0.rows && r0.rows[j]) || {a: r0.a, b: r0.b, name: r0.name, h: r0.h};
+    let m0, s0, m1, s1;
+    if (r0.dim===1){ m0 = rr.a*r0.ubar; s0 = Math.abs(rr.a)*r0.sig; m1 = rr.a*(r0.ubar + r0.mu); s1 = Math.abs(rr.a)*r0.s; }
+    else { const a = rr.a; m0 = a[0]*r0.ubar[0]+a[1]*r0.ubar[1]+a[2]*r0.ubar[2]; s0 = Math.hypot(a[0]*r0.sig[0], a[1]*r0.sig[1], a[2]*r0.sig[2]);
+      m1 = m0 + a[0]*r0.mu[0]+a[1]*r0.mu[1]+a[2]*r0.mu[2]; const P = r0.P; const q = [0,1,2].map(i => P[0][i]*a[0] + P[1][i]*a[1] + P[2][i]*a[2]); s1 = Math.hypot(q[0], q[1], q[2]); }   // (P^T a)_i: e = mu + P xi  =>  a.e ~ N(a.mu, |P^T a|^2)
+    const tol = 1e-7*(1+Math.abs(rr.b));
+    const pr = (m, sd) => sd > 1e-12 ? Phi((m - rr.b)/sd) : (m >= rr.b - tol ? 1 : 0);
+    const filtered = !!(r0.filtered && !r0.printed); const degenerate = s0 < 1e-12;
+    const z0 = degenerate ? 0 : (m0 - rr.b)/s0, z1 = degenerate ? 0 : (m1 - rr.b)/s0, s1z = degenerate ? 1 : s1/s0;
+    return {name: rr.name, h: rr.h, m0, s0, m1, s1, b: rr.b, z0, z1, s1z, zTick: r0.z, vTick: r0.alpha*s0, pr0: pr(m0, s0), pr1: filtered ? pr(m1, s1) : pr(m0, s0), filtered, printed: !!r0.printed, degenerate,
+      collapsed: filtered && s1 < 0.06*s0, active: !!r0.active, multi: !!r0.multi, form: r0.form, z: r0.z, alpha: r0.alpha, dim: r0.dim};
+  }
+  function rvRunnerIndex(s){ const sel = $("rvsel"); if (s.mode==="race"){ const i = +sel.value; return (i>=0 && i<s.runners.length) ? i : 0; } return 0; }
+  const rv = {lo:-4.5, hi:7.5, init:false, name:{}, prev:{}, cur:{}, src:{}};
+  function drawRowView(replay, frac){
+    const s = state; if (!s) return; const c = $("rv"); const cw = c.clientWidth, ch = c.clientHeight; if (cw && ch && (c.width !== cw*2 || c.height !== ch*2)) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const i = rvRunnerIndex(s); const r = s.runners[i]; const r0 = replay ? replay.row0[i] : r.row0; const colr = col(r.kind);
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), bad = css("--bad"), surface = css("--surface"), amber = css("--active");
+    g.font = "22px IBM Plex Sans, sans-serif"; g.textAlign = "left"; g.textBaseline = "alphabetic";
+    if (!r0){ g.fillStyle = muted; g.fillText("step or run: the row the filter works on at t = 0 of the current plan appears here", 20, Hh/2); $("rvtext").innerHTML = ""; rv.init = false; return; }
+    // the row to show (with hysteresis), the eased parameters between this cycle and the previous one
+    const j = rowPick(r0, rv.name[i]); const cur = rowStats(r0, j); rv.name[i] = cur.name;
+    let st = cur;
+    if (!replay){
+      if (rv.src[i] !== r0){ rv.prev[i] = rv.cur[i] || null; rv.cur[i] = cur; rv.src[i] = r0; }
+      const pv = rv.prev[i]; const e = settle(frac, 0.35);
+      if (pv && pv.name === cur.name && !cur.degenerate && !pv.degenerate && e < 1){ const L = (a,b) => a + (b-a)*e; st = Object.assign({}, cur, {z0: L(pv.z0, cur.z0), z1: L(pv.z1, cur.z1), s1z: L(pv.s1z, cur.s1z), vTick: L(pv.vTick, cur.vTick)}); }
+    }
+    const unit = s.sc==="corridor" ? "m/s" : "m/s²";
+    const padL = 24, padR = 24, top = 60, base = Hh - 104;
+    // title + status chip
+    g.fillStyle = ink; g.font = "500 22px IBM Plex Sans, sans-serif"; g.fillText(`${SHORT[r.kind]} · ${st.name} row${isFinite(st.h) ? ` · h = ${st.h.toFixed(1)} m` : ""}`, padL, 28);
+    const tw0 = g.measureText(`${SHORT[r.kind]} · ${st.name} row${isFinite(st.h) ? ` · h = ${st.h.toFixed(1)} m` : ""}`).width;
+    const prof = replay ? replay.prof[i] : r.prof; const profMean = prof ? Array.from(prof).reduce((a,b)=>a+b,0)/prof.length : NaN;
+    const chipTxt = st.printed ? "a = 0 · nothing to shift or shrink" : (st.active ? (st.filtered ? "active · the filter acted here" : "would bind · nothing filters") : `inactive at t = 0${isFinite(profMean) ? ` · binds on ${(100*profMean).toFixed(0)} % of the horizon's sample-steps` : ""}`);
+    g.font = "500 17px IBM Plex Sans, sans-serif"; const cwid = g.measureText(chipTxt).width + 22; g.fillStyle = st.printed ? line : (st.active ? amber : line); g.globalAlpha = st.active && !st.printed ? 0.22 : 0.6; g.beginPath(); g.roundRect(padL + tw0 + 14, 9, cwid, 28, 14); g.fill(); g.globalAlpha = 1; g.fillStyle = ink; g.fillText(chipTxt, padL + tw0 + 25, 29);
+    if (st.printed || st.degenerate){
+      g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif"; g.fillText(`the printed relative-degree-1 row has a = 0 for a force input: 0 ≥ b with b = ${st.b.toFixed(3)} m/s — ${st.b <= 0 ? "satisfied" : "violated"}, and nothing can be shifted or shrunk`, padL, Hh/2);
+      $("rvtext").innerHTML = `<b>${st.name}</b> row · L_g h = 0: the chance constraint cannot act, the trajectory is MPPI's bit for bit.`; return;
+    }
+    // x-range in standardised units: eased toward what this cycle needs, never jumping
+    const sd1 = st.filtered ? Math.max(st.s1z, 0.06) : 1;
+    const tLo = Math.min(-4.5, st.z0 - 3.4, st.filtered ? st.z1 - 3.4*sd1 : Infinity), tHi = Math.max(7.5, st.z0 + 3.4, st.filtered ? st.z1 + 3.4*sd1 : -Infinity, st.zTick + 1.2, st.vTick + 1.2);
+    if (!rv.init || replay){ rv.lo = tLo; rv.hi = tHi; rv.init = !replay; } else { rv.lo += (tLo - rv.lo)*0.18; rv.hi += (tHi - rv.hi)*0.18; }
+    const lo = rv.lo, hi = rv.hi; const X = v => padL + (W - padL - padR)*(v - lo)/(hi - lo);
+    const pdf = (x, m, sd) => Math.exp(-0.5*((x-m)/sd)**2)/(sd*Math.sqrt(2*Math.PI));
+    const f0 = pdf(0,0,1); const f1raw = (st.filtered && !st.collapsed) ? pdf(0,0,st.s1z) : 0; const scale1 = f1raw > 2.6*f0 ? 2.6*f0/f1raw : 1; const capped = scale1 < 1;
+    const ymax = 2.6*f0; const Y = f => base - (base - top)*f/ymax;
+    const curve = (m, sd, sc) => { g.beginPath(); for (let k=0;k<=240;k++){ const x = lo + (hi-lo)*k/240; const y = Y(sc*pdf(x, m, sd)); k ? g.lineTo(X(x), y) : g.moveTo(X(x), y); } };
+    const area = (m, sd, sc, fill, alpha) => { curve(m, sd, sc); g.lineTo(X(hi), base); g.lineTo(X(lo), base); g.closePath(); g.fillStyle = fill; g.globalAlpha = alpha; g.fill(); g.globalAlpha = 1; };
+    // faint guide grid every σ
+    g.strokeStyle = line; g.lineWidth = 1; g.globalAlpha = 0.6; for (let v = Math.ceil(lo); v <= Math.floor(hi); v++){ if (v === 0) continue; g.beginPath(); g.moveTo(X(v), top + 8); g.lineTo(X(v), base); g.stroke(); } g.globalAlpha = 1;
+    // the violation tail of what the plant receives (filtered for SCBF, nominal otherwise), left of b — from the true (m, σ), never from a widened spike
+    if (!st.collapsed){ g.save(); g.beginPath(); g.rect(0, 0, Math.max(X(0), 0), Hh); g.clip(); area(st.filtered ? st.z1 : st.z0, st.filtered ? Math.max(st.s1z, 1e-3) : 1, st.filtered ? scale1 : 1, bad, 0.42); g.restore(); }
+    // nominal proposal: a unit Gaussian at z0
+    area(st.z0, 1, 1, colr, st.filtered ? 0.12 : 0.26); curve(st.z0, 1, 1); g.strokeStyle = colr; g.lineWidth = 2.5; g.setLineDash(st.filtered ? [8,6] : []); g.stroke(); g.setLineDash([]);
+    // filtered proposal, or an impulse when the row collapsed to a point mass
+    if (st.filtered && !st.collapsed){ area(st.z1, st.s1z, scale1, colr, 0.3); curve(st.z1, st.s1z, scale1); g.strokeStyle = colr; g.lineWidth = 3.5; g.stroke(); }
+    if (st.collapsed){ g.strokeStyle = st.pr1 >= 0.5 ? colr : bad; g.lineWidth = 7; g.lineCap = "round"; g.beginPath(); g.moveTo(X(st.z1), base); g.lineTo(X(st.z1), top + 8); g.stroke(); g.lineCap = "butt"; g.fillStyle = colr; g.beginPath(); g.arc(X(st.z1), top + 8, 7, 0, 2*Math.PI); g.fill(); }
+    // mean markers
+    g.strokeStyle = colr; g.lineWidth = 1.5; g.setLineDash([3,4]); g.beginPath(); g.moveTo(X(st.z0), base); g.lineTo(X(st.z0), Y(f0)); g.stroke(); g.setLineDash([]);
+    if (st.filtered && !st.collapsed){ g.beginPath(); g.moveTo(X(st.z1), base); g.lineTo(X(st.z1), Y(f1raw*scale1)); g.stroke(); }
+    // baseline, b at zero, the two margins
+    g.strokeStyle = line; g.lineWidth = 2; g.beginPath(); g.moveTo(padL, base); g.lineTo(W - padR, base); g.stroke();
+    g.strokeStyle = bad; g.lineWidth = 3; g.beginPath(); g.moveTo(X(0), top - 6); g.lineTo(X(0), base + 8); g.stroke();
+    const zLab = st.filtered ? st.z1 : st.z0; const bLeft = zLab >= -0.2 && zLab < 1.4;   // keep the b label clear of a curve label sitting just right of b
+    g.fillStyle = bad; g.font = "600 22px IBM Plex Sans, sans-serif"; g.textAlign = bLeft ? "right" : "left"; g.fillText("b", X(0) + (bLeft ? -10 : 10), top + 14);
+    const tick = (x, label, colr2, dy) => { g.fillStyle = colr2; g.beginPath(); g.moveTo(X(x), base + 2); g.lineTo(X(x) - 9, base + 17); g.lineTo(X(x) + 9, base + 17); g.closePath(); g.fill(); g.font = "20px IBM Plex Sans, sans-serif"; g.textAlign = "center"; g.fillText(label, X(x), base + 38 + dy); };
+    const close = Math.abs(X(st.zTick) - X(st.vTick)) < 240;
+    tick(st.zTick, `z·σ — corrected form`, ink, 0); tick(st.vTick, `α·σ² — as printed`, css("--var"), close ? 22 : 0);
+    // curve labels
+    const lab = (x, y, txt, align) => { g.font = "500 20px IBM Plex Sans, sans-serif"; g.textAlign = align; const tw = g.measureText(txt).width; const lx = align==="left" ? x + 12 : x - 12; g.fillStyle = surface; g.globalAlpha = 0.88; g.fillRect(align==="left" ? lx - 4 : lx - tw - 4, y - 18, tw + 8, 24); g.globalAlpha = 1; g.fillStyle = ink; g.fillText(txt, lx, y); };
+    const y0 = Math.max(Y(f0) - 8, top + 6);
+    if (st.filtered){ const y1 = st.collapsed ? top + 14 : Math.max(Y(f1raw*scale1) - 8, top + 6); const right = st.z1 >= st.z0; lab(X(st.z1), y1, `${st.collapsed ? "after the filter · point mass · " : "after the filter · "}Pr ${st.pr1.toFixed(3)}${(st.active && st.pr1 < 0.5) ? " (infeasible sample)" : ""}`, right ? "left" : "right"); lab(X(st.z0), Math.max(y0, y1 + 30), `nominal · Pr ${st.pr0.toFixed(3)}`, right ? "right" : "left"); }
+    else lab(X(st.z0), y0, `as drawn · Pr ${st.pr0.toFixed(3)}`, "left");
+    // legend line (top right), axis unit (bottom left), the binding profile over the horizon (bottom right)
+    g.fillStyle = muted; g.font = "18px IBM Plex Sans, sans-serif"; g.textAlign = "right"; g.fillText(st.filtered ? "dashed = nominal · solid = after the filter" + (capped ? " (peak capped)" : "") + " · red = mass left of b" : "the proposal as drawn · red = the mass that violates the row", W - padR, 28);
+    g.textAlign = "left"; g.fillText(`axis: (a·u − b) / σ₀ in units of the nominal spread · σ₀ = ${st.s0.toFixed(3)} ${unit} · z = ${st.z.toFixed(2)}`, padL, Hh - 12);
+    if (prof && prof.length){ const T = prof.length; const bw = 300, bx = W - padR - bw, by = Hh - 36, bh = 26; const cell = bw / T;
+      g.fillStyle = line; g.globalAlpha = 0.5; g.fillRect(bx, by, bw, bh); g.globalAlpha = 1;
+      for (let t = 0; t < T; t++){ const hgt = bh * prof[t]; g.fillStyle = amber; g.globalAlpha = 0.85; g.fillRect(bx + t*cell + 1, by + bh - hgt, cell - 2, hgt); } g.globalAlpha = 1;
+      g.fillStyle = muted; g.font = "17px IBM Plex Sans, sans-serif"; g.textAlign = "right"; g.fillText(`binds along the horizon t = 0…${T-1} · ${(100*profMean).toFixed(0)} %`, bx - 12, by + 19); }
+    // text line
+    const f3 = v => v.toFixed(3), sg = v => (v>=0?"+":"")+v.toFixed(3);
+    const ratio = (st.alpha*st.s0*st.s0/(st.z*st.s0)).toFixed(2);
+    const forms = `margins at the nominal spread: corrected z·σ = ${f3(st.z*st.s0)} ${unit}, printed α·σ² = ${f3(st.alpha*st.s0*st.s0)} ${unit} (α = z, so the ratio is σ₀ itself: ${ratio})`;
+    const resid = st.filtered && st.active && st.pr1 < 0.5;
+    let txt;
+    if (st.filtered) txt = `<b>${st.name}</b>: nominal Pr(a·u ≥ b) = <b>${f3(st.pr0)}</b> → after the filter <b>${f3(st.pr1)}</b> (claimed ${(1-s.o.delta).toFixed(3)}; before input clipping) · shift a·μ = ${sg(st.m1-st.m0)} ${unit} (${sg((st.m1-st.m0)/st.s0)} σ₀) · ${st.collapsed ? "σ → 0: the row collapsed to a point mass" + (Math.abs(st.m1-st.b) < 1e-6*(1+Math.abs(st.b)) ? " sitting exactly on b" : "") : `σ kept ${(100*st.s1z).toFixed(0)} %`} · ${st.form==="std" ? "problem (8) with the corrected constraint" : "problem (8) as printed"}${st.multi ? " · two or more rows active at once" : ""}${resid ? " · <b>no feasible proposal</b>: no mean shift satisfies every active row at once for this sample — the solver keeps the single-row solution and counts the sample as infeasible, as the Python package does" : ""} · ${forms}${st.active ? "" : " · inactive at t = 0 (the nominal already satisfies the chance constraint)"}`;
+    else txt = `<b>${st.name}</b>: no filter — Pr(a·u ≥ b) = <b>${f3(st.pr0)}</b> for the proposal as drawn (the method claims ${(1-s.o.delta).toFixed(3)}; before input clipping) · the nominal mean sits ${st.z0.toFixed(2)} σ₀ above b; the corrected form needs ${st.z.toFixed(2)} σ₀, the printed one ${(st.vTick).toFixed(2)} σ₀ · ${forms}${r.kind==="det" ? " · first of the 4 inner iterations" : ""}${st.active ? "" : " · the nominal satisfies it here"}`;
+    $("rvtext").innerHTML = txt;
+  }
+  // ---------------------------------------------------------------- thrust gauges
+  const tgEase = {src:{}, prev:{}, cur:{}};
+  function drawGauges(replay, frac){
+    const s = state; if (!s || s.sc!=="vessel") return; const c = $("tg"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return; if (c.width !== cw*2 || c.height !== ch*2) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const n = s.runners.length, cellW = W/n; const FMAX = SIM.SG.F_AT_MAX, BMAX = SIM.SG.F_BT_MAX0;
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), amber = css("--active"), surface = css("--surface");
+    let cells = 0;
+    const small = n >= 3; const fMono = small ? "20px IBM Plex Mono, monospace" : "23px IBM Plex Mono, monospace", fSans = small ? "18px IBM Plex Sans, sans-serif" : "20px IBM Plex Sans, sans-serif";
+    s.runners.forEach((r,i)=>{
+      let thr = replay ? replay.thr[i] : r.thr; const colr = col(r.kind); const x0 = cellW*i; const cx = x0 + cellW/2, cy = 128, R = 78;
+      if (!replay && thr){ if (tgEase.src[i] !== thr){ tgEase.prev[i] = tgEase.cur[i] || null; tgEase.cur[i] = thr; tgEase.src[i] = thr; }
+        const pv = tgEase.prev[i], e = settle(frac, 0.3); if (pv && e < 1){ const L = (a,b) => a + (b-a)*e; thr = {u0: thr.u0.map((v,k)=>L(pv.u0[k], v)), raw: thr.raw.map((v,k)=>L(pv.raw[k], v)), cap: L(pv.cap, thr.cap), clip: thr.clip, speed: L(pv.speed, thr.speed)}; } }
+      g.textBaseline = "alphabetic"; g.textAlign = "left"; g.font = "500 21px IBM Plex Sans, sans-serif"; g.fillStyle = colr; g.fillRect(x0 + 14, 16, 16, 5); g.fillStyle = ink; g.fillText(SHORT[r.kind], x0 + 38, 26);
+      // the disk (top-down: bow up, +Y_AT = the model's +y sway direction, drawn to the left as the east-north map has it), rim ticks every 90°, a faint hull
+      g.strokeStyle = line; g.lineWidth = 2.5; g.beginPath(); g.arc(cx, cy, R, 0, 2*Math.PI); g.stroke();
+      g.beginPath(); for (let q=0;q<4;q++){ const a = q*Math.PI/2; g.moveTo(cx + (R-7)*Math.cos(a), cy + (R-7)*Math.sin(a)); g.lineTo(cx + R*Math.cos(a), cy + R*Math.sin(a)); } g.stroke();
+      g.strokeStyle = line; g.lineWidth = 1; g.beginPath(); g.arc(cx, cy, R/2, 0, 2*Math.PI); g.stroke();
+      g.fillStyle = muted; g.globalAlpha = 0.3; g.beginPath(); g.moveTo(cx, cy-30); g.lineTo(cx+9, cy-12); g.lineTo(cx+8, cy+24); g.lineTo(cx-8, cy+24); g.lineTo(cx-9, cy-12); g.closePath(); g.fill(); g.globalAlpha = 1;
+      g.textAlign = "center"; g.fillStyle = muted; g.font = "16px IBM Plex Sans, sans-serif"; g.fillText("bow", cx, cy - R + 22); g.textAlign = "left"; g.fillText("700 N", cx + R + 8, cy - R + 12);
+      if (!thr){ g.textAlign = "center"; g.fillStyle = muted; g.font = fSans; g.fillText("— no plan yet —", cx, cy + R + 44); return; }
+      cells++;
+      const toScreen = (X, Y) => [cx - Y/FMAX*R, cy - X/FMAX*R];   // surge up, +y sway left
+      const raw = thr.raw, u0 = thr.u0; const magRaw = Math.hypot(raw[0], raw[1]), mag = Math.hypot(u0[0], u0[1]);
+      if (magRaw > FMAX*1.001){ const k = Math.min(magRaw, 1.55*FMAX)/magRaw; const [rx, ry] = toScreen(raw[0]*k, raw[1]*k); g.save(); g.strokeStyle = amber; g.lineWidth = 3; g.setLineDash([6,6]); g.beginPath(); g.moveTo(cx, cy); g.lineTo(rx, ry); g.stroke(); g.restore();
+        const ang = Math.atan2(ry-cy, rx-cx); g.strokeStyle = amber; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, R, ang-0.18, ang+0.18); g.stroke(); }
+      const [ax, ay] = toScreen(u0[0], u0[1]); g.strokeStyle = colr; g.fillStyle = colr; g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); g.moveTo(cx, cy); g.lineTo(ax, ay); g.stroke();
+      const ang = Math.atan2(ay-cy, ax-cx); if (mag > 20){ g.beginPath(); g.moveTo(ax + 9*Math.cos(ang), ay + 9*Math.sin(ang)); g.lineTo(ax - 9*Math.cos(ang-0.55), ay - 9*Math.sin(ang-0.55)); g.lineTo(ax - 9*Math.cos(ang+0.55), ay - 9*Math.sin(ang+0.55)); g.closePath(); g.fill(); }
+      g.fillStyle = surface; g.beginPath(); g.arc(cx, cy, 4, 0, 2*Math.PI); g.fill(); g.strokeStyle = colr; g.lineWidth = 2; g.stroke();
+      // bow thruster: track ±244 N, the cap at this speed, the value, the raw request if it exceeded the cap
+      const bw = Math.min(cellW - 70, 420), bx = cx - bw/2, by = cy + R + 28, bh = 16; const BX = F => bx + bw*(0.5 - F/(2*BMAX));   // +y (sway) to the left, as on the dial
+      g.fillStyle = line; g.globalAlpha = 0.6; g.fillRect(bx, by, bw, bh); g.globalAlpha = 1;
+      g.fillStyle = muted; g.globalAlpha = 0.28; g.fillRect(BX(-thr.cap), by, BX(thr.cap) - BX(-thr.cap), bh); g.globalAlpha = 1;
+      g.strokeStyle = muted; g.lineWidth = 2; g.beginPath(); g.moveTo(BX(-thr.cap), by - 4); g.lineTo(BX(-thr.cap), by + bh + 4); g.moveTo(BX(thr.cap), by - 4); g.lineTo(BX(thr.cap), by + bh + 4); g.stroke();
+      g.fillStyle = colr; const v0 = BX(0), v1 = BX(u0[2]); g.fillRect(Math.min(v0, v1), by + 2, Math.abs(v1 - v0), bh - 4);
+      if (Math.abs(raw[2]) > thr.cap*1.001){ const rx = Math.max(bx, Math.min(bx + bw, BX(raw[2]))); g.strokeStyle = amber; g.lineWidth = 3; g.setLineDash([4,4]); g.beginPath(); g.moveTo(rx, by - 6); g.lineTo(rx, by + bh + 6); g.stroke(); g.setLineDash([]); }
+      g.fillStyle = muted; g.font = "16px IBM Plex Sans, sans-serif"; g.textAlign = "left"; g.fillText("+y sway", bx, by + bh + 22); g.textAlign = "right"; g.fillText("−y", bx + bw, by + bh + 22);
+      g.textAlign = "center"; g.fillStyle = ink; g.font = fMono;
+      g.fillText(`|F_AT| ${mag.toFixed(0)} N${magRaw > FMAX*1.001 ? ` (asked ${magRaw.toFixed(0)})` : ""}`, cx, by + bh + 50);
+      g.fillText(`bow ${u0[2].toFixed(0)}/${thr.cap.toFixed(0)} N · u ${thr.speed.toFixed(1)} m/s`, cx, by + bh + 78);
+      g.fillStyle = muted; g.font = fSans; g.fillText(`draws clipped: ${(100*thr.clip).toFixed(0)} %`, cx, by + bh + 106);
+    });
+    $("tgnote").textContent = cells ? "amber = the request exceeded a limit and was clipped" : "";
+  }
+  // ---------------------------------------------------------------- control
+  function reset(){
+    stop(); state = newState(); replayFrames = null; hover = null; cam.init = false; rv.init = false; rv.name = {}; rv.prev = {}; rv.cur = {}; rv.src = {}; tgEase.src = {}; tgEase.prev = {}; tgEase.cur = {}; $("tip").hidden = true; $("replaybox").hidden = true;
+    cv.height = state.sc==="corridor" ? 860 : (state.o.scenario==="crossing" ? 770 : 670);
+    const names = state.runners.map(r=>SHORT[r.kind]).join(" · ");
+    $("canvastitle").textContent = $("scene").selectedOptions[0].textContent + "  ·  " + (state.mode==="race" ? "race: " + names : $("ctrl").selectedOptions[0].textContent);
+    $("singlestats").hidden = state.mode!=="single"; $("racestats").hidden = state.mode!=="race"; $("rightHead").textContent = state.mode==="race" ? "Leaderboard (live)" : "This run";
+    $("batch").disabled = state.mode==="race" || batchRunning;
+    const sel = $("rvsel"); sel.innerHTML = ""; if (state.mode==="race"){ state.runners.forEach((r,i)=>{ const o = document.createElement("option"); o.value = String(i); o.textContent = SHORT[r.kind]; sel.appendChild(o); }); const pref = state.runners.findIndex(r => isScbfKind(r.kind) && r.kind!=="printed"); sel.value = String(pref >= 0 ? pref : 0); sel.hidden = false; } else sel.hidden = true;
+    const lg = [];
+    for (const r of state.runners) lg.push(`<span><i class="sw" style="background:${col(r.kind)}"></i>${SHORT[r.kind]}</span>`);
+    lg.push(`<span>solid = path and wake · faint = 60 of the K sampled rollouts of this cycle, opacity ∝ weight</span>`);
+    lg.push(`<span><i class="sw" style="background:${css("--active")}"></i>segment on which the barrier chance constraint binds for the proposal (SCBF: the filter modifies the draw there; MPPI: nothing does)</span>`);
+    const hasFront = state.sc==="vessel" && state.runners.some(r => isScbfKind(r.kind) && r.kind!=="printed");
+    lg.push(state.sc==="corridor" ? `<span><i class="sw" style="background:${css("--wall")}"></i>corridor walls · × goal</span>` : `<span><i class="sw" style="background:${css("--obst")}"></i>obstacle + 5 m ego radius · × goal${hasFront ? " · dashed front = ψ₁ = dh/dt + α₁h = 0 at the velocity the controller believes: inside it the barrier forces recovery" : ""}</span>`);
+    if (hasFront && state.o.current) lg.push(`<span>dotted front = the true one for the boat selected in the row view (an SCBF boat) — its ground velocity includes the ${state.o.curSpeed.toFixed(1)} m/s current the controller's model does not know</span>`);
+    if (state.sc==="vessel" && state.o.disturbance==="ou") lg.push(`<span><i class="sw" style="background:${css("--muted")}"></i>arrow on the hull = the gust force as this second begins (100 N = 2.5 m)</span>`);
+    if (state.runners.some(r => r.kind==="printed")) lg.push(`<span>as printed (rd 1) is MPPI bit for bit — drawn dashed on top of it</span>`);
+    if (history.length) lg.push(`<span>dashed thin = ghosts of the last runs</span>`);
+    $("legend").innerHTML = lg.join("");
+    draw(1); updateStats(); if (state.mode==="single") $("s_s").textContent = "ready";
+  }
+  function stop(){ running = false; if (rafId) cancelAnimationFrame(rafId); rafId = null; lastTs = 0; acc = 0; $("run").textContent = "Run"; }
+  function startRunning(){ state.pausedMsg = null; state.stepQueue = 0; running = true; $("run").textContent = "Pause"; lastTs = 0; rafId = requestAnimationFrame(loop); }
+  $("run").addEventListener("click", function(){ this.blur(); if (!state || state.done) reset(); if (running) { stop(); updateStats(); } else startRunning(); });
+  $("stepb").addEventListener("click", function(){ this.blur(); if (!state || state.done) reset(); stop(); stepOnce(); });
+  $("reset").addEventListener("click", function(){ this.blur(); reset(); });
+  $("scene").addEventListener("change", ()=>{ fillCtrls(); reset(); });
+  $("mode").addEventListener("change", ()=>{ $("singlectrl").hidden = $("mode").value==="race"; $("racectrl").hidden = $("mode").value!=="race"; reset(); });
+  $("ctrl").addEventListener("change", reset);
+  $("K").addEventListener("input", ()=>{ $("Kv").textContent = $("K").value; }); $("K").addEventListener("change", reset);
+  $("noise").addEventListener("input", ()=>{ $("noisev").textContent = "×"+(+$("noise").value).toFixed(1); }); $("noise").addEventListener("change", reset);
+  $("dist").addEventListener("change", reset);
+  const curLabel = ()=>{ const v = +$("cur").value; $("curv").textContent = v > 0 ? v.toFixed(1)+" m/s" : "off"; $("curdirv").textContent = DIRS[+$("curdir").value][0]; };
+  $("cur").addEventListener("input", curLabel); $("cur").addEventListener("change", reset); $("curdir").addEventListener("input", curLabel); $("curdir").addEventListener("change", reset);
+  $("delta").addEventListener("input", ()=>{ $("deltav").textContent = (1-DELTAS[+$("delta").value]).toFixed(3); }); $("delta").addEventListener("change", reset);
+  $("seed").addEventListener("input", ()=>{ $("seedv").textContent = $("seed").value; }); $("seed").addEventListener("change", reset);
+  $("speed").addEventListener("input", ()=>{ $("speedv").textContent = ["½×","1× real time","3×","up to 10×"][+$("speed").value]; });
+  ["t_fan","t_act","t_halo","t_ghost","t_wake","t_grid","t_cur","t_follow"].forEach(id => $(id).addEventListener("change", ()=>{ if (id==="t_follow") cam.init = false; redrawNow(); }));
+  $("rvsel").addEventListener("change", ()=>{ redrawNow(); });
+  $("clearhist").addEventListener("click", function(){ this.blur(); history = []; renderHistory(); if (state) redrawNow(); });
+  function setReplayLabel(){ const i = +$("replay").value; const f = replayFrames && replayFrames[i]; $("replayt").textContent = f ? ((state.sc==="corridor" ? (f.k*SIM.CDT).toFixed(2) : f.k) + " s") : ""; }
+  function drawReplay(){ const i = +$("replay").value; const f = replayFrames && replayFrames[i]; if (f) { updateStats(f); draw(1, f); } setReplayLabel(); }
+  $("replay").addEventListener("input", drawReplay);
+  // sample inspector: nearest rollout vertex within 14 px (canvas units) of the pointer
+  let lastMap = null;
+  function currentFrame(){ if (replayFrames && state && state.done && !$("replaybox").hidden) { const f = replayFrames[+$("replay").value]; return f || null; } return null; }
+  function redrawNow(){ const f = currentFrame(); if (f) draw(1, f); else draw(1); }
+  cv.addEventListener("mousemove", e => {
+    if (!state || !$("t_inspect").checked || story) { if (hover && !story) { hover = null; $("tip").hidden = true; redrawNow(); } return; }
+    const rect = cv.getBoundingClientRect(); const sx = (e.clientX - rect.left) * cv.width / rect.width, sy = (e.clientY - rect.top) * cv.height / rect.height;
+    const m = lastMap; if (!m) return; let best = null, bd = 14*14;
+    for (const r of state.runners){ const fc = r.fanCache; if (!fc) continue;
+      for (let j=0;j<fc.N;j++){ const off = fc.offs[j]; for (let t=1;t<=fc.TT;t++){ const dx = m.X(fc.xy[off+t*2]) - sx, dy = m.Y(fc.xy[off+t*2+1]) - sy; const d = dx*dx+dy*dy; if (d < bd){ bd = d; best = {r, j}; } } } }
+    const changed = (best && (!hover || hover.r!==best.r || hover.j!==best.j)) || (!best && hover);
+    hover = best; if (!changed) return;
+    if (!best){ $("tip").hidden = true; redrawNow(); return; }
+    const fc = best.r.fanCache; const foff = fc.foffs[best.j]; let nAct = 0; for (let t=0;t<fc.TT;t++) nAct += fc.fl[foff+t] ? 1 : 0;
+    const w = fc.wts[best.j]; const isS = isScbfKind(best.r.kind);
+    const isP = best.r.kind==="printed", isD = best.r.kind==="det";
+    $("tip").innerHTML = `<b>${SHORT[best.r.kind]}</b> · rollout ${best.j+1} of the ${fc.N} shown (by weight)${isD ? ", last of the 4 iterations" : ""}<br><span class="mono">weight ${(w/fc.wmax).toFixed(2)} × max · ${(100*w).toFixed(1)} % of the update</span><br>${isP ? "printed row binds (unfixable) on" : (isS ? "constraint bound, filter modified the draw on" : "constraint would bind on")} <span class="mono">${nAct} / ${fc.TT}</span> steps${isS ? "" : " (nothing filters)"}`;
+    const tip = $("tip"); tip.hidden = false; const px = e.clientX - rect.left, py = e.clientY - rect.top; tip.style.left = Math.min(px + 14, rect.width - 270) + "px"; tip.style.top = Math.max(py - 10, 0) + "px";
+    redrawNow();
+  });
+  cv.addEventListener("mouseleave", () => { if (story) return; if (hover) { hover = null; $("tip").hidden = true; redrawNow(); } else $("tip").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.ctrlKey || e.metaKey || e.altKey) return; const tg = e.target, tag = tg.tagName; if (tag==="SELECT" || tag==="TEXTAREA" || (tag==="INPUT" && !["checkbox","range"].includes(tg.type))) return;
+    if (e.key==="Escape") { storyStop(); return; }
+    if (e.key===" ") { if (tag==="INPUT" && tg.type==="checkbox") return; if (tag==="BUTTON") return; e.preventDefault(); $("run").click(); } if (e.key==="r") { storyStop(); reset(); } if (e.key==="s") $("stepb").click(); if (e.key==="f") { $("t_follow").checked = !$("t_follow").checked; cam.init = false; redrawNow(); } });
+  // ---------------------------------------------------------------- the 30-second story (a scripted run with captions; any control ends it)
+  let captionSeq = 0;
+  function caption(html, eyebrow){ const c = $("caption"); captionSeq++; if (html==null){ c.hidden = true; return captionSeq; } c.innerHTML = (eyebrow ? `<div class="eb">${eyebrow}</div>` : "") + html; c.hidden = false; return captionSeq; }
+  function captionFor(ms, html, eyebrow){ const id = caption(html, eyebrow); story.timers.push(setTimeout(()=>{ if (story && state && !state.done && captionSeq === id) caption(null); }, ms)); }   // hides only if it is still the caption showing
+  function storyStop(){ if (!story) return; story.timers.forEach(clearTimeout); story = null; caption(null); $("t_pause").checked = false; hover = null; }
+  function setRange(id, v, label){ $(id).value = String(v); if (label) $(label[0]).textContent = label[1]; }
+  function storyStart(){
+    storyStop(); stop();
+    $("scene").value = "crossing"; fillCtrls(); $("mode").value = "race"; $("singlectrl").hidden = true; $("racectrl").hidden = false;
+    [...$("racechecks").querySelectorAll("input")].forEach(cb => { cb.checked = ["mppi","scbf","scbf_is","det"].includes(cb.value); });
+    setRange("K", 500, ["Kv","500"]); setRange("noise", 1, ["noisev","×1.0"]); $("dist").value = "white"; setRange("cur", 0); setRange("curdir", 6); curLabel(); setRange("delta", 0, ["deltav","0.997"]); setRange("seed", STORY_SEED, ["seedv", String(STORY_SEED)]); setRange("speed", 2, ["speedv","3×"]);
+    for (const [id, v] of [["t_fan",true],["t_act",true],["t_halo",true],["t_ghost",true],["t_wake",true],["t_grid",true],["t_cur",true],["t_follow",false],["t_pause",true],["t_inspect",true]]) $(id).checked = v;
+    reset(); story = {stage:0, timers:[], paused:false, noted:new Set()};
+    caption("Four controllers, one seed, one disturbance realisation — the same random forces hit every boat. Ranked live by collision steps, then time to goal.", "story · 1 of 6");
+    startRunning();
+  }
+  function storyOnStep(s){
+    if (!story || story.paused) return; const t = s.k;
+    if (story.stage>=4 && s.lastHits.length){ // a later touch, after the rewind: one caption per boat
+      const fresh = s.lastHits.filter(r => !story.noted.has(r.kind)); if (fresh.length){ fresh.forEach(r => story.noted.add(r.kind)); const names = fresh.map(r=>SHORT[r.kind]).join(" and "); const clean = s.runners.filter(r=>r.outside===0).map(r=>SHORT[r.kind]).join(", ");
+        captionFor(6000, `t = ${t} s: <b>${names}</b> touch${fresh.length>1 ? "" : "es"} as well.${clean ? " Still clean: " + clean + "." : ""}`, "story · 6 of 6 · continued"); }
+      return; }
+    if (story.stage===0 && t>=7){ story.stage = 1; caption("The fan: 60 of the sampled rollouts of each cycle (K = 500; det. MPPI 125 per iteration), opacity by weight. <b>Amber</b> = the barrier chance constraint binds for that draw — the SCBF variants correct it there, MPPI carries on.", "story · 2 of 6"); }
+    else if (story.stage===1 && t>=15){ story.stage = 2; caption("The ferry crosses the track at 3 m/s. The dashed fronts are where the second-order barrier will act, at each boat's current velocity — they bulge towards the boat.", "story · 3 of 6"); }
+    else if (story.stage===2 && t>=34){ story.stage = 3; caption("Past the ferry. Watch the amber share of MPPI's fan between the barge and the buoy field — nothing corrects those draws.", "story · 3 of 6 · continued"); }
+  }
+  function storyOnCollision(s){
+    story.paused = true; story.stage = 4; s.lastHits.forEach(r => story.noted.add(r.kind)); const names = s.lastHits.map(r=>SHORT[r.kind]).join(" and "); const others = s.runners.filter(r=>!s.lastHits.includes(r) && r.outside===0).map(r=>SHORT[r.kind]).join(", ");
+    caption(`First touch at t = ${s.k} s: <b>${names}</b>.${others ? " Clean so far: " + others + "." : ""}`, "story · 4 of 6");
+    const frames = s.frames.slice(-6); const focus = s.lastHits[0]; let i = 0;
+    const show = ()=>{ if (!story) return; const f = frames[i]; hover = {r: focus, j: 0}; updateStats(f); draw(1, f); i++; if (i < frames.length) story.timers.push(setTimeout(show, 750)); else story.timers.push(setTimeout(resume, 1600)); };
+    const resume = ()=>{ if (!story) return; hover = null; story.paused = false; $("t_pause").checked = false; captionFor(7000, "On to the goal. The leaderboard, the sparklines, the row view and the thrust gauges keep following every boat.", "story · 6 of 6"); startRunning(); };
+    story.timers.push(setTimeout(()=>{ if (!story) return; caption(`Rewind — the five seconds before the touch. The highlighted rollout is ${SHORT[focus.kind]}'s heaviest sample: amber where the chance constraint bound, and ${isScbfKind(focus.kind) ? "the filter had already shrunk what it could" : "nothing corrected it"}.`, "story · 5 of 6"); show(); }, 2600));
+  }
+  function storyOnFinish(s){
+    if (!story) return; const rows = s.runners.map(r=>`${SHORT[r.kind]} ${r.outside}${r.reached ? "" : " (not reached)"}`).join(" · ");
+    caption(`Finished — collision steps: ${rows}. This seed was chosen because it separates the four; over all 30 seeds of this scene MPPI touches a circle in 18 runs, SCBF-MPPI in 8, + IS in 2, det. MPPI in 23 (story_scan.json). <span class="eb" style="display:inline;margin-left:8px">drag the replay · esc leaves the story</span>`, "story · end");
+    story.timers.push(setTimeout(storyStop, 12000));
+  }
+  $("story").addEventListener("click", function(){ this.blur(); storyStart(); });
+  document.querySelector(".panel").addEventListener("input", e => { if (e.target.id !== "story") storyStop(); });
+  document.querySelector(".panel").addEventListener("click", e => { const b = e.target.closest("button"); if (b && b.id !== "story") storyStop(); });
+  // batch (single mode) — runs in the engine (the worker keeps the page responsive)
+  let batchRunning = false;
+  $("batch").addEventListener("click", function(){
+    if (batchRunning) return; this.blur();
+    stop(); const o = opts(); const kind = $("ctrl").value; const sc = sceneKind(); const N = 20; $("prog").hidden = false; $("prog").value = 0; $("batch").disabled = true; batchRunning = true; $("run").disabled = true; $("stepb").disabled = true;
+    const batchEnd = ()=>{ batchRunning = false; $("run").disabled = false; $("stepb").disabled = false; $("batch").disabled = state && state.mode==="race"; if (state && (running || state.stepQueue > 0)) requestStep(); };
+    const label = `${$("scene").selectedOptions[0].textContent} · ${SHORT[kind]} · K ${o.K} · noise ×${o.mult.toFixed(1)}${sc==="vessel" ? " · " + ({white:"white", ou:"gust", none:"no noise"}[o.disturbance]) + (o.current ? ` · current ${o.curSpeed.toFixed(1)} m/s ${o.curDir}` : "") : ""} · 1−δ ${(1-o.delta).toFixed(3)} · seeds 0–${N-1}`;
+    $("btb").innerHTML = `<tr><td colspan="3" style="color:var(--muted)">running: ${label} — ${engine.kind==="worker" ? "in a background thread; the page stays live" : "on the main thread; the page pauses between seeds"}</td></tr>`;
+    engine.batch(kind, o, N, i => { $("prog").value = i/N; }).then(finish, ()=>{ $("prog").hidden = true; batchEnd(); $("btb").innerHTML = '<tr><td colspan="3" style="color:var(--bad)">the batch failed — try again</td></tr>'; });
+    function finish(rs){ $("prog").hidden = true; batchEnd();
+      const mm = (k)=>{ const a = rs.map(r=>r[k]).filter(v=>!isNaN(v)); const mu = mean(a); const sd = Math.sqrt(a.reduce((x,y)=>x+(y-mu)**2,0)/Math.max(a.length-1,1)); return [mu, 1.96*sd/Math.sqrt(a.length)]; };
+      const rows = [["collision rate", mm("collision_rate"), 3], [sc==="corridor"?"runs touching a wall":"runs touching a circle", [rs.filter(r=>r.collided).length/N, NaN], 2], [sc==="corridor"?"time to finish, steps":"time to goal, s", mm("ttf"), 0], ["goal reached", [rs.filter(r=>r.reached).length/N, NaN], 2], ["min h", mm("min_h"), 2], ["ESS", mm("ess"), 0], ["constraint active", mm("activation"), 2], ["var kept", mm("var_ratio"), 2], ["delivered Pr", mm("sat_active"), 3]];
+      $("btb").innerHTML = `<tr><td colspan="3" style="color:var(--muted)">${label}</td></tr>` + rows.map(([n,[mu,ci],d]) => `<tr><td>${n}</td><td class="num">${isNaN(mu)?"–":mu.toFixed(d)}</td><td class="num">${isNaN(ci)?"":"±"+ci.toFixed(d)}</td></tr>`).join("");
+    }
+  });
+  window.__demo = { get state(){ return state; }, get engine(){ return engine && engine.kind; }, get running(){ return running; } };   // read-only hook for the automated checks
+  fillCtrls(); renderHistory(); curLabel();
+  bootEngine().then(()=>{ if (!state) reset(); $("enginenote").textContent = engine.kind==="worker" ? "simulation in a background thread" : "simulation on the main thread"; });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if (state) { redrawNow(); updateStats(currentFrame()); } });
+  window.addEventListener("resize", ()=>{ if (state) { updateStats(currentFrame()); redrawNow(); } });
+})();
+</script>

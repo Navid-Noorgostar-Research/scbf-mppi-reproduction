@@ -1,0 +1,14 @@
+# Pinned to the stack that produced the results in this repository (Python 3.12.6, Windows 11, 14 Sep 2026).
+# The floors that were here before ("numpy>=1.26" and so on) are the reason the SCBF numbers drifted between
+# installs: the barrier path goes through a convex solver, and Clarabel changes its iterates between minor
+# versions.  See REPRODUCIBILITY.md for the measured size of that drift and which numbers it touches.
+numpy==2.5.3
+scipy==1.18.1
+matplotlib==3.11.2
+cvxpy==1.9.2
+clarabel==0.11.1
+
+# Optional, used by the animations and the head-less capture; the code degrades gracefully without them.
+imageio-ffmpeg==0.6.0     # an ffmpeg with libx264, picked up automatically by animate.py / animate_current.py
+websocket-client==1.9.2   # live_demo/3d/capture_mp4.py drives Chrome over the DevTools protocol
+sympy==1.14.0             # symbolic cross-checks of the closed-form barrier solution

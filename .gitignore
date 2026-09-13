@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+*.stackdump
+
+# Rendered video is large and fully regenerable (see README and live_demo/3d/README_3D.md).
+figures/*.mp4
+figures/*.gif
+C:/render/

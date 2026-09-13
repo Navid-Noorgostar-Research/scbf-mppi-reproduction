@@ -1,0 +1,8 @@
+* text=auto
+*.json text
+*.py text
+*.md text
+*.png binary
+*.jpg binary
+*.mp4 binary
+*.gif binary

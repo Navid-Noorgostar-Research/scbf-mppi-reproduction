@@ -1,0 +1,29 @@
+{
+ "n_active_instances_in_cycle": 6986,
+ "K": 500,
+ "T": 15,
+ "problems_per_cycle": 7500,
+ "by_active_rows": {
+  "1": {
+   "n_in_cycle": 4234,
+   "n_compared": 150,
+   "feasible_all_rows": 150,
+   "mean_rel_gap": 4.523310112041641e-08,
+   "median_rel_gap": 3.3743110741581364e-08,
+   "p90_rel_gap": 9.049833067567379e-08,
+   "max_rel_gap": 2.6578619719080176e-07
+  },
+  "2": {
+   "n_in_cycle": 2752,
+   "n_compared": 150,
+   "feasible_all_rows": 150,
+   "mean_rel_gap": 0.14103372932478328,
+   "median_rel_gap": 0.08239952191171239,
+   "p90_rel_gap": 0.38267494366124866,
+   "max_rel_gap": 0.5881776571558833
+  }
+ },
+ "socp_cvxpy_wall_s_per_problem": 0.008000373840332031,
+ "sdp_literal_cvxpy_wall_s_per_problem": 0.011014580726623535,
+ "sdp_literal_solver_only_s_per_problem": 0.00047254999999999997
+}

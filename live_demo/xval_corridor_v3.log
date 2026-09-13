@@ -1,0 +1,5 @@
+mppi      coll 0.041 ±0.011 median 0.039 | ttf 122 ±12 | reached 1.00 touched 0.90 | act 0.95 var 1.00 sat 0.480 | 8s
+scbf_var  coll 0.032 ±0.011 median 0.029 | ttf 183 ±18 | reached 0.77 touched 0.83 | act 0.80 var 0.35 sat 0.733 | 47s
+scbf_std  coll 0.065 ±0.055 median 0.036 | ttf 230 ±11 | reached 0.47 touched 0.80 | act 0.96 var 0.07 sat 0.998 | 64s
+scbf_is   coll 0.004 ±0.005 median 0.000 | ttf 117 ±11 | reached 1.00 touched 0.10 | act 0.74 var 0.37 sat 0.998 | 32s
+det       coll 0.054 ±0.014 median 0.045 | ttf 152 ±21 | reached 0.90 touched 0.97 | act 0.83 var 1.00 sat 0.501 | 9s

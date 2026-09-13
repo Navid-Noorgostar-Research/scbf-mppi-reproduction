@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The runs in 3D</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="top" class="panel">
+  <h1 id="title">—</h1>
+  <div class="sub" id="subtitle">—</div>
+  <div id="hint">drag: orbit · wheel: zoom · right-drag: pan · space: play · 1–4: cameras (chase follows the course over ground; helm looks along the heading) · [ ]: speed</div>
+</div>
+
+<div id="recbar">● recording — press Record again to stop</div>
+
+<div id="readouts"></div>
+
+<div id="foot" class="panel"><span id="stats">—</span><span id="note">—</span></div>
+
+<div id="controls" class="panel">
+  <div class="grp"><label>scene</label>
+    <select id="scene"><option value="current">unknown current (V3, seed 0)</option><option value="ferry">crossing ferry (V4, seed 2)</option><option value="corridor">the paper's corridor (E1, seed 6)</option></select></div>
+  <div class="grp"><button id="play">▶ play</button><button id="reset">reset</button>
+    <label>speed</label><select id="speed"><option>0.5</option><option>1</option><option selected>2</option><option>4</option><option>8</option></select>
+    <input type="range" id="scrub" min="0" max="1000" value="0"><span id="clock" style="font-family:Consolas,monospace;font-size:13px;min-width:64px;display:inline-block">t = 0 s</span></div>
+  <div class="grp"><label>camera</label><button data-cam="orbit" class="cam on">orbit</button><button data-cam="chase" class="cam">chase</button><button data-cam="helm" class="cam">helm</button><button data-cam="top" class="cam">top</button>
+    <label>follow</label><select id="follow"></select></div>
+  <div class="grp"><button data-tog="fan" class="tog on">rollouts</button><button data-tog="lift" class="tog on">horizon lift</button><button data-tog="thrust" class="tog on">thrust · gust</button><button data-tog="fronts" class="tog on">ψ₁ = 0 ring</button><button data-tog="discs" class="tog on">exclusion circles</button><button data-tog="paths" class="tog on">paths</button><button data-tog="labels" class="tog on">labels</button></div>
+  <div class="grp"><button id="record" class="rec">● record</button><span id="dl"></span></div>
+</div>
+
+<script>/*__THREE__*/</script>
+<script>/*__SKY__*/</script>
+<script>/*__WATER__*/</script>
+<script>window.WATER_NORMALS_URI = "data:image/jpeg;base64,/*__WATERNORMALS__*/";</script>
+<script id="scene-data" type="application/json">/*__DATA__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

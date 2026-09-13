@@ -1,0 +1,11 @@
+MPPI K=200         coll 0.033 [0.025,0.041]  runs-with-collision 0.9  ttf 123  reached 0.9  ess 30  min_h -0.04  bridge 1.8/116
+MPPI K=500         coll 0.047 [0.038,0.056]  runs-with-collision 1.0  ttf 139  reached 1.0  ess 160  min_h -0.06  bridge 2.6/129
+MPPI K=1000        coll 0.059 [0.049,0.071]  runs-with-collision 1.0  ttf 120  reached 1.0  ess 349  min_h -0.06  bridge 2.7/109
+MPPI K=4000        coll 0.054 [0.044,0.064]  runs-with-collision 1.0  ttf 131  reached 1.0  ess 1689  min_h -0.06  bridge 3.4/120
+MPPI K=5000        coll 0.054 [0.044,0.064]  runs-with-collision 1.0  ttf 131  reached 1.0  ess 2211  min_h -0.05  bridge 3.1/120
+SCBF-var K=200     coll 0.031 [0.021,0.043]  runs-with-collision 0.8  ttf 174  reached 0.9  act 0.79 varratio 0.37 sat_active 0.737  ess 75  min_h -0.05  bridge 2.4/165
+SCBF-var K=300     coll 0.043 [0.020,0.082]  runs-with-collision 0.8  ttf 176  reached 0.8  act 0.81 varratio 0.35 sat_active 0.736  ess 127  min_h -6.04  bridge 1.5/164
+SCBF-var K=400     coll 0.030 [0.021,0.040]  runs-with-collision 0.8  ttf 170  reached 0.9  act 0.80 varratio 0.36 sat_active 0.734  ess 187  min_h -0.05  bridge 2.3/162
+SCBF-var K=500     coll 0.045 [0.027,0.069]  runs-with-collision 0.8  ttf 187  reached 0.7  act 0.81 varratio 0.34 sat_active 0.734  ess 244  min_h -2.12  bridge 1.8/174
+SCBF-std K=200     coll 0.056 [0.038,0.075]  runs-with-collision 0.9  ttf 237  reached 0.3  act 0.96 varratio 0.07 sat_active 0.998  ess 99  min_h -0.10  bridge 2.2/220
+SCBF-std K=500     coll 0.047 [0.027,0.068]  runs-with-collision 0.7  ttf 235  reached 0.4  act 0.96 varratio 0.08 sat_active 0.998  ess 284  min_h -0.30  bridge 2.6/220

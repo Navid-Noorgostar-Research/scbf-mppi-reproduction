@@ -1,0 +1,13 @@
+{
+ "MPPI K=500": 0.031929850578308105,
+ "MPPI K=2000": 0.08266842365264893,
+ "SCBF-MPPI closed-form per-sample solve": 0.9096735715866089,
+ "SCBF-MPPI + IS": 0.31130969524383545,
+ "Deterministic MPPI 4x125": 0.07250463962554932,
+ "literal SDP (8) per problem, cvxpy wall s": 0.01579141616821289,
+ "literal SDP (8) per problem, solver-only s": 0.0006273305,
+ "problems per cycle (K x T)": 7500,
+ "Algorithm 1 cycle with literal SDP, cvxpy wall s": 118.43562126159668,
+ "Algorithm 1 cycle with literal SDP, solver-only s": 4.70497875,
+ "control interval s": 1.0
+}

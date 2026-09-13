@@ -1,0 +1,8 @@
+MPPI K=500                               coll 0.047 [0.038,0.056] collided-runs 1.0 ttf 139 reached 1.0 ess 160 min_h -0.06
+MPPI K=500, Sigma x0.25 (beta=0.5)       coll 0.060 [0.052,0.069] collided-runs 1.0 ttf 250 reached 0.0 ess 122 min_h -0.08
+Deterministic MPPI 4x125 (nu=0.5)        coll 0.063 [0.049,0.078] collided-runs 1.0 ttf 149 reached 0.9 ess 6 min_h -0.06
+SCBF-var K=500 (both)                    coll 0.048 [0.026,0.081] collided-runs 0.8 ttf 186 reached 0.7 ess 241 min_h -0.51 act 0.81 varratio 0.35
+SCBF-var K=500 mean-shift only           coll 0.016 [0.012,0.022] collided-runs 0.9 ttf 239 reached 0.2 ess 18 min_h -0.03 act 0.88 varratio 1.00
+SCBF-var K=500 variance only             coll 0.068 [0.053,0.083] collided-runs 1.0 ttf 178 reached 0.7 ess 264 min_h -0.07 act 0.88 varratio 0.27
+SCBF-var K=500 + IS correction           coll 0.015 [0.008,0.024] collided-runs 0.4 ttf 113 reached 1.0 ess 14 min_h 0.04 act 0.56 varratio 0.62
+SCBF-std K=500 (both)                    coll 0.047 [0.029,0.068] collided-runs 0.7 ttf 234 reached 0.4 ess 288 min_h -0.07 act 0.96 varratio 0.08

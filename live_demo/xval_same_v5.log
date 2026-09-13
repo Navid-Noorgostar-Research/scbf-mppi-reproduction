@@ -1,0 +1,23 @@
+mppi 0 identical path ttf 72 72 | min h step-only 0.022 sub-steps 0.022 | coll 0.000 0.000 | diagnostics act 0.552 var 1.000 sat 0.539 ess 104.6
+mppi 1 identical path ttf 85 85 | min h step-only 0.159 sub-steps 0.159 | coll 0.000 0.000 | diagnostics act 0.519 var 1.000 sat 0.529 ess 144.7
+mppi 2 identical path ttf 118 118 | min h step-only 0.265 sub-steps 0.265 | coll 0.000 0.000 | diagnostics act 0.347 var 1.000 sat 0.631 ess 221.4
+scbf 0 identical path ttf 107 107 | min h step-only 0.874 sub-steps 0.874 | coll 0.000 0.000 | diagnostics act 0.483 var 0.597 sat 0.928 ess 150.3
+scbf 1 identical path ttf 84 84 | min h step-only 1.573 sub-steps 1.573 | coll 0.000 0.000 | diagnostics act 0.707 var 0.384 sat 0.878 ess 74.5
+scbf 2 identical path ttf 125 125 | min h step-only 1.335 sub-steps 1.335 | coll 0.000 0.000 | diagnostics act 0.524 var 0.544 sat 0.913 ess 148.8
+scbf_is 0 identical path ttf 110 110 | min h step-only 3.955 sub-steps 3.955 | coll 0.000 0.000 | diagnostics act 0.337 var 0.752 sat 0.951 ess 77.4
+scbf_is 1 identical path ttf 73 73 | min h step-only 3.337 sub-steps 3.337 | coll 0.000 0.000 | diagnostics act 0.439 var 0.673 sat 0.937 ess 67.3
+scbf_is 2 identical path ttf 78 78 | min h step-only 3.925 sub-steps 3.925 | coll 0.000 0.000 | diagnostics act 0.390 var 0.723 sat 0.957 ess 65.5
+det 0 identical path ttf 106 106 | min h step-only -1.794 sub-steps -1.794 | coll 0.132 0.132 | diagnostics act 0.374 var 1.000 sat 0.591 ess 6.3
+det 1 identical path ttf 83 83 | min h step-only -0.693 sub-steps -0.693 | coll 0.108 0.108 | diagnostics act 0.607 var 1.000 sat 0.294 ess 5.0
+det 2 identical path ttf 86 86 | min h step-only -0.525 sub-steps -0.525 | coll 0.058 0.058 | diagnostics act 0.447 var 1.000 sat 0.354 ess 3.3
+corridor mppi 0 identical
+corridor mppi 1 identical
+corridor scbf_var 0 identical
+corridor scbf_var 1 identical
+corridor scbf_std 0 identical
+corridor scbf_std 1 identical
+corridor scbf_is 0 identical
+corridor scbf_is 1 identical
+corridor det 0 identical
+corridor det 1 identical
+ALL IDENTICAL (paths bit for bit)

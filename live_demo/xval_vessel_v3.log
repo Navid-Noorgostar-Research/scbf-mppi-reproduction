@@ -1,0 +1,3 @@
+mppi     coll 0.016 ±0.014 | ttf 82 ±8 | reached 1.00 touched 0.40 | min_h 0.2 | ess 139 | act 0.48 var 1.00 sat 0.536 | 31s
+scbf     coll 0.020 ±0.022 | ttf 98 ±9 | reached 1.00 touched 0.40 | min_h 0.7 | ess 121 | act 0.56 var 0.51 sat 0.894 | 42s
+scbf_is  coll 0.000 ±0.000 | ttf 98 ±15 | reached 0.90 touched 0.00 | min_h 6.0 | ess 106 | act 0.33 var 0.76 sat 0.954 | 34s

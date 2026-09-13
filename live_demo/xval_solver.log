@@ -1,0 +1,29 @@
+mppi 0 identical ttf 72 72 coll 0.000 0.000
+mppi 1 identical ttf 85 85 coll 0.000 0.000
+mppi 2 identical ttf 118 118 coll 0.000 0.000
+det 0 identical ttf 106 106 coll 0.132 0.132
+det 1 identical ttf 83 83 coll 0.108 0.108
+det 2 identical ttf 86 86 coll 0.058 0.058
+printed 0 identical ttf 72 72 coll 0.000 0.000
+printed 1 identical ttf 85 85 coll 0.000 0.000
+printed 2 identical ttf 118 118 coll 0.000 0.000
+scbf 0 old: ttf 107 coll 0.000 minh 0.87 infeas - | new: ttf 107 coll 0.093 minh -1.83 sat 0.925 multi 0.251 | ms/step old 34 new 116
+scbf 1 old: ttf 84 coll 0.000 minh 1.57 infeas - | new: ttf 130 coll 0.000 minh 1.32 sat 0.919 multi 0.256 | ms/step old 36 new 115
+scbf 2 old: ttf 125 coll 0.000 minh 1.34 infeas - | new: ttf 125 coll 0.000 minh 1.66 sat 0.935 multi 0.188 | ms/step old 34 new 93
+scbf_is 0 old: ttf 110 coll 0.000 minh 3.96 infeas - | new: ttf 108 coll 0.065 minh -0.67 sat 0.947 multi 0.222 | ms/step old 33 new 106
+scbf_is 1 old: ttf 73 coll 0.000 minh 3.34 infeas - | new: ttf 72 coll 0.000 minh 3.59 sat 0.943 multi 0.102 | ms/step old 35 new 69
+scbf_is 2 old: ttf 78 coll 0.000 minh 3.92 infeas - | new: ttf 101 coll 0.000 minh 8.84 sat 0.964 multi 0.048 | ms/step old 35 new 48
+scbf_var 0 old: ttf 110 coll 0.136 minh -2.13 infeas - | new: ttf 106 coll 0.085 minh -1.15 sat 0.612 multi 0.017 | ms/step old 32 new 40
+scbf_var 1 old: ttf 122 coll 0.000 minh 0.12 infeas - | new: ttf 128 coll 0.000 minh 1.91 sat 0.606 multi 0.010 | ms/step old 31 new 37
+scbf_var 2 old: ttf 98 coll 0.000 minh 0.34 infeas - | new: ttf 127 coll 0.063 minh -1.58 sat 0.614 multi 0.009 | ms/step old 32 new 36
+corridor mppi 0 identical
+corridor mppi 1 identical
+corridor scbf_var 0 identical
+corridor scbf_var 1 identical
+corridor scbf_std 0 identical
+corridor scbf_std 1 identical
+corridor scbf_is 0 identical
+corridor scbf_is 1 identical
+corridor det 0 identical
+corridor det 1 identical
+UNCHANGED PATHS IDENTICAL (bit for bit) | total 175 s

@@ -1,0 +1,7 @@
+SCBF-std delta=0.003             coll 0.047 ttf 234 reached 0.4 act 0.96 varratio 0.08 sat_active 0.998 ess 288 min_h -0.07
+SCBF-std delta=0.05              coll 0.047 ttf 213 reached 0.5 act 0.93 varratio 0.13 sat_active 0.956 ess 290 min_h -0.24
+SCBF-std delta=0.2               coll 0.009 ttf 143 reached 1.0 act 0.62 varratio 0.79 sat_active 0.653 ess 113 min_h 0.03
+SCBF-std delta=0.5               coll 0.048 ttf 160 reached 0.9 act 0.30 varratio 1.00 sat_active 0.387 ess 116 min_h -0.09
+SCBF-var alpha=3                 coll 0.028 ttf 172 reached 0.8 act 0.81 varratio 0.34 sat_active 0.741 ess 241 min_h -1.04
+SCBF-var alpha=z (2.748)         coll 0.048 ttf 186 reached 0.7 act 0.81 varratio 0.35 sat_active 0.734 ess 241 min_h -0.51
+SCBF-std delta=0.003, |v|<=2     coll 0.074 ttf 239 reached 0.2 act 0.97 varratio 0.06 sat_active 0.998 ess 280 min_h -0.12
