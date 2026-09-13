@@ -186,29 +186,26 @@ def fig_V11():
         h = np.asarray(r0["obs_hist"], float)
         ax.plot(np.arange(len(h)), h[:, 1], lw=1.6, label=n.split("| ", 1)[1])
     ax.axhline(-0.5, color=COL["ink"], ls="--", lw=1.1)
-    ax.text(2, -0.47, "true current  −0.5 m/s", fontsize=9, color=COL["ink"])
+    ax.text(2, -0.455, "true current  −0.5 m/s", fontsize=9, color=COL["ink"])
     ax.set_xlabel("time [s]")
     ax.set_ylabel("estimated northward current [m/s]")
     ax.set_title("the estimate, seed 0", fontsize=11.5, color=COL["ink"])
-    ax.legend(fontsize=8.5, loc="lower right")
+    ax.legend(fontsize=8.2, loc="upper right", ncol=1)
 
     ax = axes[2]
-    w = 0.38
-    xs = np.arange(len(names))
-    reach = [res[n]["summary"]["reached_frac"] for n in names]
+    ys = np.arange(len(names))[::-1]
     ttf = [_m(res[n], "ttf") for n in names]
-    ax.bar(xs - w / 2, reach, width=w, color=COL["is"], alpha=0.9, label="reached the goal")
-    ax2 = ax.twinx()
-    ax2.bar(xs + w / 2, ttf, width=w, color=COL["mppi"], alpha=0.9, label="time to the goal [s]")
-    ax2.grid(False)
-    ax.set_xticks(xs)
-    ax.set_xticklabels([n.split("| ", 1)[1].replace(" ", "\n", 1) for n in names], fontsize=8)
-    ax.set_ylabel("fraction of seeds reaching the goal")
-    ax2.set_ylabel("time to the goal [s]")
+    ax.barh(ys, ttf, color=COL["mppi"], alpha=0.85, height=0.55)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([n.split("| ", 1)[1] for n in names], fontsize=9)
+    ax.set_xlabel("time to the goal [s]")
     ax.set_title("the cost of not knowing", fontsize=11.5, color=COL["ink"])
-    h1, l1 = ax.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax.legend(h1 + h2, l1 + l2, fontsize=9, loc="lower center")
+    ax.set_xlim(0, max(ttf) * 1.45)
+    for y, v, n in zip(ys, ttf, names):
+        s = res[n]["summary"]
+        t, tot = _touched(res[n])
+        ax.text(v, y, f"  {v:.0f} s · reached {s['reached_frac']*100:.0f}% · touched {t}/{tot}",
+                fontsize=8.5, va="center", color=COL["ink"])
 
     fig.suptitle("V11  an unmodelled 0.5 m/s current against a nominal delta of 0.003", fontsize=12.5,
                  color=COL["ink"], y=0.99)
@@ -233,11 +230,16 @@ def fig_V12():
             ax.plot(xs, ys, "-", color=c, lw=1.2, alpha=0.6)
             ax.scatter(xs, ys, s=[40 + 220 * r for r in rs], color=c, edgecolor=COL["ink"],
                        linewidth=0.7, zorder=3, label=g.rstrip(","))
-            for x, y, n, r in zip(xs, ys, names, rs):
+            for i, (x, y, n, r) in enumerate(zip(xs, ys, names, rs)):
                 tag = n.split("| ")[-1]
-                tag = tag.replace("SCBF-MPPI + IS, ", "").replace("SCBF-MPPI (no IS), ", "").replace("MPPI, ", "")
-                ax.annotate(f"{tag}\nreach {r:.2f}", (x, y), textcoords="offset points", xytext=(6, 4),
-                            fontsize=7.8, color=COL["ink"])
+                tag = (tag.replace("SCBF-MPPI + IS, ", "").replace("SCBF-MPPI (no IS), ", "")
+                          .replace("MPPI, ", "").replace("fixed lambda = 300", "fixed λ")
+                          .replace("ESS target ", "→"))
+                if r < 0.999:                                  # only the interesting ones carry the reach
+                    tag += f"  (reach {r:.0%})"
+                off = (8, 6) if i % 2 == 0 else (8, -12)
+                ax.annotate(tag, (x, y), textcoords="offset points", xytext=off,
+                            fontsize=8.2, color=COL["ink"])
         ax.set_xlabel("median effective sample size  (of K = 500)")
         ax.set_ylabel("‖control update‖ per cycle  [N]")
         ax.set_title(("A  gust + 0.5 m/s unknown current" if sk == "A" else "B  crossing ferry"),
@@ -247,15 +249,17 @@ def fig_V12():
             ax.legend(fontsize=9, loc="lower right")
 
     ax = axes[2]
-    names = [k for k, _ in _rows(res) if "+ IS" in k]
+    names = [k for k, _ in _rows(res) if "ESS target" in k]
     ys = np.arange(len(names))[::-1]
     met = [_m(res[n], "ess_target_met_mean") for n in names]
-    ax.barh(ys, met, color=COL["is"], alpha=0.85, height=0.55)
+    ax.barh(ys, met, color=[COL["is"] if "+ IS" in n else COL["std"] if "SCBF" in n else COL["mppi"]
+                            for n in names], alpha=0.85, height=0.55)
     ax.set_yticks(ys)
-    ax.set_yticklabels([n.replace(" gust + 0.5 m/s current ", " ").replace(" crossing ferry ", " ")
-                        .replace("SCBF-MPPI + IS, ", "") for n in names], fontsize=8.5)
-    ax.set_xlabel("fraction of cycles where the ESS target was reachable at all")
-    ax.set_xlim(0, 1.05)
+    ax.set_yticklabels([n.replace("gust + 0.5 m/s current ", "").replace("crossing ferry ", "")
+                        .replace("SCBF-MPPI + IS, ", "+IS ").replace("SCBF-MPPI (no IS), ", "SCBF ")
+                        .replace("MPPI, ", "MPPI ").replace("ESS target ", "→") for n in names], fontsize=8.5)
+    ax.set_xlabel("cycles where the target was reachable")
+    ax.set_xlim(0, 1.12)
     ax.set_title("the ceiling the temperature cannot raise", fontsize=11.5, color=COL["ink"])
     for y, v in zip(ys, met):
         if np.isfinite(v):

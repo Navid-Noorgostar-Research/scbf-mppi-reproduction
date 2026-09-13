@@ -105,8 +105,7 @@ if __name__ == "__main__":
     run("self-test: the V9-V12 additions (defaults identical to shipped, rows under a current, filter, observer)",
         [PY, "-m", "scbf_mppi.vessel.ext.selftest_ext"])
     run("regression: twelve shipped configurations, bit for bit",
-        [os.path.join(os.path.dirname(PY), "python.exe") if os.name == "nt" else PY,
-         os.path.join("tests", "test_regression.py"), "check"],
+        [PY, os.path.join("tests", "test_regression.py"), "check"],
         env={"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"},
         optional=not clean)
 

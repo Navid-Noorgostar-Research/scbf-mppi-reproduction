@@ -210,3 +210,56 @@ changed on the command line. Two things are therefore *findings about the paper 
 that σ = I is incompatible with Table I, and that the constraint as printed delivers a lower probability than it claims.
 Everything else — the wall-clock cost, the activation fraction, the collapse of the corrected constraint, the mechanism
 separation — is a property of the method as specified, in the regime where its own baseline numbers reproduce.
+
+## Beyond the reproduction: four questions the critique opens (`scbf_mppi/vessel/ext/`)
+
+The reproduction ends with a set of objections. These four experiments turn the sharpest of them into
+measurements. They are additions, not corrections: no shipped result file is touched, and
+`tests/test_regression.py` re-runs twelve shipped configurations and requires bit-identical trajectories
+after every change here.
+
+```
+python -m scbf_mppi.vessel.ext.selftest_ext                              # ~2 min, 21 checks
+python -m scbf_mppi.vessel.ext.experiments_ext --exp all --runs 30       # writes results/vessel_V9..V12*.json
+python -m scbf_mppi.vessel.ext.figures_ext                               # writes figures/fig_V9..V12*.png
+```
+
+**V9 — the heading term the cost does not have.** The vessel running cost is distance to the goal plus a
+speed penalty on `|u|`, so nothing prefers bow-first motion, and every controller spends much of a run going
+astern on an isotropic 700 N force disk. That is a property of the force-input abstraction rather than of the
+barrier, and it affects all three controllers, but it invites the question whether the comparison survives a
+cost that does prefer going forwards. V9 adds an optional heading term and an optional astern penalty and
+re-runs the comparison in both scenarios, over a weight sweep.
+
+**V10 — the barrier in the sampler or on the output.** The paper pushes the barrier into the sampling
+distribution, at K × T = 7500 constrained solves per control cycle. The standard alternative is one convex
+solve per cycle that projects the controller's output onto the same barrier condition. V10 runs both, plus a
+chance-constrained filter whose tightening is derived exactly for a force disturbance, with the same MPPI, the
+same barrier gains, the same seeds and the real input set (the 700 N azimuth cone and the speed-dependent bow
+cap). It also shows what the paper's white-noise assumption costs: the tightening it demands is √(2τ_c/h) —
+here a factor 3.2 — larger than the one a correlated gust of the same intensity demands.
+
+**V11 — the disturbance the chance constraint never sees.** In the unknown-current scenario the controllers
+are blind to a 0.5 m/s drift that enters the position kinematics, so their barrier derivative is wrong by
+n · c, up to 0.5 m/s — the size of the whole α₁h term at h = 5 m. A nominal δ = 0.003 says nothing about
+that: δ bounds the modelled noise, not an unmodelled drift. V11 adds a kinematic-residual observer (which
+needs no vessel model, only the measured state), injects the estimate into the rollouts and into the barrier
+rows separately, and audits at the plant how often the controller's own certificate was false.
+
+**V12 — the effective sample size the correction destroys.** With the importance-sampling weights the paper
+omits, the median effective sample size is 13 of 500. V12 retunes the temperature on line to hold the ESS at
+a target, exploiting `log w(λ) = −J/λ − C + log q` so one rollout batch gives the whole family of weights.
+It reports ESS together with the norm of the control update and the fraction of runs that reach the goal,
+because ESS bought by flattening the weights is not a rescue.
+
+## Reproducing it
+
+```
+python reproduce.py            # environment, self-tests, bit-exactness guard   (~3 min)
+python reproduce.py --full     # the above, then every experiment and figure    (~90 min)
+python tests/drift_report.py   # how far the numbers moved when the versions moved
+```
+
+`REPRODUCIBILITY.md` states precisely what reproduces and what does not, and which reported numbers
+are fragile across library versions. `requirements.txt` is pinned; `results_shipped_2026_09_12/` keeps the
+result files the reported numbers were taken from, so the claim that the text matches the code stays checkable.

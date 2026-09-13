@@ -132,7 +132,7 @@ for fc in nt.animation_data.action.fcurves:
 gx, gy = sc["goal"]; ring("goal_ring", sc["goal_r"], 0.35, material("goal_m", INK, 0.6), 0.04).location = (gx, gy, 0)
 cylinder("goal_pole", 0.12, 6.0, material("pole_m", INK), (gx, gy, 3.0))
 label_m = material("label_m", INK, 0.9, emit=0.4)
-labels = [text("goal_lab", "goal", 1.6, label_m, (gx, gy, 7.0))]
+labels = [text("goal_lab", "goal", 1.1, label_m, (gx, gy, 7.0))]
 
 # obstacles
 obst_m = material("obst_m", (0.44, 0.50, 0.55), 0.9); dark_m = material("dark_m", (0.31, 0.37, 0.42), 1.0); buoy_m = material("buoy_m", (0.89, 0.60, 0.16), 0.6)
@@ -156,7 +156,7 @@ for k, o in enumerate(sc["obstacles"]):
             for kp in fc.keyframe_points: kp.interpolation = "LINEAR"
         ferry_obj = root
     ring(f"excl{k}", o["R"], 0.3, circle_m, 0.05, root)
-    labels.append(text(f"lab{k}", o["name"], 1.5, label_m, (0, 0, 4.5 + (4 if o["kind"] == "ferry" else 0)), root))
+    labels.append(text(f"lab{k}", o["name"], 1.05, label_m, (0, 0, 4.5 + (4 if o["kind"] == "ferry" else 0)), root))
 
 # boats: keyframed on the 1-s control states; paths grow with time; thrust arrow at the stern
 def unwrap(angles):
@@ -189,8 +189,8 @@ for i, b in enumerate(sc["boats"]):
         f = 1 + k * FPS; mag = math.hypot(u[0], u[1]); L = 6.0 * mag / META["f_at_max"]
         stern.rotation_euler = (0, 0, math.atan2(u[1], u[0])); stern.keyframe_insert("rotation_euler", frame=f)
         cone.scale = (1.0, 1.0, max(L, 0.05)); cone.location = (max(L, 0.05) / 2, 0, 0); cone.keyframe_insert("scale", frame=f); cone.keyframe_insert("location", frame=f)
-    labels.append(text(f"boatlab{i}", b.get("short", b["label"]), 1.3, material(f"bl{i}_m", rgb, 0.9, emit=0.5), (0, 0, 4.6), root))
-    labels.append(text(f"disklab{i}", "700 N", 0.9, material(f"dl{i}_m", rgb, 0.9, emit=0.5), (-6.4, 0, 0.5), stern))
+    labels.append(text(f"boatlab{i}", b.get("short", b["label"]), 0.95, material(f"bl{i}_m", rgb, 0.9, emit=0.5), (0, 0, 4.6), root))
+    labels.append(text(f"disklab{i}", "700 N", 0.62, material(f"dl{i}_m", rgb, 0.9, emit=0.5), (-6.4, 0, 0.5), stern))
     # the course over ground (with the current), keyframed per second: the chase camera follows it, so a boat running
     # astern is seen travelling stern-first instead of the camera looking away from where it goes
     course = empty(f"course{i}"); cur = sc.get("current", [0.0, 0.0]); ang = None; angs = []
@@ -220,21 +220,31 @@ else:                                                                           
 for lab in labels:                                                                 # labels face the camera
     c = lab.constraints.new("TRACK_TO"); c.target = cam; c.track_axis = "TRACK_Z"; c.up_axis = "UP_Y"
 
-# HUD: the followed boat's readout, updated every frame from the data
-hud = text("hud", "", 0.062, material("hud_m", INK, 1.0, emit=0.6), (-1.02, 0.54, -2.3), cam, align="LEFT")
+# HUD: the followed boat's readout, updated every frame from the data.
+# Sizing: the camera is 32 mm on a 36 mm sensor and the text sits 2.3 units in front of it, so the visible
+# half-width is 2.3 * 18 / 32 = 1.294 and the half-height 0.728.  A line of N characters is about
+# 0.5 * N * size wide, so at size 0.048 a line must stay under ~100 characters to avoid being clipped at the
+# right edge.  The readout is therefore split into three short lines instead of two long ones.
+HUD_SIZE = 0.048
+hud = text("hud", "", HUD_SIZE, material("hud_m", INK, 1.0, emit=0.6), (-1.22, 0.60, -2.3), cam, align="LEFT")
 bf = sc["boats"][min(FOLLOW, len(boats) - 1)]
 def hud_update(scn):
     t = (scn.frame_current - 1) / FPS; k = min(int(t), len(bf["ctrl"]) - 1); n = len(bf["traj"]) - 1
     u = bf["ctrl"][k]; mag = math.hypot(u[0], u[1]); h = bf["h"][min(k, len(bf["h"]) - 1)]; hmin = min(bf["h"][:k + 1]); nin = sum(1 for v in bf["h"][:k + 1] if v < 0)
     ess = bf["ess"][min(k, len(bf["ess"]) - 1)]; surge = bf["traj"][min(k, n)][3]
-    end = ("  ·  goal reached" if bf["reached"] else "  ·  time limit") if t >= n else ""
-    hud.data.body = (f"{bf['label']}   t = {min(int(t), n):3d} s   surge {surge:+.1f} m/s{'  astern' if surge < -0.3 else ''}   azimuth {mag:3.0f} / {META['f_at_max']:.0f} N{'  (at limit)' if mag >= 0.98 * META['f_at_max'] else ''}   bow {u[2]:+.0f} N{end}\n"
+    end = ("   ·   goal reached" if bf["reached"] else "   ·   time limit") if t >= n else ""
+    hud.data.body = (f"{bf['label']}   ·   t = {min(int(t), n):3d} s{end}\n"
+                     f"surge {surge:+.1f} m/s{' astern' if surge < -0.3 else ''}   azimuth {mag:3.0f} / {META['f_at_max']:.0f} N"
+                     f"{' (at limit)' if mag >= 0.98 * META['f_at_max'] else ''}   bow {u[2]:+.0f} N\n"
                      f"h {h:+.1f} m   closest so far {hmin:+.1f} m   inside a circle {nin} s   ESS {ess:.0f} / 500")
 bpy.app.handlers.frame_change_pre.append(hud_update)
 st = sc.get("stats")
-foot = text("foot", ("3-DOF planar model — no roll, pitch or heave · hull stylised to 8.5 × 2.2 m · positions interpolated between the 1-s control states · the boats run astern when that is cheaper: isotropic 700 N force input, symmetric damping, no heading cost\n"
-                     + (f"over {st['n']} seeds: touched a circle {st['touched'][0]} / {st['touched'][1]} / {st['touched'][2]} · reached the goal {st['reached'][0]} / {st['reached'][1]} / {st['reached'][2]} (MPPI / barrier / + IS) · this is seed {sc['seed']}, not a selected one" if st else "")),
-            0.03, material("foot_m", (0.36, 0.44, 0.50), 1.0, emit=0.5), (-1.02, -0.55, -2.3), cam, align="LEFT")
+foot = text("foot", ("3-DOF planar model — no roll, pitch or heave · hull stylised to 8.5 × 2.2 m\n"
+                     "positions interpolated between the 1-s control states\n"
+                     "the boats run astern when that is cheaper: isotropic 700 N force input, odd surge damping, no heading cost\n"
+                     + (f"over {st['n']} seeds: touched a circle {st['touched'][0]} / {st['touched'][1]} / {st['touched'][2]} · reached the goal {st['reached'][0]} / {st['reached'][1]} / {st['reached'][2]} (MPPI / barrier / + IS)\n"
+                        f"this is seed {sc['seed']}, not a selected one" if st else "")),
+            0.024, material("foot_m", (0.36, 0.44, 0.50), 1.0, emit=0.5), (-1.22, -0.60, -2.3), cam, align="LEFT")
 
 # render settings
 w, h = (int(v) for v in RES.split("x")); scene.render.resolution_x = w; scene.render.resolution_y = h; scene.render.resolution_percentage = 100

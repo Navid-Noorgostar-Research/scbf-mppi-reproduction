@@ -50,6 +50,19 @@ That factor is not a detail: the model the paper assumes (white) demands a three
 than the disturbance a vessel actually sees (a gust with a correlation time), for the same delta.  Both are
 computed here and V10 reports both.
 
+Three things the chance-constrained filter does NOT claim, stated here so no reader has to infer them:
+
+  * It bounds the MEAN.  The white-noise tightening uses the covariance of the force averaged over one
+    control interval, so what it delivers is P(the interval-averaged barrier condition holds) >= 1 - delta.
+    It does NOT bound P(psi1 dips below zero somewhere inside the interval), which is what the reported
+    collision statistics measure (they are evaluated at every 0.25 s integration sub-step).  A bound on the
+    sup over the interval needs a crossing argument this does not make.
+  * delta is PER ROW.  With J rows active at one instant a union bound gives up to J x delta for the
+    instant, so in the crossing scenario (four circles) the per-instant figure is up to 0.012, not 0.003.
+    The paper's delta is per row too; that is worth saying out loud next to it.
+  * It is a per-instant condition, not a claim about the whole route.  Nothing here multiplies out to an
+    end-to-end probability of reaching the goal without contact.
+
 What would make this comparison a strawman, and what is done about it.  (i) Giving the filter a different
 MPPI: it gets the identical one, same seeds, same cost, same K.  (ii) Giving the filter a different barrier:
 it uses harbour.rows, the same second-order rows with the same alpha1, alpha2 that the SCBF sampler uses.
@@ -57,10 +70,23 @@ it uses harbour.rows, the same second-order rows with the same alpha1, alpha2 th
 the experiment and is reported as such, not hidden.  (iv) Input limits: the filter respects the real
 azimuth disk and bow-thruster cap, so it cannot buy safety with thrust the vessel does not have.
 
-Known limitation, stated rather than hidden: the inner MPPI is not told that its output was filtered, so its
-warm start is the unfiltered plan.  This is the standard cascade, and it re-plans from the measured state
-every second, so the stale warm start is a second-order effect -- but it is an effect, and a controller
-co-designed with its filter would do better than the numbers reported here.
+Two known limitations, stated rather than hidden.
+
+(a) The inner MPPI is not told that its output was filtered, so its warm start is the unfiltered plan.  This
+is the standard cascade, and it re-plans from the measured state every second, so the stale warm start is a
+second-order effect -- but it is an effect, and a controller co-designed with its filter would do better than
+the numbers reported here.  This one works AGAINST the filter.
+
+(b) The filter and the sampler do not solve their constrained problems to the same accuracy, and this one
+works FOR the filter.  The filter's problem has three variables and is solved exactly by Clarabel.  The
+sampler's per-sample problem is solved in closed form, which experiment V0 measured against the exact conic
+optimum on real instances taken from one cycle: with ONE active row (4234 of 6986 active instances) the
+closed form is exact, relative gap 0.0; with TWO active rows (2752 instances) it is more conservative than
+the optimum by 14 % on average, 8 % at the median and 38 % at the ninth decile.  So roughly a third of the
+sampler's active instances carry an extra tightening the filter does not carry.  Any margin the filter shows
+over the sampler that is smaller than that should be read as inconclusive.  Solving the sampler's 7500
+problems per cycle exactly with cvxpy would settle it and costs 8 ms each, i.e. a minute per control cycle,
+which is why V0 measured the gap instead.
 """
 import numpy as np
 

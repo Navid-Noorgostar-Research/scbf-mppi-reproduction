@@ -146,12 +146,17 @@ class CertificateAudit:
         c_bel = barrier_belief(controller)
         uc = sg.clip_inputs(np.asarray(u, float)[None], np.asarray(x, float)[None])[0]
         tau = sg.B_ALLOC @ uc
-        a_b, b_b, h, _ = self.H.rows(x[None], t, current=(c_bel if (c_bel[0] or c_bel[1]) else None))
+        a_b, b_b, h, psi1_b = self.H.rows(x[None], t, current=(c_bel if (c_bel[0] or c_bel[1]) else None))
         a_t, b_t, _, _ = self.H.rows(x[None], t, current=(self.c_true if (self.c_true[0] or self.c_true[1]) else None))
-        m_bel = a_b[0] @ tau - b_b[0]
-        m_true = a_t[0] @ tau - b_t[0]
-        ok_bel = bool((m_bel >= -1e-9).all())
-        ok_true = bool((m_true >= -1e-9).all())
+        # Margins in SAMPLING-STD units: the rows have coefficients of order 3e-4 per newton, so an absolute
+        # tolerance is meaningless.  The per-sample solver puts an active row's mean EXACTLY on its boundary,
+        # so without a scaled tolerance "satisfied" would be decided by the last bit of a float.
+        g = np.maximum(np.linalg.norm((a_t[0] @ sg.B_ALLOC) * self.s0[None, :], axis=1), 1e-12)
+        m_bel = (a_b[0] @ tau - b_b[0]) / g
+        m_true = (a_t[0] @ tau - b_t[0]) / g
+        tol = 1e-6
+        ok_bel = bool((m_bel >= -tol).all())
+        ok_true = bool((m_true >= -tol).all())
         near = bool(h.min() < self.near_h)
         self.n += 1
         self.n_bel_viol += int(not ok_bel)
@@ -169,10 +174,9 @@ class CertificateAudit:
         rel = np.asarray(x, float)[:2] - o.center(t)
         nrm = rel / max(np.linalg.norm(rel), 1e-9)
         self.hdot_err.append(float(abs(nrm @ dc)))
-        self.psi1_abs.append(float(abs(psi1[0][j])))
+        self.psi1_abs.append(float(abs(psi1_b[0][j])))
         # the same error expressed as thrust: how many sampling stds of input the margin is wrong by
-        g = np.maximum(np.linalg.norm((a_t[0] @ sg.B_ALLOC) * self.s0[None, :], axis=1), 1e-12)
-        self.margin_err.append(float(np.abs((m_bel - m_true) / g).max()))
+        self.margin_err.append(float(np.abs(m_bel - m_true).max()))
 
     def summary(self):
         bel_ok = max(self.n_bel_ok, 1)

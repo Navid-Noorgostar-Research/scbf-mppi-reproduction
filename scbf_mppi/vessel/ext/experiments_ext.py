@@ -172,7 +172,14 @@ def V10(runs, procs):
                     "the 700 N azimuth disk and the speed-dependent bow cap, with W = diag(1/s0^2).  The chance "
                     "variant tightens each row by z sqrt(a Sigma_d a^T) with a in tau coordinates; Sigma_d is "
                     "diag(s_F^2) for the coloured gust and diag((s_F sqrt(2 tau_c / h))^2) for white force "
-                    "noise, a factor sqrt(10) larger at tau_c = 5 s, h = 1 s.")
+                    "noise, a factor sqrt(10) larger at tau_c = 5 s, h = 1 s.  Three caveats belong beside "
+                    "these numbers.  (1) The white tightening bounds the INTERVAL-AVERAGED barrier condition, "
+                    "not the sup of psi1 inside the interval, while the collision statistics are evaluated at "
+                    "every 0.25 s sub-step.  (2) delta is per row: with four circles active a union bound "
+                    "gives up to 4 delta = 0.012 per instant.  (3) The filter solves its three-variable "
+                    "problem exactly while the sampler uses the closed form, which V0 measured to be exact on "
+                    "single-row instances (4234 of 6986) and 14 % more conservative on average on two-row "
+                    "instances (2752 of 6986).  A filter margin smaller than that is inconclusive.")
     save("vessel_V10_filter", res)
     return res
 
