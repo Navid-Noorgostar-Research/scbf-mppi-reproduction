@@ -38,6 +38,14 @@
   B crossing ferry | MPPI + chance CBF-QP filter                     n=30  touched 0/30  reached 0.30  collision_rate 0  ttf 144.3  min_h 9.288  mean_speed 0.943  path_length 148  filter_active_mean 0.7573  filter_dU_mean 1.369
   B crossing ferry | SCBF-MPPI + CBF-QP filter                       n=30  touched 4/30  reached 1.00  collision_rate 0.005026  ttf 112.6  min_h 0.9499  mean_speed 1.173  path_length 140  filter_active_mean 0.1387  filter_dU_mean 0.0364
 
+== V10b does an estimate repair the filter?
+  MPPI + CBF-QP filter | no estimate                                 n=30  touched 23/30  reached 0.43  collision_rate 0.1225  ttf 138.1  min_h -0.4649  hdot_err_mean 0.306  cert_false_frac 0.1807  filter_active_mean 0.4947
+  MPPI + CBF-QP filter | estimate in the filter only                 n=30  touched 15/30  reached 0.43  collision_rate 0.04043  ttf 137.2  min_h 0.2219  hdot_err_mean 0.00654  cert_false_frac 0.2096  filter_active_mean 0.427
+  MPPI + CBF-QP filter | estimate in the rollouts and the filter     n=30  touched 11/30  reached 0.87  collision_rate 0.01108  ttf 120.8  min_h 0.557  hdot_err_mean 0.007234  cert_false_frac 0.1882  filter_active_mean 0.4622
+  MPPI + CBF-QP filter | true current known (oracle)                 n=30  touched 12/30  reached 0.90  collision_rate 0.018  ttf 116.4  min_h 0.4185  hdot_err_mean 0  cert_false_frac 0  filter_active_mean 0.4867
+  MPPI + chance CBF-QP filter | estimate in both                     n=30  touched 0/30  reached 0.50  collision_rate 0  ttf 142.9  min_h 2.753  hdot_err_mean 0.00597  cert_false_frac 0  filter_active_mean 0.7219
+  SCBF-MPPI (sampler) | estimate in both, for reference              n=30  touched 4/30  reached 0.90  collision_rate 0.0044  ttf 105.5  min_h 1.379  hdot_err_mean 0.008619  cert_false_frac 0.04989
+
 == V11 unmodelled current
   SCBF-MPPI | no estimate                                            n=30  touched 9/30  reached 0.50  cert_false_frac 0.05588  cert_false_frac_near 0.07769  collision_rate 0.04703  min_h 3.985
   SCBF-MPPI | estimate in the rollouts                               n=30  touched 8/30  reached 0.93  cert_false_frac 0.04793  cert_false_frac_near 0.05861  collision_rate 0.01121  min_h 3.411  obs_err_final 0.001208  obs_settle_s 8

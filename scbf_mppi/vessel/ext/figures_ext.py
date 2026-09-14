@@ -289,9 +289,64 @@ def fig_V12():
     plt.close(fig)
 
 
+def fig_V10b():
+    """V10b: does an estimate of the current repair the output filter?  One panel, because the result is
+    one comparison: the filter with and without the estimate, against the oracle and the sampler."""
+    res = load("vessel_V10b_filter_observer")
+    order = ["MPPI + CBF-QP filter | no estimate",
+             "MPPI + CBF-QP filter | estimate in the filter only",
+             "MPPI + CBF-QP filter | estimate in the rollouts and the filter",
+             "MPPI + CBF-QP filter | true current known (oracle)",
+             "MPPI + chance CBF-QP filter | estimate in both",
+             "SCBF-MPPI (sampler) | estimate in both, for reference"]
+    short = ["filter, no estimate", "filter, estimate in the filter only",
+             "filter, estimate in rollouts + filter", "filter, true current (oracle)",
+             "chance filter + estimate", "sampler + estimate (reference)"]
+    fig, axes = plt.subplots(1, 2, figsize=(14.4, 4.9))
+    rows_ = []
+    for a in order:
+        if a not in res:
+            continue
+        blk = res[a]
+        t, n = _touched(blk)
+        rows_.append((a, t, n, blk["summary"]["reached_frac"], _m(blk, "ttf"), _m(blk, "hdot_err_mean")))
+    ys = np.arange(len(rows_))[::-1]
+
+    ax = axes[0]
+    cols = [COL["filt"]] * 4 + [COL["var"], COL["std"]]
+    ax.barh(ys, [r[1] for r in rows_], height=0.6, alpha=0.92, color=cols[:len(rows_)],
+            edgecolor=COL["ink"], linewidth=0.6)
+    ax.set_yticks(ys)
+    ax.set_yticklabels(short[:len(rows_)], fontsize=9.5)
+    ax.set_xlabel("seeds that touched a circle (of 30)")
+    ax.set_xlim(0, max(max(r[1] for r in rows_), 6) * 2.4)
+    ax.set_title("what the estimate buys the filter", fontsize=11.5, color=COL["ink"])
+    for y, r in zip(ys, rows_):
+        ax.text(r[1], y, f"  {r[1]}  ·  {int(round(r[3]*r[2]))}/{r[2]} reached  ·  {r[4]:.0f} s",
+                fontsize=8.6, va="center", color=COL["ink"])
+
+    ax = axes[1]
+    errs = [r[5] for r in rows_]
+    ax.barh(ys, errs, height=0.6, alpha=0.9, color=COL["var"], edgecolor=COL["ink"], linewidth=0.6)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([])
+    ax.set_xlabel("error in the barrier derivative  |n · (c_believed − c_true)|  [m/s]")
+    ax.set_xlim(0, max(errs) * 1.45 if max(errs) > 0 else 1)
+    ax.set_title("the model error it removes", fontsize=11.5, color=COL["ink"])
+    for y, e in zip(ys, errs):
+        ax.text(e, y, f"  {e:.3f}", fontsize=8.8, va="center", color=COL["ink"])
+
+    fig.suptitle("V10b  the V10 diagnosis, tested: the filter failed under an unknown current because its "
+                 "barrier derivative was wrong", fontsize=12.0, color=COL["ink"], y=0.985)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.savefig(os.path.join(FIG, "fig_V10b_filter_observer.png"), dpi=200)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     made = []
     for tag, fn in [("vessel_V9_heading", fig_V9), ("vessel_V10_filter", fig_V10),
+                    ("vessel_V10b_filter_observer", fig_V10b),
                     ("vessel_V11_observer", fig_V11), ("vessel_V12_ess", fig_V12)]:
         if not _exists(tag):
             print(f"  skipped {tag} (no results yet)")
