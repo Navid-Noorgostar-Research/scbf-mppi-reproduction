@@ -502,7 +502,7 @@ cost as a function of the retained row standard deviation has slope `z/‖a‖�
 branch, which is positive whenever
 
 ```math
-z \;>\; rac{\lVert aVert_\infty}{\lVert aVert_2}
+z \;>\; \frac{\lVert a\rVert_\infty}{\lVert a\rVert_2}
 ```
 
 Since `‖a‖∞/‖a‖₂ ≤ 1` always, every δ ≤ 0.1587 satisfies it, so the optimum is `s* = max(0, slack/z)` and
@@ -558,7 +558,7 @@ whole horizon. Charging for that explicitly turns the accident into a parameter.
 be the per-sample problem's own objective value, which the paper computes at every sample and discards:
 
 ```math
-w_k \;\propto\; \exp\!\left(-rac{S_k + \mu\lambda\sum_t I_{k,t}}{\lambda}ight)
+w_k \;\propto\; \exp\!\left(-\frac{S_k + \mu\lambda\sum_t I_{k,t}}{\lambda}\right)
 ```
 
 `μ = 0` reproduces the corrected controller to the digit, large `μ` reproduces the accidental rule, and
@@ -687,7 +687,7 @@ in any other source by a four-way prior-art search. None is a theorem — in ord
 analysis, a slope comparison, and one line of arithmetic over two published inequalities:
 
 ```math
-s^\star \;=\; \operatorname{clip}\!\left(\frac{a\cdot\bar u - b}{z},\; 0,\; \lVert P_0^\top a\rVert\right)
+s^\star \;=\; \mathrm{clip}\!\left(\frac{a\cdot\bar u - b}{z},\; 0,\; \lVert P_0^\top a\rVert\right)
 \qquad\text{the optimum of the paper's own (8), which it never locates}
 ```
 
