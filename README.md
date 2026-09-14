@@ -501,8 +501,8 @@ It is not conservatism. For one active row, with the objective of (8) and the co
 cost as a function of the retained row standard deviation has slope `z/‖a‖∞ − 1/‖a‖₂` on the binding
 branch, which is positive whenever
 
-```
-z  >  ‖a‖∞ / ‖a‖₂
+```math
+z \;>\; rac{\lVert aVert_\infty}{\lVert aVert_2}
 ```
 
 Since `‖a‖∞/‖a‖₂ ≤ 1` always, every δ ≤ 0.1587 satisfies it, so the optimum is `s* = max(0, slack/z)` and
@@ -546,13 +546,19 @@ the best controller measured here. Over 512 corridor seeds at the repository's o
 | corrected **+ the omitted weights** | 100.0 % | 0.0000 | **+0.167** | **12.1 %** | 0 / 512 | **1.9** |
 | intervention penalty, μ = 0.5 | 99.4 % | 0.0000 | +0.133 | 16.8 % | 3 / 512 | **69.4** |
 
+Every column above is a **median** except *reached*, *ever unsafe* and *runaway*, and that is deliberate:
+the mean minimum barrier is useless here. A handful of runaway episodes drag it to −855 for Algorithm 1 as
+printed and −442 for the corrected form, so a mean ranks the controllers by how badly their worst episodes
+fail rather than by what they typically do. Reading means cost this work one wrong conclusion before the
+medians and the explicit tail counts replaced them.
+
 An effective sample size of two is not averaging. It is selection, and the dominant term in the log
 density ratio is `log s`, so the rollout it selects is the one the barrier had to correct least over the
 whole horizon. Charging for that explicitly turns the accident into a parameter. Let `I = |m| + (σ₀ − s)`
 be the per-sample problem's own objective value, which the paper computes at every sample and discards:
 
-```
-w_k  ∝  exp( −( S_k + μ λ Σ_t I_{k,t} ) / λ )
+```math
+w_k \;\propto\; \exp\!\left(-rac{S_k + \mu\lambda\sum_t I_{k,t}}{\lambda}ight)
 ```
 
 `μ = 0` reproduces the corrected controller to the digit, large `μ` reproduces the accidental rule, and
@@ -587,8 +593,8 @@ corrected chance constraints requires `ℓ + zσ ≤ μ ≤ r − zσ`, so a Gau
 `σ ≤ (r − ℓ)/2z`. Finite variance of the exact importance weight requires `σ > σ₀/√2`. A usable Gaussian
 therefore exists **exactly when**
 
-```
-r − ℓ  >  √2 · z · σ₀
+```math
+r - \ell \;>\; \sqrt{2}\,z\,\sigma_0
 ```
 
 At `x = 0, y = 0.5, θ = 0` with `σ₀ = 1` and `δ = 0.003`, evaluated against this repository's own
@@ -656,6 +662,201 @@ is zero; and `r − ℓ > √2·z·σ₀`, when any usable Gaussian exists — a
 qualifier they need, *not found stated anywhere, and I looked*, which is not the same as new. §7 also states
 each prior-art position with its citation, and §5b–§5d record the two defects found in this repository and
 the setting that must be quoted with the V15 table.
+
+### Every equation this work uses, and where each one comes from
+
+Collected in one place because the sections above introduce each where it is needed, and because the only
+question that matters for any of them is *whose is it*. Nothing here is a new theorem.
+
+**The correction.** The paper's Theorem 2 / eq. (6) is reached by taking "the upper bound of the confidence
+interval for the Gaussian variable", and a Gaussian confidence interval is built on the standard deviation:
+
+```math
+\underbrace{a^\top\mu - z\,(a^\top\Sigma a) \;\ge\; b}_{\text{as printed}}
+\qquad\longrightarrow\qquad
+\underbrace{a^\top\mu - z\sqrt{a^\top\Sigma a} \;\ge\; b}_{\text{as the proof requires}},
+\qquad z=\Phi^{-1}(1-\delta)
+```
+
+Not new — it is the textbook chance constraint, and merely the one the paper should have printed. At
+$\delta = 0.003$, $\sigma = 0.5$ and a mean of $z\sigma^2 = 0.686945$ the printed form is satisfied with
+equality while the true violation probability is **8.47 %**, not the claimed 0.3 %.
+
+**The three that no search found stated anywhere else.** Each is absent from Tao et al. *and* was not found
+in any other source by a four-way prior-art search. None is a theorem — in order, three lines of convex
+analysis, a slope comparison, and one line of arithmetic over two published inequalities:
+
+```math
+s^\star \;=\; \operatorname{clip}\!\left(\frac{a\cdot\bar u - b}{z},\; 0,\; \lVert P_0^\top a\rVert\right)
+\qquad\text{the optimum of the paper's own (8), which it never locates}
+```
+
+```math
+z \;>\; \frac{\lVert a\rVert_\infty}{\lVert a\rVert_2}
+\qquad\text{exactly when that optimum is zero}
+```
+
+```math
+r - \ell \;>\; \sqrt{2}\,z\,\sigma_0
+\qquad\text{exactly when any usable Gaussian exists at that state}
+```
+
+Their honest status is **"not found stated anywhere, and I looked"** — four independent searches returning
+nothing is not proof that nothing exists.
+
+**Classical, and cited as such.** Used here, and nobody's contribution in this repository:
+
+```math
+\mathbb{E}_q[w^2] \;=\; \frac{\beta^2}{\sqrt{2\beta^2-1}}\;
+\exp\!\left(\frac{m^2}{\sigma_0^2\,(2\beta^2-1)}\right),\qquad s=\beta\sigma_0
+```
+
+```math
+\mathbb{E}_q[w^2]<\infty
+\iff s > \frac{\sigma_0}{\sqrt{2}}\ \ \text{(scalar)}
+\iff 2\Sigma_q - \Sigma_p \succ 0\ \ \text{(general)}
+```
+
+```math
+\chi^2(p\,\|\,q) \;\ge\; \frac{(\delta_0-\delta)_+^2}{\delta(1-\delta)},
+\qquad
+\frac{\mathrm{ESS}}{K} \;\longrightarrow\; \frac{1}{1+\chi^2},
+\qquad
+\Pr(\text{all }K\text{ safe}) \;\ge\; (1-\delta)^K
+```
+
+The Gaussian weight moment is Owen ch. 9; the matrix condition is Pitt, Tran, Scharth and Kohn,
+Proposition 1; the $\chi^2$ bound is Hammersley–Chapman–Robbins with the indicator of the violation set as
+test function, which Polyanskiy and Wu set as a reader **exercise**; $\mathrm{ESS}/K \to 1/(1+\chi^2)$ is
+Kong 1992. The two-sided cap behind $r-\ell > \sqrt{2}z\sigma_0$ is Lubin, Bienstock and Vielma, Lemma 16.
+
+**Prior art — and the one that most looked new.** Charging a safety filter's own effort as an extra
+$\lambda$-scaled running cost inside the MPPI exponent:
+
+```math
+w_k \;\propto\; \exp\!\left(-\frac{S_k + \mu\lambda\sum_t I_{k,t}}{\lambda}\right),
+\qquad I \;=\; |m| + (\sigma_0 - s)
+```
+
+This is **not** in Tao et al., which is exactly what made it look new — but it is Gandhi, Almubarak, Aoyama
+and Theodorou (arXiv:2204.05963) Algorithm 1, and Robust MPPI a year earlier, and the reason it is a valid
+estimator at all is §III-B of MPPI's founding paper, *Likelihood Ratio as Additional Running Cost*
+(arXiv:1509.01149). *Not in the paper under review* and *new* are different things.
+
+**From the external reviews, verified here.** The full cost-weighted extension of the obstruction, and the
+split of the log density ratio that identifies the mechanism of V16:
+
+```math
+\sigma^2 < \left(\frac{2}{\sigma_0^2} + \frac{4(T+1)\Delta t^2}{\lambda}\right)^{-1}
+\;\Longrightarrow\; \mathbb{E}_Q[W^2] = \infty
+\qquad (=0.452489\ \text{here; every feasible } \sigma^2 \le 0.013420)
+```
+
+```math
+\log\frac{p}{q}
+= \underbrace{\sum_t\left[-\tfrac12\left(\tfrac{m+s\xi}{\sigma_0}\right)^{2} - \log\sigma_0\right]}_{\text{mean shift}}
++ \underbrace{\sum_t \tfrac12\,\xi^2}_{\text{noise}}
++ \underbrace{\sum_t \log s}_{\text{shrink}}
+```
+
+Measured across samples, the shrink term's spread is **44.65** against 2.49 and 3.10 for the other two, and
+the total correlates with it at **+0.994** — the selection is the shrink.
+
+**The one constructive equation, and the only one whose status is still open.**
+`scbf_mppi/ess_budget.py` inverts the weight second moment into an admissibility budget on the mean shift,
+then chains it over the horizon:
+
+```math
+|m| \;\le\; \sigma_0\sqrt{\,(2\beta^2-1)\,\log\!\left(\frac{\kappa\sqrt{2\beta^2-1}}{\beta^2}\right)},
+\qquad
+\frac{\mathrm{ESS}}{K} \;\ge\; \kappa^{-T},
+\qquad
+\kappa = \rho^{-1/T}
+```
+
+with the proposal inadmissible wherever the logarithm's argument falls to 1 or below. It binds to machine
+precision, $2\cdot10^{-16}$ across the 113 admissible $\beta$, and buys no control benefit.
+
+A prior-art search found **the closed-form bound itself stated nowhere**, and it is the only equation here
+of which that is true — but it needs three concessions, each of which a well-read examiner will raise.
+*The expression being inverted is published repeatedly and independently*: it is the exponentiated
+Rényi-2 divergence between two Gaussians, Metelli, Papini, Faccio and Restelli (POIS, NeurIPS 2018)
+Appendix C eq. (14) at $\alpha=2$, equivalently Sanz-Alonso and Wang Proposition 2.4 — and the inversion is
+one line of algebra. *The same inversion is published in a different divergence*: Otto et al. (ICLR 2021)
+invert a closed-form Gaussian divergence into an explicit mean-shift ball and enforce it as a hard
+projection, for KL, Wasserstein-2 and Frobenius. *And at $\beta = 1$ it collapses* to
+$|m| \le \sigma_0\sqrt{\log\kappa}$, the one-line inversion of the classical exponential-tilting identity —
+verified here to be exact. The ESS link $\mathrm{ESS} = N/d_2$ is POIS eq. (6) and Kong 1992, and the
+per-step-to-horizon chaining is POIS Proposition E.1.
+
+What survives is narrow and should be said narrowly: the inversion itself with its companion feasibility
+test (no mean shift admissible once $\kappa \le \beta^2/\sqrt{2\beta^2-1}$); the fact that the
+$2\beta^2-1$ factor **couples** mean shift and covariance shrink into one feasible region rather than two
+separate budgets; and its use as a hard per-sample constraint inside a chance-constrained sampling-based
+MPC safety filter, so the sample size cannot collapse by construction — the MPPI safety-filter family
+bounds neither the weight second moment nor the effective sample size at all. All three arithmetic claims
+were checked here: the $\beta=1$ collapse is exact, the feasibility threshold returns NaN just below and a
+positive budget just above, and substituting the bound back into $\mathbb{E}_q[w^2]$ returns $\kappa$ to
+$1.8\cdot10^{-15}$. `FINDINGS.md` §7 states the position with its citations.
+
+### What the two external reviews corrected, and what survived
+
+Two outside reviews were checked against this repository line by line — a six-point technical review of the
+theory, and a research brief on the corridor. Every correction below was verified here before being
+accepted; the ones that were wrong are said to be wrong, and there were none in the first review.
+
+**1. The χ² bound needs a positive part.** `χ²(p‖q) ≥ (δ₀−δ)₊²/(δ(1−δ))`, because without it `δ < δ₀` fails:
+`q = p` then satisfies the constraint at zero divergence. Correct, and the bound is sharp — attained by
+keeping the reference conditionals and moving the mass. Carried in `FINDINGS.md` §3.
+
+**2. The effective sample size is a population quantity, not a finite-run ceiling.** `ESS/K → 1/(1+χ²)` is
+asymptotic. For the equality-attaining proposal at K = 500, δ = 0.003, no sample lands in the violation set
+in `(1−δ)^K = 0.997⁵⁰⁰ = 22.3 %` of runs, and the measured ESS is then exactly 500 — an estimator that has
+missed the region entirely, reporting perfect health. *This repository previously carried 21.5 % from a
+finite simulation where the closed form was available.* The review also notes that `δ₀ = 0.5` requires the
+nominal projected mean to sit exactly on the boundary, `a·μ₀ = b`; a physical state on the barrier does not
+imply it. Both correct.
+
+**3. The governing divergence is against the target, not the nominal law.** MPPI estimates under
+`π ∝ exp(−S/λ)·p`, so the relevant quantity is `χ²(π‖q)` and `δ₀` must be replaced by `π(A)`. If the running
+cost already suppresses the unsafe set below δ, the chance constraint forces no divergence at all.
+The bound therefore limits *recovery of the nominal law* and is not an impossibility result for every safe
+MPPI variant. Correct, and it is the single most important limit on how far the §3 result reaches.
+
+**4. `(1−δ)^K` is a conservative guarantee, not a ceiling.** It lower-bounds the probability that *every*
+sample is safe; and since a convex combination of inputs each satisfying the same linear row also satisfies
+it, it lower-bounds the probability that the executed average is safe. It does not bound the executed
+input's safety from above — the average can satisfy the row while individual samples violate it, which is
+what this repository measures: the averaged input never violated the row in 666 active instances.
+Tightening per sample by the union bound, `δ/K`, is *sufficient* for all-samples-safe at level `1−δ` and
+needs `z′ = 4.378` here; it is not necessary for safe execution. Correct, and it had no trace here until it
+was checked.
+
+**5. State the covariance-collapse result with its assumptions.** Single active row, unconstrained mean, and
+a Frobenius or spectral norm on the covariance factor; non-singular feasible proposals still exist if the
+mean moves further into the safe region, so the obstruction is the objective's preferred solution rather
+than infeasibility. And `σ₀/√2` is the **scalar** case — a geometric fraction of a specified activation
+band, not a universal fraction of Gaussian proposals or of observed timesteps. The general condition is the
+matrix one, `2Σ_q − Σ_p ≻ 0`. All correct, and carried in §2 and §3.
+
+**6. Keep the experimental and novelty claims provisional.** Acted on rather than argued with: the slope
+extrapolation it warned about is gone from this repository, and novelty is now answered with citations
+rather than assertion (§7 of `FINDINGS.md`).
+
+**The research brief.** Its corridor obstruction and the full cost-weighted extension were reproduced here
+to the digit against this repository's own `Corridor.scbf_rows`, and are §2b. Its bug report against
+`vessel/solver_nd.py` was correct and is fixed (§5b) — and its severity assessment was right where this
+work's was wrong. Its plain-MPPI effective sample size of 170.62 over 30 seeds turned out to be the
+consistent one: this work's 269.62 was the harness defect of §5c.
+
+Its **constructive** contribution — a three-region sampler that keeps the nominal Gaussian's conditional
+shape inside and outside the admissible interval while reallocating the three probabilities — **is the
+reviewer's work, not this repository's**, and it is not reproduced here; its reported 30-seed comparison
+(ESS 1.90 → 5.79) could not be checked without its prototype. It also sits in a known tradition, which the
+brief says itself and which was verified here: Pitt, Tran, Scharth and Kohn (arXiv:1307.7975) give the
+finite-moment condition **and** develop a two-component mixture proposal in §3.1 precisely to impose it, and
+Patrick and Bakolas (arXiv:2403.18066) eq. (24) put a truncated Gaussian — positive piecewise reweighting —
+inside MPPI, proved valid because it stays strictly positive wherever the base density is non-zero.
 
 ## Reproducing it
 

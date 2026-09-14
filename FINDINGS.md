@@ -131,6 +131,11 @@ equality-attaining proposal at `K = 500` and `delta = 0.003`, no sample lands in
 `(1 - delta)^K = 0.997^500 = 22.3 %` of runs, and the measured ESS is then exactly 500. (An earlier
 version of this note reported 21.5 % from a finite simulation where the closed form was available.)
 
+Two further conditions on reading it, both from an external review and both correct. `delta0 = 0.5` requires
+the nominal projected mean to sit exactly on the boundary, `a.mu_0 = b`; a physical state on the barrier does
+not imply that. And the 70.7 % figure is a geometric fraction of a specified activation band under a scalar
+or single-direction contraction, not a universal fraction of Gaussian proposals or of observed timesteps.
+
 *The reference is the target, not the nominal law.* MPPI estimates under `pi` proportional to
 `exp(-S/lambda) p`, so the governing divergence is `chi2(pi||q)` and `delta0` must be replaced by
 `pi(A)`. If the running cost already suppresses the unsafe set below `delta`, the constraint forces no
@@ -457,6 +462,45 @@ Two things that look like they belong on this list and do not. The corrected con
 paper should have printed. And the intervention-penalty weight `w propto exp(−(S + mu lambda sum_t I)/lambda)`
 is not in Tao et al. either, which is what made it look new — but it is in Gandhi et al. (2022). *Not in the
 paper under review* and *new* are different things, and that gap is what caught this work out once already.
+
+### The budget equation, checked separately
+
+`scbf_mppi/ess_budget.py` inverts the Gaussian weight second moment into an admissibility budget on the
+mean shift and chains it over the horizon. It was not one of the four claims above and was checked on its
+own. **Verdict: new composition of known parts — and the only equation here whose closed form the search
+found stated nowhere.** Three concessions come with that, all verified in the sources:
+
+* the expression being inverted is published repeatedly — it is the exponentiated Renyi-2 divergence
+  between two Gaussians, POIS (Metelli, Papini, Faccio, Restelli, NeurIPS 2018) Appendix C eq. (14) at
+  `alpha = 2`, equivalently Sanz-Alonso and Wang Prop. 2.4 — and the inversion is one line of algebra;
+* the identical inversion is published in a **different divergence**: Otto et al. (ICLR 2021) invert a
+  closed-form Gaussian divergence into an explicit mean-shift ball and impose it as a hard projection,
+  for KL, Wasserstein-2 and Frobenius;
+* at `beta = 1` the budget collapses to `|m| <= sigma_0 sqrt(log kappa)`, the one-line inversion of the
+  classical exponential-tilting identity. Verified exact here at `kappa` = 1.2, 2 and 5.
+
+Also conceded: `ESS = N/d_2` is POIS eq. (6) and Kong 1992; the `beta > 1/sqrt(2)` admissibility is the
+Geweke-Pitt finite-variance condition; the per-step-to-horizon chaining is POIS Proposition E.1; and an ESS
+floor as a hard constraint on proposal movement is Doubly Adaptive Importance Sampling.
+
+What survives: the inversion itself with its feasibility test (no mean shift admissible once
+`kappa <= beta^2/sqrt(2 beta^2 - 1)`); that the `2 beta^2 - 1` factor **couples** mean shift and covariance
+shrink into a single feasible region rather than two separate budgets; and its use as a hard per-sample
+constraint inside a chance-constrained sampling-based MPC safety filter, where the MPPI safety-filter
+family bounds neither the weight second moment nor the effective sample size. Checked here: the `beta = 1`
+collapse is exact to 0.0e+00, the feasibility threshold is admissible above and NaN below, and substituting
+the bound back into `E_q[w^2]` returns `kappa` to 1.8e-15.
+
+### The three-region sampler is the reviewer's, not this repository's
+
+The research brief's constructive contribution — a sampler keeping the nominal Gaussian's conditional shape
+inside and outside the admissible interval while reallocating the three probabilities — is **not
+implemented here**, and its reported 30-seed comparison (effective size 1.90 to 5.79) is **not reproduced**;
+it needs the author's prototype. It also sits in a known tradition, as the brief itself says: Pitt, Tran,
+Scharth and Kohn (arXiv:1307.7975) give the finite-moment condition and develop a two-component mixture
+proposal in section 3.1 precisely to impose it, and Patrick and Bakolas (arXiv:2403.18066) eq. (24) put a
+truncated Gaussian -- positive piecewise reweighting -- inside MPPI, proved valid because it stays strictly
+positive wherever the base density is non-zero. Both were read and confirmed to say that.
 
 **How this should be said out loud.** "None of the measure theory or the inequalities are mine, and the
 intervention penalty is Theodorou's group's construction from 2021-22 — what I did was locate the optimum
