@@ -27,7 +27,7 @@ the coloured ring near an obstacle is ψ₁ = ḣ + α₁h = 0 at the followed b
 ```
 cd code/scbf-mppi-reproduction
 python -m scbf_mppi.export3d                 # re-simulates the three scenes with the rollout fan recorded -> live_demo/3d/scene_data.json  (~2.5 min)
-python live_demo/3d/build3d.py               # inlines vendor/three.min.js + src/* + the data -> live_demo/3d/viewer_3d.html and demo/viewer_3d.html
+python live_demo/3d/build3d.py               # inlines vendor/three.min.js + src/* + the data -> live_demo/3d/viewer_3d.html
 ```
 
 Backup clips without anyone at the browser (needs Chrome and the demo server: `python -m http.server 8080 --bind 127.0.0.1` in `demo/`):

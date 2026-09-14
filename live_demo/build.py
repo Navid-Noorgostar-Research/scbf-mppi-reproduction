@@ -1,5 +1,5 @@
-"""Inline sim.js into demo_src.html -> demo_artifact.html (fragment for the Artifact tool) and
-safety_bench.html (full standalone document, offline, for the package)."""
+"""Inline sim.js into demo_src.html -> demo_artifact.html (an embeddable fragment) and
+safety_bench.html (the full standalone document, offline)."""
 import os
 here = os.path.dirname(os.path.abspath(__file__))
 src = open(os.path.join(here, "demo_src.html"), encoding="utf-8").read()

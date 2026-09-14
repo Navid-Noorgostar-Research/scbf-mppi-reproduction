@@ -1,6 +1,6 @@
 """Inline vendor/three.min.js (+ the Sky and Water example shaders and the water normal map), src/app.js, src/style.css
 and scene_data.json into ONE offline file:
-    python build3d.py      -> live_demo/3d/viewer_3d.html  and a copy at  demo/viewer_3d.html
+    python build3d.py      -> live_demo/3d/viewer_3d.html
 Run scbf_mppi.export3d first (it writes scene_data.json)."""
 import os, json, base64
 here = os.path.dirname(os.path.abspath(__file__))
@@ -15,6 +15,4 @@ out = (src.replace("/*__CSS__*/", css).replace("/*__THREE__*/", three).replace("
           .replace("/*__WATERNORMALS__*/", normals).replace("/*__DATA__*/", data).replace("/*__APP__*/", app))
 dst = os.path.join(here, "viewer_3d.html")
 open(dst, "w", encoding="utf-8").write(out)
-demo = os.path.normpath(os.path.join(here, "..", "..", "..", "..", "demo", "viewer_3d.html"))
-os.makedirs(os.path.dirname(demo), exist_ok=True); shutil.copyfile(dst, demo)
-print(f"built {dst} ({len(out)/1e6:.1f} MB); copied to {demo}")
+print(f"built {dst} ({len(out)/1e6:.1f} MB)")

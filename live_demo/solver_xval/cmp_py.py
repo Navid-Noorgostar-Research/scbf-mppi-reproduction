@@ -1,5 +1,5 @@
 import json, sys, os, numpy as np
-_here = os.path.dirname(os.path.abspath(__file__)); [sys.path.insert(0, c) for c in (os.path.join(_here, '..', '..'), os.path.join(_here, '..', '..', 'scbf-mppi-reproduction'))]   # package layout / development tree
+_here = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, os.path.join(_here, '..', '..'))   # the repository root, so that scbf_mppi imports
 from scbf_mppi.vessel import solver_nd
 d = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'js_instances.json'))); s0 = np.asarray(d['s0']); z = d['z']; alpha = d['alpha']
 worst_mu = worst_P = worst_cost = 0.0; n_ok = 0; n_diff = 0; diffs = []

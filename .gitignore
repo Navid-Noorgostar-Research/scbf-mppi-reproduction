@@ -3,7 +3,7 @@ __pycache__/
 .venv/
 *.stackdump
 
-# Rendered video is large and fully regenerable (see README and live_demo/3d/README_3D.md).
-figures/*.mp4
+# The 13 simulation videos in figures/ ARE tracked: they are the point of the repository.
+# The animated GIFs are not - each is a low-resolution copy of the mp4 beside it.
 figures/*.gif
 C:/render/

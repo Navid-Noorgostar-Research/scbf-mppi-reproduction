@@ -203,6 +203,44 @@ ESS 114 vs 0.009 [0.002, 0.018] / 106 s, 0.56, 0.54, 0.909, ESS 129; + IS 0.001 
 JavaScript SCBF variants reach the goal about 9 % sooner (97 ± 7 s against 106 s), the two cores drawing different random streams. With a
 deterministic plant both cores reach the goal in 55–56 s on every seed. Every number reported in this README
 comes from the Python package, not from the browser core.
+## The simulation videos
+
+Thirteen clips are in `figures/`. Every one is drawn from a logged run of this package; none is an
+illustration. The 2-D clips are written by the animation scripts directly. The 3-D clips draw the same
+stored state logs through the offline viewer, which adds no physics: the model is planar, so there is no
+roll, pitch or heave in it and none is shown.
+
+| file | what it shows | written by |
+|---|---|---|
+| `anim_mppi_vs_scbf.mp4` | the paper's corridor, MPPI against SCBF-MPPI | `python -m scbf_mppi.animate` |
+| `anim_corridor_three.mp4` | the corridor with the printed and the corrected form side by side | `python -m scbf_mppi.animate --three` |
+| `anim_vessel_mppi_vs_scbf.mp4` | the vessel meeting the crossing ferry | `python -m scbf_mppi.vessel.animate` |
+| `anim_vessel_current.mp4` | three controllers under a gust and an unmodelled 0.5 m/s current | `python -m scbf_mppi.vessel.animate_current` |
+| `anim_vessel_current_ghosts.mp4` | the same run with the rejected candidate paths drawn | `python -m scbf_mppi.vessel.animate_current --ghosts` |
+| `anim_vessel_rowspace.mp4` | one control cycle opened up: the barrier rows and the chosen input | `python -m scbf_mppi.vessel.animate_rowspace` |
+| `anim3d_corridor_orbit.mp4` | the corridor run in three dimensions | `live_demo/3d/capture_mp4.py` |
+| `anim3d_ferry_chase.mp4` | the ferry crossing, camera behind the course over ground | `live_demo/3d/capture_mp4.py` |
+| `anim3d_current_chase.mp4` | the current scene, same camera | `live_demo/3d/capture_mp4.py` |
+| `anim3d_current_orbit.mp4` | the current scene, orbiting camera | `live_demo/3d/capture_mp4.py` |
+| `anim3d_pathtraced_ferry_chase.mp4` | the ferry crossing, path traced at 1920×1080 | `live_demo/3d/blender_render.py` |
+| `anim3d_pathtraced_current_chase.mp4` | the current scene, path traced | `live_demo/3d/blender_render.py` |
+| `anim3d_pathtraced_current_orbit.mp4` | the current scene from orbit, path traced | `live_demo/3d/blender_render.py` |
+
+`live_demo/3d/README_3D.md` gives the exact command behind each 3-D clip, including the frame ranges.
+
+**One thing to notice before anyone points it out.** In several clips the boats travel astern. That is a
+property of the abstraction, not a bug and not the barrier: the input is an isotropic 700 N force, the
+damping is symmetric in surge, and the running cost penalises the size of the speed rather than its sign, so
+nothing in the problem prefers forwards. `scbf_mppi/vessel/ext/costs.py` adds a heading term and experiment
+V9 re-runs everything with it; `results/vessel_V9_heading.json` holds the outcome, and it changes one
+conclusion in the crossing-ferry scene. The planar model is *not* exactly invariant under reversing the
+boat: the worst mismatch over random states is 0.449 m/s², and it is exact only when the boat is not
+turning. `test_why_astern` in `scbf_mppi/vessel/ext/selftest_ext.py` measures both statements.
+
+Two render passes that were superseded are not in the repository: an earlier 1600×900 path-traced pair, and
+a larger encode of `anim3d_pathtraced_current_orbit.mp4` at the same resolution. The GIF beside each 2-D clip
+is not tracked either, being a lower-resolution copy of the mp4. All of them regenerate from the commands above.
+
 ## Reading the results honestly
 
 Everything here is a reimplementation from the paper's text: where the paper is silent, the assumption is listed above and can be
