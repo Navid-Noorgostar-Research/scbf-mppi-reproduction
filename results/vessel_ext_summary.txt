@@ -1,32 +1,72 @@
+== V9  heading-cost ablation
+  A gust + 0.5 m/s current | MPPI | no heading term                  n=30  touched 29/30  reached 0.60  astern_frac 0.3318  astern_frac_strong 0.2868  collision_rate 0.106  ttf 113.3  min_h -1.551  path_length 145.2
+  A gust + 0.5 m/s current | MPPI | heading to goal w=400            n=30  touched 29/30  reached 0.83  astern_frac 0.08816  astern_frac_strong 0.07614  collision_rate 0.1242  ttf 102.2  min_h -1.462  path_length 140.9
+  A gust + 0.5 m/s current | MPPI | astern penalty w=2000            n=30  touched 28/30  reached 0.30  astern_frac 0.2344  astern_frac_strong 0.02756  collision_rate 0.09378  ttf 126.8  min_h -1.546  path_length 148.7
+  A gust + 0.5 m/s current | SCBF-MPPI | no heading term             n=30  touched 9/30  reached 0.50  astern_frac 0.7234  astern_frac_strong 0.6949  collision_rate 0.04703  ttf 133  min_h 3.985  path_length 152.8
+  A gust + 0.5 m/s current | SCBF-MPPI | heading to goal w=400       n=30  touched 3/30  reached 0.60  astern_frac 0.03619  astern_frac_strong 0.02817  collision_rate 0.013  ttf 128.4  min_h 4.109  path_length 145.3
+  A gust + 0.5 m/s current | SCBF-MPPI | astern penalty w=2000       n=30  touched 3/30  reached 0.07  astern_frac 0.5002  astern_frac_strong 0.3216  collision_rate 0.04222  ttf 145.3  min_h 4.491  path_length 122.1
+  A gust + 0.5 m/s current | SCBF-MPPI + IS | no heading term        n=30  touched 3/30  reached 0.43  astern_frac 0.3127  astern_frac_strong 0.2603  collision_rate 0.01434  ttf 128.1  min_h 11.36  path_length 162.4
+  A gust + 0.5 m/s current | SCBF-MPPI + IS | heading to goal w=400  n=30  touched 1/30  reached 0.77  astern_frac 0.0336  astern_frac_strong 0.02795  collision_rate 0.003781  ttf 112.6  min_h 10.81  path_length 154.3
+  A gust + 0.5 m/s current | SCBF-MPPI + IS | astern penalty w=2000  n=30  touched 0/30  reached 0.30  astern_frac 0.1843  astern_frac_strong 0.006889  collision_rate 0  ttf 130.2  min_h 12.66  path_length 168.2
+  B crossing ferry | MPPI | no heading term                          n=30  touched 21/30  reached 0.97  astern_frac 0.2053  astern_frac_strong 0.1656  collision_rate 0.03955  ttf 91.47  min_h -0.5231  path_length 138.7
+  B crossing ferry | MPPI | heading to goal w=400                    n=30  touched 23/30  reached 0.90  astern_frac 0.08258  astern_frac_strong 0.05888  collision_rate 0.0467  ttf 85.5  min_h -0.5657  path_length 130.5
+  B crossing ferry | MPPI | astern penalty w=2000                    n=30  touched 21/30  reached 0.57  astern_frac 0.1592  astern_frac_strong 0.04387  collision_rate 0.03406  ttf 112.6  min_h -0.5631  path_length 138
+  B crossing ferry | SCBF-MPPI | no heading term                     n=30  touched 6/30  reached 0.97  astern_frac 0.7915  astern_frac_strong 0.7516  collision_rate 0.00937  ttf 114.5  min_h 0.7013  path_length 142
+  B crossing ferry | SCBF-MPPI | heading to goal w=400               n=30  touched 16/30  reached 0.70  astern_frac 0.3031  astern_frac_strong 0.2531  collision_rate 0.02625  ttf 129  min_h 0.1415  path_length 135.6
+  B crossing ferry | SCBF-MPPI | astern penalty w=2000               n=30  touched 20/30  reached 0.07  astern_frac 0.6369  astern_frac_strong 0.3409  collision_rate 0.04071  ttf 147.4  min_h -0.08504  path_length 100.7
+  B crossing ferry | SCBF-MPPI + IS | no heading term                n=30  touched 3/30  reached 0.83  astern_frac 0.642  astern_frac_strong 0.6017  collision_rate 0.003398  ttf 110.1  min_h 4.913  path_length 154.5
+  B crossing ferry | SCBF-MPPI + IS | heading to goal w=400          n=30  touched 1/30  reached 0.50  astern_frac 0.1831  astern_frac_strong 0.09899  collision_rate 0.0003333  ttf 127.4  min_h 3.194  path_length 136
+  B crossing ferry | SCBF-MPPI + IS | astern penalty w=2000          n=30  touched 0/30  reached 0.27  astern_frac 0.355  astern_frac_strong 0.1583  collision_rate 0  ttf 134.6  min_h 3.749  path_length 124.3
+  A gust + 0.5 m/s current | MPPI | heading to goal w=100            n=30  touched 29/30  reached 0.67  astern_frac 0.1838  astern_frac_strong 0.1672  collision_rate 0.1048  ttf 111.2  min_h -1.46  path_length 143.2
+  A gust + 0.5 m/s current | MPPI | heading to goal w=1600           n=30  touched 26/30  reached 0.87  astern_frac 0.02777  astern_frac_strong 0.01658  collision_rate 0.113  ttf 92.23  min_h -1.121  path_length 133.4
+  A gust + 0.5 m/s current | SCBF-MPPI | heading to goal w=100       n=30  touched 5/30  reached 0.77  astern_frac 0.5698  astern_frac_strong 0.5537  collision_rate 0.03112  ttf 119.6  min_h 4.073  path_length 152.6
+  A gust + 0.5 m/s current | SCBF-MPPI | heading to goal w=1600      n=30  touched 1/30  reached 0.80  astern_frac 0.008914  astern_frac_strong 0.006312  collision_rate 0.004056  ttf 123.1  min_h 4.062  path_length 142.4
+  A gust + 0.5 m/s current | SCBF-MPPI + IS | heading to goal w=100  n=30  touched 2/30  reached 0.70  astern_frac 0.1218  astern_frac_strong 0.1084  collision_rate 0.005376  ttf 118  min_h 11.17  path_length 159.3
+  A gust + 0.5 m/s current | SCBF-MPPI + IS | heading to goal w=1600 n=30  touched 0/30  reached 0.73  astern_frac 0.01903  astern_frac_strong 0.01279  collision_rate 0  ttf 126.3  min_h 8.325  path_length 147.8
+
+== V10 sampler vs output filter
+  A gust + 0.5 m/s current | MPPI (no barrier)                       n=30  touched 29/30  reached 0.60  collision_rate 0.106  ttf 113.3  min_h -1.551  mean_speed 1.478  path_length 145.2
+  A gust + 0.5 m/s current | SCBF-MPPI (barrier in the sampler)      n=30  touched 9/30  reached 0.50  collision_rate 0.04703  ttf 133  min_h 3.985  mean_speed 1.245  path_length 152.8
+  A gust + 0.5 m/s current | SCBF-MPPI + IS                          n=30  touched 3/30  reached 0.43  collision_rate 0.01434  ttf 128.1  min_h 11.36  mean_speed 1.423  path_length 162.4
+  A gust + 0.5 m/s current | MPPI + CBF-QP filter                    n=30  touched 23/30  reached 0.43  collision_rate 0.1225  ttf 138.1  min_h -0.4649  mean_speed 1.101  path_length 141.8  filter_active_mean 0.4947  filter_dU_mean 0.6621
+  A gust + 0.5 m/s current | MPPI + chance CBF-QP filter             n=30  touched 11/30  reached 0.20  collision_rate 0.04406  ttf 147.4  min_h 2.608  mean_speed 0.9761  path_length 135  filter_active_mean 0.7266  filter_dU_mean 1.112
+  A gust + 0.5 m/s current | SCBF-MPPI + CBF-QP filter               n=30  touched 8/30  reached 0.50  collision_rate 0.04382  ttf 133.3  min_h 3.895  mean_speed 1.244  path_length 153.2  filter_active_mean 0.0496  filter_dU_mean 0.004768
+  B crossing ferry | MPPI (no barrier)                               n=30  touched 21/30  reached 0.97  collision_rate 0.03955  ttf 91.47  min_h -0.5231  mean_speed 1.481  path_length 138.7
+  B crossing ferry | SCBF-MPPI (barrier in the sampler)              n=30  touched 6/30  reached 0.97  collision_rate 0.00937  ttf 114.5  min_h 0.7013  mean_speed 1.174  path_length 142
+  B crossing ferry | SCBF-MPPI + IS                                  n=30  touched 3/30  reached 0.83  collision_rate 0.003398  ttf 110.1  min_h 4.913  mean_speed 1.362  path_length 154.5
+  B crossing ferry | MPPI + CBF-QP filter                            n=30  touched 8/30  reached 1.00  collision_rate 0.01138  ttf 111.8  min_h 0.3967  mean_speed 1.151  path_length 136.3  filter_active_mean 0.4979  filter_dU_mean 0.6975
+  B crossing ferry | MPPI + chance CBF-QP filter                     n=30  touched 0/30  reached 0.30  collision_rate 0  ttf 144.3  min_h 9.288  mean_speed 0.943  path_length 148  filter_active_mean 0.7573  filter_dU_mean 1.369
+  B crossing ferry | SCBF-MPPI + CBF-QP filter                       n=30  touched 4/30  reached 1.00  collision_rate 0.005026  ttf 112.6  min_h 0.9499  mean_speed 1.173  path_length 140  filter_active_mean 0.1387  filter_dU_mean 0.0364
+
 == V11 unmodelled current
-  SCBF-MPPI | no estimate                                            n=2  touched 0/2  reached 0.50  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 5.509
-  SCBF-MPPI | estimate in the rollouts                               n=2  touched 0/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 4.503  obs_err_final 0.0007231  obs_settle_s 8
-  SCBF-MPPI | estimate in the barrier                                n=2  touched 0/2  reached 0.50  cert_false_frac 0.02  cert_false_frac_near 0.02857  collision_rate 0  min_h 3.425  obs_err_final 0.0009309  obs_settle_s 8
-  SCBF-MPPI | estimate in both                                       n=2  touched 0/2  reached 1.00  cert_false_frac 0.08511  cert_false_frac_near 0.1111  collision_rate 0  min_h 1.449  obs_err_final 0.001055  obs_settle_s 8
-  SCBF-MPPI | true current known (oracle)                            n=2  touched 1/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0.01747  min_h 1.074  obs_err_final 0  obs_settle_s 0
-  MPPI | no estimate                                                 n=2  touched 2/2  reached 0.50  cert_false_frac 0.02103  cert_false_frac_near 0.03537  collision_rate 0.1045  min_h -1.139
-  MPPI | estimate in the rollouts                                    n=2  touched 0/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 0.6903  obs_err_final 0.001998  obs_settle_s 8
-  MPPI | estimate in both                                            n=2  touched 0/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 0.6903  obs_err_final 0.001998  obs_settle_s 8
-  MPPI | true current known (oracle)                                 n=2  touched 1/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0.02885  min_h -0.05322  obs_err_final 0  obs_settle_s 0
-  SCBF-MPPI | estimate in both, gain 0.05                            n=2  touched 0/2  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 3.473  obs_err_final 0.009235  obs_settle_s 32
-  SCBF-MPPI | estimate in both, gain 0.5                             n=2  touched 0/2  reached 1.00  cert_false_frac 0.1041  cert_false_frac_near 0.1289  collision_rate 0  min_h 0.9592  obs_err_final 0.0009076  obs_settle_s 3
-  SCBF-MPPI | 1.0 m/s current | no estimate                          n=2  touched 0/2  reached 0.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 13.47
-  SCBF-MPPI | 1.0 m/s current | estimate in both                     n=2  touched 0/2  reached 0.50  cert_false_frac 0.01  cert_false_frac_near 0.01485  collision_rate 0  min_h 4.447  obs_err_final 0.0008576  obs_settle_s 11
+  SCBF-MPPI | no estimate                                            n=30  touched 9/30  reached 0.50  cert_false_frac 0.05588  cert_false_frac_near 0.07769  collision_rate 0.04703  min_h 3.985
+  SCBF-MPPI | estimate in the rollouts                               n=30  touched 8/30  reached 0.93  cert_false_frac 0.04793  cert_false_frac_near 0.05861  collision_rate 0.01121  min_h 3.411  obs_err_final 0.001208  obs_settle_s 8
+  SCBF-MPPI | estimate in the barrier                                n=30  touched 3/30  reached 0.53  cert_false_frac 0.02775  cert_false_frac_near 0.04282  collision_rate 0.006412  min_h 2.683  obs_err_final 0.001329  obs_settle_s 8
+  SCBF-MPPI | estimate in both                                       n=30  touched 4/30  reached 0.90  cert_false_frac 0.04989  cert_false_frac_near 0.06803  collision_rate 0.0044  min_h 1.379  obs_err_final 0.001102  obs_settle_s 8
+  SCBF-MPPI | true current known (oracle)                            n=30  touched 6/30  reached 0.90  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0.004911  min_h 1.145  obs_err_final 0  obs_settle_s 0
+  MPPI | no estimate                                                 n=30  touched 29/30  reached 0.60  cert_false_frac 0.01541  cert_false_frac_near 0.02534  collision_rate 0.106  min_h -1.551
+  MPPI | estimate in the rollouts                                    n=30  touched 11/30  reached 1.00  cert_false_frac 0.007748  cert_false_frac_near 0.009974  collision_rate 0.01227  min_h 0.1852  obs_err_final 0.001133  obs_settle_s 8
+  MPPI | estimate in both                                            n=30  touched 11/30  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0.01227  min_h 0.1852  obs_err_final 0.001133  obs_settle_s 8
+  MPPI | true current known (oracle)                                 n=30  touched 12/30  reached 1.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0.01643  min_h 0.1757  obs_err_final 0  obs_settle_s 0
+  SCBF-MPPI | estimate in both, gain 0.05                            n=30  touched 5/30  reached 0.90  cert_false_frac 0.02878  cert_false_frac_near 0.03699  collision_rate 0.006317  min_h 2.093  obs_err_final 0.003854  obs_settle_s 32
+  SCBF-MPPI | estimate in both, gain 0.5                             n=30  touched 3/30  reached 0.90  cert_false_frac 0.05545  cert_false_frac_near 0.07352  collision_rate 0.003926  min_h 1.313  obs_err_final 0.002443  obs_settle_s 3
+  SCBF-MPPI | 1.0 m/s current | no estimate                          n=30  touched 0/30  reached 0.00  cert_false_frac 0  cert_false_frac_near 0  collision_rate 0  min_h 12.06
+  SCBF-MPPI | 1.0 m/s current | estimate in both                     n=30  touched 1/30  reached 0.63  cert_false_frac 0.01629  cert_false_frac_near 0.02329  collision_rate 0.0009549  min_h 3.548  obs_err_final 0.001087  obs_settle_s 11
 
 == V12 ESS-targeted temperature
-  A gust + 0.5 m/s current | SCBF-MPPI + IS, fixed lambda = 300      n=2  touched 0/2  reached 0.50  ess_median 171.4  ess_mean 175  dU_norm_mean 672.8  lam_eff_mean 300  ttf 112.5  collision_rate 0
-  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 50           n=2  touched 0/2  reached 1.00  ess_median 50  ess_mean 47.94  dU_norm_mean 424.1  lam_eff_mean 1.221e+05  ttf 112  collision_rate 0
-  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 100          n=2  touched 0/2  reached 1.00  ess_median 100  ess_mean 87.45  dU_norm_mean 363.7  lam_eff_mean 2.348e+05  ttf 115.5  collision_rate 0
-  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 250          n=2  touched 0/2  reached 0.50  ess_median 250  ess_mean 217  dU_norm_mean 233.7  lam_eff_mean 4.544e+05  ttf 132  collision_rate 0
-  A gust + 0.5 m/s current | SCBF-MPPI (no IS), fixed lambda = 300   n=2  touched 0/2  reached 0.50  ess_median 296.1  ess_mean 231.8  dU_norm_mean 485.9  lam_eff_mean 300  ttf 142.5  collision_rate 0
-  A gust + 0.5 m/s current | SCBF-MPPI (no IS), ESS target 100       n=2  touched 0/2  reached 1.00  ess_median 100  ess_mean 96.31  dU_norm_mean 304.1  lam_eff_mean 2.858e+04  ttf 91.5  collision_rate 0
-  A gust + 0.5 m/s current | MPPI, fixed lambda = 300                n=2  touched 2/2  reached 0.50  ess_median 347.3  ess_mean 245.4  dU_norm_mean 646.1  lam_eff_mean 300  ttf 143  collision_rate 0.1045
-  A gust + 0.5 m/s current | MPPI, ESS target 100                    n=2  touched 1/2  reached 1.00  ess_median 100  ess_mean 99.67  dU_norm_mean 311.3  lam_eff_mean 3912  ttf 78.5  collision_rate 0.1574
-  B crossing ferry | SCBF-MPPI + IS, fixed lambda = 300              n=2  touched 0/2  reached 0.50  ess_median 3.542  ess_mean 58.95  dU_norm_mean 1071  lam_eff_mean 300  ttf 113.5  collision_rate 0
-  B crossing ferry | SCBF-MPPI + IS, ESS target 50                   n=2  touched 0/2  reached 1.00  ess_median 50  ess_mean 38.25  dU_norm_mean 558.1  lam_eff_mean 3.696e+05  ttf 122.5  collision_rate 0
-  B crossing ferry | SCBF-MPPI + IS, ESS target 100                  n=2  touched 0/2  reached 0.00  ess_median 80.45  ess_mean 62.87  dU_norm_mean 475.2  lam_eff_mean 7.253e+05  ttf 150  collision_rate 0
-  B crossing ferry | SCBF-MPPI + IS, ESS target 250                  n=2  touched 0/2  reached 0.00  ess_median 246.6  ess_mean 181.9  dU_norm_mean 306.6  lam_eff_mean 8.71e+05  ttf 150  collision_rate 0
-  B crossing ferry | SCBF-MPPI (no IS), fixed lambda = 300           n=2  touched 0/2  reached 1.00  ess_median 86.64  ess_mean 142.7  dU_norm_mean 644.6  lam_eff_mean 300  ttf 130  collision_rate 0
-  B crossing ferry | SCBF-MPPI (no IS), ESS target 100               n=2  touched 0/2  reached 1.00  ess_median 100  ess_mean 92.54  dU_norm_mean 395.5  lam_eff_mean 6.807e+04  ttf 121.5  collision_rate 0
-  B crossing ferry | MPPI, fixed lambda = 300                        n=2  touched 1/2  reached 1.00  ess_median 175.4  ess_mean 179.3  dU_norm_mean 786.3  lam_eff_mean 300  ttf 118.5  collision_rate 0.009831
-  B crossing ferry | MPPI, ESS target 100                            n=2  touched 1/2  reached 1.00  ess_median 100  ess_mean 98.54  dU_norm_mean 367  lam_eff_mean 3.443e+04  ttf 91.5  collision_rate 0.004464
+  A gust + 0.5 m/s current | SCBF-MPPI + IS, fixed lambda = 300      n=30  touched 3/30  reached 0.43  ess_median 226.2  ess_mean 200.7  dU_norm_mean 637  lam_eff_mean 300  ttf 128.1  collision_rate 0.01434
+  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 50           n=30  touched 1/30  reached 0.87  ess_median 49.55  ess_mean 44.21  dU_norm_mean 460.8  lam_eff_mean 7.796e+07  ttf 114.4  collision_rate 0.0008333
+  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 100          n=30  touched 2/30  reached 0.73  ess_median 94.56  ess_mean 86.16  dU_norm_mean 369.6  lam_eff_mean 9.658e+07  ttf 129  collision_rate 0.007889
+  A gust + 0.5 m/s current | SCBF-MPPI + IS, ESS target 250          n=30  touched 0/30  reached 0.13  ess_median 243.9  ess_mean 215.1  dU_norm_mean 248.4  lam_eff_mean 1.584e+08  ttf 147.3  collision_rate 0
+  A gust + 0.5 m/s current | SCBF-MPPI (no IS), fixed lambda = 300   n=30  touched 9/30  reached 0.50  ess_median 211  ess_mean 204.3  dU_norm_mean 464  lam_eff_mean 300  ttf 133  collision_rate 0.04703
+  A gust + 0.5 m/s current | SCBF-MPPI (no IS), ESS target 100       n=30  touched 4/30  reached 1.00  ess_median 100  ess_mean 96.8  dU_norm_mean 308.7  lam_eff_mean 1.06e+07  ttf 105  collision_rate 0.03053
+  A gust + 0.5 m/s current | MPPI, fixed lambda = 300                n=30  touched 29/30  reached 0.60  ess_median 233.6  ess_mean 219.6  dU_norm_mean 679.3  lam_eff_mean 300  ttf 113.3  collision_rate 0.106
+  A gust + 0.5 m/s current | MPPI, ESS target 100                    n=30  touched 18/30  reached 0.90  ess_median 100  ess_mean 99.44  dU_norm_mean 316.5  lam_eff_mean 2.604e+06  ttf 95.2  collision_rate 0.1196
+  B crossing ferry | SCBF-MPPI + IS, fixed lambda = 300              n=30  touched 3/30  reached 0.83  ess_median 19.54  ess_mean 87.07  dU_norm_mean 1010  lam_eff_mean 300  ttf 110.1  collision_rate 0.003398
+  B crossing ferry | SCBF-MPPI + IS, ESS target 50                   n=30  touched 3/30  reached 0.57  ess_median 38.78  ess_mean 33.7  dU_norm_mean 604.2  lam_eff_mean 1.272e+08  ttf 135.4  collision_rate 0.003925
+  B crossing ferry | SCBF-MPPI + IS, ESS target 100                  n=30  touched 2/30  reached 0.40  ess_median 82.79  ess_mean 67.34  dU_norm_mean 495.2  lam_eff_mean 1.667e+08  ttf 139.7  collision_rate 0.000774
+  B crossing ferry | SCBF-MPPI + IS, ESS target 250                  n=30  touched 0/30  reached 0.13  ess_median 208.4  ess_mean 164.3  dU_norm_mean 375.9  lam_eff_mean 2.403e+08  ttf 147.8  collision_rate 0
+  B crossing ferry | SCBF-MPPI (no IS), fixed lambda = 300           n=30  touched 6/30  reached 0.97  ess_median 61.64  ess_mean 125  dU_norm_mean 660.2  lam_eff_mean 300  ttf 114.5  collision_rate 0.00937
+  B crossing ferry | SCBF-MPPI (no IS), ESS target 100               n=30  touched 9/30  reached 0.97  ess_median 100  ess_mean 94.23  dU_norm_mean 387.2  lam_eff_mean 2.243e+07  ttf 112.7  collision_rate 0.01904
+  B crossing ferry | MPPI, fixed lambda = 300                        n=30  touched 21/30  reached 0.97  ess_median 49.8  ess_mean 126.5  dU_norm_mean 996.9  lam_eff_mean 300  ttf 91.47  collision_rate 0.03955
+  B crossing ferry | MPPI, ESS target 100                            n=30  touched 23/30  reached 0.90  ess_median 100  ess_mean 97.74  dU_norm_mean 371.1  lam_eff_mean 9.729e+06  ttf 112.3  collision_rate 0.05691

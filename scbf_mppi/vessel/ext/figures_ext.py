@@ -240,7 +240,7 @@ def fig_V12():
             names = [k for k, _ in _rows(res) if k.startswith(sk + " ") and g in k]
             if not names:
                 continue
-            xs = [_m(res[n], "ess_median") for n in names]
+            xs = [_m(res[n], "ess_obstacle_mean") for n in names]
             ys = [_m(res[n], "dU_norm_mean") for n in names]
             rs = [res[n]["summary"]["reached_frac"] for n in names]
             ax.plot(xs, ys, "-", color=c, lw=1.2, alpha=0.6)
@@ -256,7 +256,7 @@ def fig_V12():
                 off = (8, 6) if i % 2 == 0 else (8, -12)
                 ax.annotate(tag, (x, y), textcoords="offset points", xytext=off,
                             fontsize=8.2, color=COL["ink"])
-        ax.set_xlabel("median effective sample size  (of K = 500)")
+        ax.set_xlabel("effective sample size in the obstacle field  (of K = 500)")
         ax.set_ylabel("‖control update‖ per cycle  [N]")
         ax.set_title(("A  gust + 0.5 m/s unknown current" if sk == "A" else "B  crossing ferry"),
                      fontsize=11.5, color=COL["ink"])
@@ -281,9 +281,9 @@ def fig_V12():
         if np.isfinite(v):
             ax.text(v, y, f"  {v:.2f}", fontsize=8.8, va="center", color=COL["ink"])
 
-    fig.suptitle("V12  raising the temperature buys effective sample size by flattening the weights — "
-                 "the size of the marker is the fraction of seeds that still reach the goal",
-                 fontsize=12.0, color=COL["ink"], y=0.99)
+    fig.suptitle("V12  the temperature that holds the effective sample size — marker size is the "
+                 "fraction of seeds that reach the goal; a big ESS with a small update is a moored boat",
+                 fontsize=11.8, color=COL["ink"], y=0.99)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(FIG, "fig_V12_ess.png"), dpi=200)
     plt.close(fig)
