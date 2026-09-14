@@ -529,8 +529,8 @@ the budget while the corrected estimator's does not move at all:
 
 Two cautions on how to read that, both of which cost an earlier version of this work its conclusion.
 `ESS/K → 1/(1+χ²)` is an **asymptotic** efficiency and not a cap on a finite run: for a proposal attaining
-the bound, no sample lands in the violation set in 21.5 % of runs at K = 500, δ = 0.003, and the measured
-value is then exactly 500. And this is the **corridor**. On the vessel the collapse is not caused by the
+the bound, no sample lands in the violation set in (1−δ)^K = 0.997^500 = 22.3 % of runs at K = 500,
+δ = 0.003, and the measured value is then exactly 500. And this is the **corridor**. On the vessel the collapse is not caused by the
 density correction at all — decomposed per cycle, the median effective size from the cost softmax alone is
 3.3, from the weights alone 157.4, and from both 3.1, so there it is the λ = 300 temperature against a
 20,000 m² penalty. The two systems behave differently and neither result transfers to the other.
@@ -650,8 +650,12 @@ Section III-B of MPPI's own founding paper, *Likelihood Ratio as Additional Runn
 Hammersley–Chapman–Robbins with an indicator test function, which Polyanskiy and Wu set as a reader
 exercise. What survives is composition and measurement: **where** the optimum of this paper's own
 per-sample program lies, that the covariance its barrier shrinks **is** the proposal covariance, and what
-both cost when measured. `FINDINGS.md` §7 states each position with its citation, and §5b–§5d record the
-two defects found in this repository and the setting that must be quoted with the V15 table.
+both cost when measured. Three equations came back from that search with nothing stated anywhere else —
+`s* = clip((a·ū − b)/z, 0, ‖P₀ᵀa‖)`, the optimum of the paper's own (8); `z > ‖a‖∞/‖a‖₂`, when that optimum
+is zero; and `r − ℓ > √2·z·σ₀`, when any usable Gaussian exists — and `FINDINGS.md` §7 lists them with the
+qualifier they need, *not found stated anywhere, and I looked*, which is not the same as new. §7 also states
+each prior-art position with its citation, and §5b–§5d record the two defects found in this repository and
+the setting that must be quoted with the V15 table.
 
 ## Reproducing it
 

@@ -128,7 +128,8 @@ moving the mass.
 
 *It is asymptotic.* `ESS/K -> 1/(1+chi2)` is a population efficiency, not a cap on a finite run. For the
 equality-attaining proposal at `K = 500` and `delta = 0.003`, no sample lands in the violation set in
-21.5 % of runs, and the measured ESS is then exactly 500.
+`(1 - delta)^K = 0.997^500 = 22.3 %` of runs, and the measured ESS is then exactly 500. (An earlier
+version of this note reported 21.5 % from a finite simulation where the closed form was available.)
 
 *The reference is the target, not the nominal law.* MPPI estimates under `pi` proportional to
 `exp(-S/lambda) p`, so the governing divergence is `chi2(pi||q)` and `delta0` must be replaced by
@@ -144,6 +145,14 @@ with rigorous versions in Agapiou, Papaspiliopoulos, Sanz-Alonso, Stuart, *Stati
 Chatterjee and Diaconis, *Ann. Appl. Prob.* 2018. The Gaussian tail condition is textbook, Owen ch. 9.
 Nothing mathematical here is new; what is assembled is the reading of it as a price every
 constraint-satisfying proposal in sampling-based MPC pays.
+
+*That same 22.3 % is a guarantee, not a ceiling.* `(1 - delta)^K` lower-bounds the probability that
+**every** sample is safe, and since a convex combination of inputs each satisfying the same linear row also
+satisfies it, it lower-bounds the probability that the executed average is safe. It does not bound the
+executed input's actual safety probability from above: the average can satisfy the row while individual
+samples violate it, which is what this repository measures — the averaged input never violated the row in
+666 active instances. Tightening per sample by the union bound, `delta/K`, is sufficient for all-samples-safe
+at level `1 - delta` and needs `z' = 4.378` at these settings; it is not necessary for safe execution.
 
 The Gaussian corollary, `E[w^2] < infinity` iff `s > s0/sqrt(2)`, is the **scalar** case. In general the
 condition is the matrix one, `2 Sigma_q - Sigma_p` positive definite, and an anisotropic shrink can fail
@@ -423,6 +432,31 @@ Prop. 7.2, and set the event rearrangement as a reader exercise. The `ESS = K/(1
 (1992), with rigorous versions in Agapiou et al. (2017) and Chatterjee and Diaconis (2018). Nothing
 mathematical here is new. What is not standard is the *reading*: that this is a price every constraint-
 satisfying proposal in sampling-based MPC pays, and a floor no shaping scheme can engineer around.
+
+### The three equations no search found stated elsewhere
+
+Written out, because the rest of this section is about what is *not* new and the reader deserves the other
+half in one place. Each is absent from Tao et al. **and** was not found in any other source by the four-way
+search. None is a theorem: they are, in order, three lines of convex analysis, a slope comparison, and one
+line of arithmetic joining two published inequalities.
+
+```
+s*  =  clip( (a·ubar − b) / z ,  0 ,  ||P0' a|| )      the optimum of the paper's own (8), which it never locates
+z   >  ||a||_inf / ||a||_2                             exactly when that optimum is zero
+r − l  >  sqrt(2) · z · sigma_0                        exactly when any usable Gaussian exists at that state
+```
+
+The honest status of all three is **"not found stated anywhere, and I looked"** — four independent searches
+returning nothing is not proof that nothing exists, and none of them should be called new without that
+qualifier. What each *buys* is in sections 2 and 2b: the first makes the covariance collapse the generic
+outcome in the only regime where the filter acts rather than an edge case; the second says when; the third
+says that at some states no Gaussian works at all, whatever the optimiser does.
+
+Two things that look like they belong on this list and do not. The corrected constraint
+`a'mu − z sqrt(a' Sigma a) >= b` is not new, it is the textbook chance constraint and merely the one the
+paper should have printed. And the intervention-penalty weight `w propto exp(−(S + mu lambda sum_t I)/lambda)`
+is not in Tao et al. either, which is what made it look new — but it is in Gandhi et al. (2022). *Not in the
+paper under review* and *new* are different things, and that gap is what caught this work out once already.
 
 **How this should be said out loud.** "None of the measure theory or the inequalities are mine, and the
 intervention penalty is Theodorou's group's construction from 2021-22 — what I did was locate the optimum
