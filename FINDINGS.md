@@ -64,6 +64,42 @@ further into the safe region; the obstruction is the objective's preferred solut
 This is the strongest claim here and the only one an independent novelty review rated as possibly new to
 the literature rather than only to this paper.
 
+## 2b. Stronger than the collapse: at the corridor's own start state, no Gaussian works at all
+
+Section 2 says the *optimiser* collapses the covariance. A sharper statement holds at the default start
+state, and it does not depend on the optimiser, the objective, the mean, or correlations with the other
+control channel.
+
+The corridor's two walls constrain the same forward-speed variable from opposite sides. Meeting both
+chance constraints requires `l + z sigma_q <= mu_q <= r - z sigma_q`, so a Gaussian exists only if
+`sigma_q <= (r - l) / (2z)`. Finite nominal importance-weight variance requires `sigma_q > sigma_0/sqrt(2)`.
+A suitable Gaussian therefore exists **exactly when**
+
+```
+r - l  >  sqrt(2) z sigma_0
+```
+
+At `x = 0, y = 0.5, theta = 0` with `sigma_0 = 1` and `delta = 0.003`, this repository's own `scbf_rows`
+gives the admissible speed interval `[-1/pi, 1/pi]`, and:
+
+| | |
+|---|---|
+| largest `sigma_q` allowed by both walls | 0.115843 |
+| smallest `sigma_q` giving finite weight variance | 0.707107 |
+| existence condition | 0.636620 > 3.885950 — **fails, by a factor of six** |
+
+So at that state **every** non-degenerate Gaussian first-speed proposal meeting both corrected wall
+constraints has infinite exact importance-weight variance. Extending to the full cost-weighted target,
+divergence follows whenever `sigma_q^2 < (2/sigma_0^2 + 4(T+1)dt^2/lambda)^-1`, which at `T = 20`,
+`dt = 0.05`, `lambda = 1` is 0.452489 — and every chance-feasible Gaussian, capped at 0.013420, is
+inside it. The MPPI cost does not rescue the example.
+
+Every figure in this section was checked against `Corridor.scbf_rows` in this repository and reproduces
+exactly. The construction and the full-target extension are due to an external review of commit
+`33497d1`, not to this repository's own work; they are recorded here because they are verified and
+because they subsume section 2's statement. Infinite variance does not imply that any particular finite
+run fails, and singular proposals escape it only by losing the support that exact correction needs.
+
 ## 3. A sample-efficiency bound, with its limits
 
 For any law `q` satisfying the per-sample constraint, with `delta0` the violation probability under the
@@ -139,6 +175,25 @@ the tail.
   failure."** Real but small: correlation +0.11 to +0.21, costing 0.24 of 2.75 standard deviations of
   margin, with the averaged input never violating the row in 666 active instances.
 * **"Repairing the estimator will improve the controller."** False, and the opposite of what happens.
+
+## 5b. A bug in this repository, found by an external review
+
+`vessel/solver_nd.py` reported the retained standard deviation along a barrier row as `||P a||` where the
+sampling covariance `P P'` requires `||P' a||`. `einsum("kij,ki->kj", M, a)` contracts M's FIRST index and
+so returns `M' a`; passing `transpose(Pfac)` therefore returned `Pfac a`. The two agree only when the
+factor is symmetric.
+
+Severity, measured rather than assumed. The factor is non-symmetric on 92.9 % of multi-row samples, and
+the reported value then differs from the true standard deviation by a median factor of 12. But the
+affected expression is reached only in the joint multi-row branch, because `_solve_one_row` is called once
+per sample and always receives the diagonal initial factor. So the error is confined to the
+retained-variance **diagnostic**. Confirmed by the regression guard: after the fix, 7 of 12 shipped cases
+changed and every one of them changed only in `var_ratio_mean`, with all trajectory, control and barrier
+digests identical. `tests/regression_ref.json` was recaptured to record the corrected diagnostic; the
+stored `results/*.json` still carry the old value for that one field.
+
+An intermediate claim of mine, that the error also sat on the sampling path, was wrong. It came from
+exercising `_solve_one_row` with a non-diagonal factor, which the real call path never does.
 
 ## 6. Reproducing
 

@@ -25,7 +25,11 @@ def _solve_one_row(ubar, a_s, b_s, Pfac, mu, s0, z, alpha, form, n_s):
     """Solve one row (K,n)/(K,) against the CURRENT proposal (mu, Pfac): shrink the std along a_s by a rank-one
     update of Pfac and add an l1-cheapest mean shift.  Returns updated (mu, Pfac, s_opt, s_nom, active, cost)."""
     K, n = ubar.shape
-    w = np.einsum("kij,ki->kj", np.transpose(Pfac, (0, 2, 1)), a_s)      # P^T a^T  (K,n)
+    w = np.einsum("kij,ki->kj", Pfac, a_s)                             # P^T a  (K,n)
+    # einsum("kij,ki->kj", M, a) contracts M's FIRST index, so it returns M^T a.  Passing
+    # transpose(Pfac) here therefore returned Pfac a, not Pfac^T a.  The variance of a.du with
+    # du = P xi is a' P P' a = ||P' a||^2, so the transpose was wrong: with a non-symmetric factor
+    # the two differ, and after the first rank-one update the factor is not symmetric.
     wn = np.linalg.norm(w, axis=-1)                                      # current std of a·du
     an = np.linalg.norm(a_s, axis=-1); amax = np.abs(a_s).max(-1)
     slack = (a_s * (ubar + mu)).sum(-1) - b_s
@@ -173,7 +177,7 @@ def solve_rows_nd(ubar, A, b, s0, z=None, alpha=None, form="std", n_s=65, n_g=No
             mu[good] = mu_j[ok_j]; Pfac[good] = P_j[ok_j]; cost[good] = cost_j[ok_j]
             # std kept along the most violated row (jstar), from the final factor — consistent with the single-row case
             aj = A[good, jstar[good]]
-            s_opt[good] = np.linalg.norm(np.einsum("kij,ki->kj", np.transpose(P_j[ok_j], (0, 2, 1)), aj), axis=-1)
+            s_opt[good] = np.linalg.norm(np.einsum("kij,ki->kj", P_j[ok_j], aj), axis=-1)   # ||P^T a||
             s_nom[good] = np.linalg.norm(aj * s0[None, :], axis=-1)
             residual[sel[~ok_j]] = True
         infeasible = infeasible | residual
