@@ -189,7 +189,8 @@ def fig_V11():
     ax.set_yticklabels([n.split("| ", 1)[1] for n in names], fontsize=9)
     ax.set_xlabel("error in the barrier derivative  |n · (c_believed − c_true)|  [m/s]")
     ax.set_title("what the unknown current does to hdot", fontsize=11.5, color=COL["ink"])
-    ax.legend(fontsize=9, loc="lower right")
+    ax.set_xlim(0, max(max(psis), max(errs)) * 1.32)
+    ax.legend(fontsize=9, loc="lower right", framealpha=0.9, frameon=True)
     for y, v in zip(ys, errs):
         ax.text(v, y, f"  {v:.3f}", fontsize=8.8, va="center", color=COL["ink"])
 
@@ -201,11 +202,11 @@ def fig_V11():
         h = np.asarray(r0["obs_hist"], float)
         ax.plot(np.arange(len(h)), h[:, 1], lw=1.6, label=n.split("| ", 1)[1])
     ax.axhline(-0.5, color=COL["ink"], ls="--", lw=1.1)
-    ax.text(2, -0.455, "true current  −0.5 m/s", fontsize=9, color=COL["ink"])
+    ax.text(2, -0.485, "true current  −0.5 m/s", fontsize=9, color=COL["ink"], va="bottom")
     ax.set_xlabel("time [s]")
     ax.set_ylabel("estimated northward current [m/s]")
     ax.set_title("the estimate, seed 0", fontsize=11.5, color=COL["ink"])
-    ax.legend(fontsize=8.2, loc="upper right", ncol=1)
+    ax.legend(fontsize=7.8, loc="center right", ncol=1, framealpha=0.85, frameon=True)
 
     ax = axes[2]
     ys = np.arange(len(names))[::-1]
@@ -215,7 +216,7 @@ def fig_V11():
     ax.set_yticklabels([n.split("| ", 1)[1] for n in names], fontsize=9)
     ax.set_xlabel("time to the goal [s]")
     ax.set_title("the cost of not knowing", fontsize=11.5, color=COL["ink"])
-    ax.set_xlim(0, max(ttf) * 1.45)
+    ax.set_xlim(0, max(ttf) * 1.95)
     for y, v, n in zip(ys, ttf, names):
         s = res[n]["summary"]
         t, tot = _touched(res[n])
