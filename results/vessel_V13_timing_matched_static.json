@@ -1,41 +1,41 @@
 {
- "scenario": "crossing",
+ "scenario": "static",
  "cycles": 40,
  "control interval s": 1.0,
  "matched": {
   "MPPI K=500": {
-   "median_s": 0.026980399998137727,
-   "mean_s": 0.027036851429979185,
+   "median_s": 0.024942099989857525,
+   "mean_s": 0.025002245712260316,
    "activation_frac": NaN,
    "multi_violation_frac": NaN
   },
   "MPPI K=2000": {
-   "median_s": 0.0720654999895487,
-   "mean_s": 0.07623626856865096,
+   "median_s": 0.06278409998049028,
+   "mean_s": 0.0645745028550404,
    "activation_frac": NaN,
    "multi_violation_frac": NaN
   },
   "SCBF-MPPI (2nd-order barrier)": {
-   "median_s": 0.7519167000136804,
-   "mean_s": 0.6530830885740995,
-   "activation_frac": 0.9821980952380951,
-   "multi_violation_frac": 0.43185904761904764
+   "median_s": 0.1705145000014454,
+   "mean_s": 0.2659147285739891,
+   "activation_frac": 0.9872571428571427,
+   "multi_violation_frac": 0.2787771428571429
   },
   "SCBF-MPPI + IS correction": {
-   "median_s": 0.6060957000008784,
-   "mean_s": 0.6019754628559375,
-   "activation_frac": 0.9488761904761903,
-   "multi_violation_frac": 0.3766933333333333
+   "median_s": 0.19724310000310652,
+   "mean_s": 0.22395080000112233,
+   "activation_frac": 0.9727542857142855,
+   "multi_violation_frac": 0.17802666666666667
   },
   "SCBF-MPPI, variance form": {
-   "median_s": 0.07711829998879693,
-   "mean_s": 0.1522261457118605,
-   "activation_frac": 0.45763047619047614,
-   "multi_violation_frac": 0.07096380952380953
+   "median_s": 0.04682639997918159,
+   "mean_s": 0.05738172285657908,
+   "activation_frac": 0.5639809523809524,
+   "multi_violation_frac": 0.007660952380952381
   },
   "Deterministic MPPI 4x125": {
-   "median_s": 0.07656339998356998,
-   "mean_s": 0.07931323142921819,
+   "median_s": 0.06688169998233207,
+   "mean_s": 0.06926935999820541,
    "activation_frac": NaN,
    "multi_violation_frac": NaN
   }

@@ -1,0 +1,69 @@
+{
+ "scenario": "crossing",
+ "cycles": 40,
+ "control interval s": 1.0,
+ "matched": {
+  "MPPI K=500": {
+   "median_s": 0.025665499997558072,
+   "mean_s": 0.025771105716869767,
+   "activation_frac": NaN,
+   "multi_violation_frac": NaN
+  },
+  "MPPI K=2000": {
+   "median_s": 0.06525400001555681,
+   "mean_s": 0.06798982571344822,
+   "activation_frac": NaN,
+   "multi_violation_frac": NaN
+  },
+  "SCBF-MPPI (2nd-order barrier)": {
+   "median_s": 0.6808423000038601,
+   "mean_s": 0.5955386542823232,
+   "activation_frac": 0.9821980952380951,
+   "multi_violation_frac": 0.43185904761904764
+  },
+  "SCBF-MPPI + IS correction": {
+   "median_s": 0.5486495000077412,
+   "mean_s": 0.5375660971422414,
+   "activation_frac": 0.9488761904761903,
+   "multi_violation_frac": 0.3766933333333333
+  },
+  "SCBF-MPPI, variance form": {
+   "median_s": 0.06683299998985603,
+   "mean_s": 0.13971904286133524,
+   "activation_frac": 0.45763047619047614,
+   "multi_violation_frac": 0.07096380952380953
+  },
+  "Deterministic MPPI 4x125": {
+   "median_s": 0.06664610002189875,
+   "mean_s": 0.0690654571417586,
+   "activation_frac": NaN,
+   "multi_violation_frac": NaN
+  }
+ },
+ "unmatched_results": {
+  "MPPI K=500": 0.025525808334350586,
+  "MPPI K=2000": 0.05848813056945801,
+  "SCBF-MPPI closed-form per-sample solve": 0.676133394241333,
+  "SCBF-MPPI + IS": 0.23392748832702637,
+  "Deterministic MPPI 4x125": 0.06564843654632568,
+  "literal SDP (8) per problem, cvxpy wall s": 0.011014580726623535,
+  "literal SDP (8) per problem, solver-only s": 0.00047254999999999997,
+  "problems per cycle (K x T)": 7500,
+  "Algorithm 1 cycle with literal SDP, cvxpy wall s": 82.60935544967651,
+  "Algorithm 1 cycle with literal SDP, solver-only s": 3.5441249999999997,
+  "control interval s": 1.0
+ },
+ "unmatched_results_shipped_2026_09_12": {
+  "MPPI K=500": 0.031929850578308105,
+  "MPPI K=2000": 0.08266842365264893,
+  "SCBF-MPPI closed-form per-sample solve": 0.9096735715866089,
+  "SCBF-MPPI + IS": 0.31130969524383545,
+  "Deterministic MPPI 4x125": 0.07250463962554932,
+  "literal SDP (8) per problem, cvxpy wall s": 0.01579141616821289,
+  "literal SDP (8) per problem, solver-only s": 0.0006273305,
+  "problems per cycle (K x T)": 7500,
+  "Algorithm 1 cycle with literal SDP, cvxpy wall s": 118.43562126159668,
+  "Algorithm 1 cycle with literal SDP, solver-only s": 4.70497875,
+  "control interval s": 1.0
+ }
+}

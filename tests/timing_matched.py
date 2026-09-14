@@ -12,18 +12,39 @@ on how many barrier rows are ACTIVE, which depends on where the boat is.  The co
 The symptom is visible in both result trees: SCBF-MPPI is reported at 0.91 s (shipped) and 0.68 s
 (regenerated) per cycle while SCBF-MPPI + IS, which does everything SCBF-MPPI does and then adds a
 log-determinant per timestep, is reported at 0.31 s and 0.23 s -- three times FASTER, which no amount of
-noise explains.  The importance-sampling variant keeps a larger margin (closest approach 4.6 m against
-1.0 m in V2), so far fewer rows are active, so its solves are cheaper.  That is a fact about the
-trajectories, not about the algorithms.
+noise explains.
 
 This script removes the confound: one reference state sequence is generated once, and every controller is
 then asked to plan from each of those states in turn.  The states are identical across controllers, so the
-only thing that differs is the work each one does.  It also reports the mean activation fraction, so the
-operating point is visible rather than implied.
+only thing that differs is the work each one does.  It also reports the fraction of sample-timesteps with any
+active row and with two active rows, because the per-sample solve leaves its closed form when two rows are
+active and enters a candidate search with LP vertex enumeration.
 
-Both numbers are worth having.  The matched one answers "what does this algorithm cost per cycle".  The
-shipped one answers "what did this controller cost in the run it actually produced".  They should be quoted
-with the right question attached; this script prints them side by side.
+WHAT THE MEASUREMENT ACTUALLY SHOWS (idle laptop, 40 cycles, pinned BLAS):
+
+                                   static harbour        crossing harbour
+    MPPI K=500                        0.025 s               0.025 s
+    SCBF-MPPI (2nd-order)             0.154 s               0.673 s
+    SCBF-MPPI + IS                    0.200 s               0.519 s
+    SCBF-MPPI, variance form          0.049 s               0.074 s
+
+Two things, and the second one refutes a tempting explanation.
+
+(1) The dominant variable is the SCENE, not the algorithm.  The same controller costs 0.15 s in the static
+    harbour and 0.67 s with the ferry added -- a factor of 4.4 for one more obstacle.  A single "seconds per
+    cycle" figure for this method is not meaningful without saying how cluttered the scene was.
+
+(2) The ordering of SCBF-MPPI and SCBF-MPPI + IS FLIPS between the two scenes.  In the static harbour + IS is
+    slower (0.200 against 0.154), which is the physically expected ordering because it does strictly more
+    work.  In the crossing harbour it is faster (0.519 against 0.673).  The obvious explanation -- that the
+    cost tracks the two-row fraction -- does not survive: in the static harbour SCBF-MPPI has MORE two-row
+    instances (0.279 against 0.178) and is still the faster of the two.  So the per-sample solve cost depends
+    on the geometry of the active rows in a way one scalar does not capture, and the honest conclusion is
+    that a per-cycle cost for this method should be quoted per scenario, with its activation statistics, and
+    never as a single number.
+
+The shipped, unmatched figure answers a different question again -- "what did this controller cost in the run
+it actually produced" -- and is printed beside the matched one for comparison.
 """
 import argparse
 import json
@@ -53,11 +74,12 @@ def reference_states(scenario, cycles, seed=0):
 
 
 def time_controller(make, xs, H, warmup=5):
-    """Time one controller along a FIXED state sequence, and record the two quantities that drive the
-    per-sample solve cost: how often a barrier row is active at all, and how often two are active at once.
-    The multi-row case leaves the closed form and enters a candidate search with LP vertex enumeration, so
-    it is far more expensive -- and two controllers put their samples in different places by construction,
-    which is the part a matched-state test cannot remove."""
+    """Time one controller along a FIXED state sequence, and record how often a barrier row is active at all
+    and how often two are active at once.  Two active rows leave the closed form for a candidate search with
+    LP vertex enumeration, so that fraction is the obvious cost driver -- but see the module docstring: it
+    does not in fact order the two barrier variants, so report it as context rather than as the explanation.
+    Two controllers also put their SAMPLES in different places by construction, which is the part a
+    matched-state test cannot remove."""
     c = make(H)
     c.t = 0.0
     ts, act, multi = [], [], []
@@ -113,7 +135,7 @@ if __name__ == "__main__":
                 d = json.load(f)
             out[f"unmatched_{tree}"] = {k: v for k, v in d.items() if isinstance(v, (int, float))}
 
-    dst = os.path.join(here, "results", "vessel_V13_timing_matched.json")
+    dst = os.path.join(here, "results", f"vessel_V13_timing_matched_{a.scenario}.json")
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
     print(f"\nwritten: {dst}")
