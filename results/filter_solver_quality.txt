@@ -1,0 +1,34 @@
+Filter solver quality, 4 episodes per configuration, 2026-09-14T02:15:58+02:00
+(cvxpy/Clarabel prints a UserWarning on an inaccurate solve and Python dedupes it per process,
+ so the count in an experiment log is meaningless; this measures the rate directly.)
+
+
+=== nominal filter, crossing ferry   (4 episodes)
+    control instants                 459
+    filter active                    215  (46.8%)
+    of those, slack was needed       5  (2.3%)
+    solver status                    {'optimal': 214, 'optimal_inaccurate': 1}
+    worst post-filter row margin     -1.24e-11 sampling std
+    margins below -1e-6              0 of 210
+    azimuth disc exceeded by         0.00e+00 N
+    bow cap exceeded by              0.00e+00 N
+
+=== chance filter, crossing ferry   (4 episodes)
+    control instants                 565
+    filter active                    409  (72.4%)
+    of those, slack was needed       26  (6.4%)
+    solver status                    {'optimal': 409}
+    worst post-filter row margin     -1.08e-15 sampling std
+    margins below -1e-6              0 of 383
+    azimuth disc exceeded by         0.00e+00 N
+    bow cap exceeded by              0.00e+00 N
+
+=== chance filter, unknown current   (4 episodes)
+    control instants                 594
+    filter active                    430  (72.4%)
+    of those, slack was needed       0  (0.0%)
+    solver status                    {'optimal': 430}
+    worst post-filter row margin     +0.00e+00 sampling std
+    margins below -1e-6              0 of 430
+    azimuth disc exceeded by         0.00e+00 N
+    bow cap exceeded by              0.00e+00 N

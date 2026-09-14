@@ -38,24 +38,30 @@ def audit(cfg, seeds):
     stats = {"status": Counter(), "margins": [], "slack_used": 0, "instants": 0,
              "cone_excess": 0.0, "bow_excess": 0.0, "active": 0}
 
-    for seed in seeds:
-        c, H = make_controller_ext(cfg, seed)
-        filt = c.filt
-        inner_call = filt.__call__
+    class Recording:
+        """A proxy round the filter.  Python looks __call__ up on the TYPE, so assigning it on the
+        instance would be silently ignored -- hence a wrapper object rather than a patched method."""
 
-        def wrapped(x, t, u_ref, _f=filt, _orig=inner_call):
-            u, info = _orig(x, t, u_ref)
+        def __init__(self, f):
+            self.f = f
+
+        def __getattr__(self, k):
+            return getattr(self.f, k)
+
+        def __call__(self, x, t, u_ref, current=None):
+            f = self.f
+            u, info = f(x, t, u_ref, current=current)
             stats["instants"] += 1
             if info["filter_active"]:
                 stats["active"] += 1
-                stats["status"][str(_f.prob.status)] += 1
+                stats["status"][str(f.prob.status)] += 1
                 if info["filter_slack"] > 1e-6:
                     stats["slack_used"] += 1
                 else:
-                    a, b, _, _ = _f.H.rows(np.asarray(x, float)[None], t)
-                    tight = (_f.z * np.linalg.norm(a[0] * _f.sig_d[None, :], axis=-1)
-                             if _f.z else np.zeros(b.shape[1]))
-                    g = np.maximum(np.linalg.norm((a[0] @ sg.B_ALLOC) * _f.s0[None, :], axis=1), 1e-12)
+                    a, b, _, _ = f.H.rows(np.asarray(x, float)[None], t, current=current)
+                    tight = (f.z * np.linalg.norm(a[0] * f.sig_d[None, :], axis=-1)
+                             if f.z else np.zeros(b.shape[1]))
+                    g = np.maximum(np.linalg.norm((a[0] @ sg.B_ALLOC) * f.s0[None, :], axis=1), 1e-12)
                     m = (a[0] @ (sg.B_ALLOC @ u) - b[0] - tight) / g
                     stats["margins"].append(float(m.min()))
             stats["cone_excess"] = max(stats["cone_excess"],
@@ -64,9 +70,9 @@ def audit(cfg, seeds):
                                       float(abs(u[2]) - sg.bow_cap(np.asarray(x, float)[3])))
             return u, info
 
-        filt.__call__ = wrapped
-        c.filt = filt
-        # FilteredController calls self.filt(...), which resolves to the instance attribute we just set
+    for seed in seeds:
+        c, H = make_controller_ext(cfg, seed)
+        c.filt = Recording(c.filt)
         run_episode(c, H, seed=seed, disturbance=cfg.get("disturbance", "white"),
                     current=tuple(cfg.get("current", (0.0, 0.0))), max_time=150.0)
     return stats
