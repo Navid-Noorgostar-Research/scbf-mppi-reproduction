@@ -1,0 +1,19 @@
+corridor, K=400, seed 3, cycle 24  (live-demo JavaScript core)
+
+  controller              sd(shift)  sd(noise)  sd(log s)  sd(total)    corr  weights
+  ------------------------------------------------------------------------------------
+  MPPI                        3.059      3.059      0.000      0.000     n/a  discarded
+  SCBF as printed (var)       2.884      3.059      7.676      5.990   0.939  discarded
+  SCBF corrected (std)        0.119      3.059     22.715     22.714   0.991  discarded
+  SCBF + IS                   2.317      3.059     57.569     57.367   0.999  applied
+  SCBF + ESS budget           2.781      3.059      0.459      1.217   0.239  applied
+
+  ARITHMETIC CHECK - plain MPPI has m = 0 and s = sigma_0 at every sample, so the three
+  parts must cancel exactly:  sd(total) = 0.00e+0  ->  EXACT, the split is right
+
+  With the weights restored the shrink term carries 100.4 % of the total spread,
+  correlated with it at 0.999.  Python, over six cycles of a real episode:
+  sd(shift) 2.49, sd(noise) 3.10, sd(log s) 44.65, corr +0.994 (tests/logratio_decomposition.py).
+
+  The budget flattens the term that does the selecting: sd(log s) 0.459 against
+  57.569 with the weights merely restored - which is what holding E_q[w^2] at kappa per step buys.

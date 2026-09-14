@@ -220,7 +220,10 @@ step by construction, and it is the only filtered controller here whose importan
 applied — the budget is what makes them exist. `node live_demo/xval_budget.js` (`xval_budget.log`) checks it
 against the study: the effective sample size rises monotonically 22.5 → 35.1 → 55.8 → 98.7 across targets of
 5, 10, 25 and 50 %, and at the 10 % target the browser's 97-point β grid gives 35.1 against the 512-seed
-GPU's 33.7 on the package's 193-point grid. (4) The *Last runs* table gained an **ESS** column and notes μ on
+GPU's 33.7 on the package's 193-point grid. (4) A panel splitting the log density ratio into mean shift, noise and shrink and comparing their spread
+across samples — it reports exactly zero total spread for plain MPPI, which is the arithmetic check that
+the split is the right one, and shows the shrink term taking the whole of it once the weights are restored.
+(5) The *Last runs* table gained an **ESS** column and notes μ on
 the rows that used it, so three runs at μ = 0, 0.5 and 3 leave the dial's whole range on screen at once
 instead of in the operator's memory. Neither addition changed a trajectory of any existing controller, and
 no default changed: the demo still opens on the corridor, single run, plain MPPI, with the new controller
@@ -643,6 +646,17 @@ it only by losing the support that exact correction needs.*
   the estimator removes the advantage, and that is what identifies selection rather than averaging as the
   mechanism. Cross-checked by `node live_demo/xval_budget.js` (`xval_budget.log`): the browser's 97-point
   β grid against the package's 193-point one, at the 10 % target, lands on the 512-seed GPU figure.
+* **"Why the restored weights select"**, the log density ratio split live into its three parts — the mean
+  shift, the noise, and the shrink `Σ_t log s` — compared by their spread *across* the K samples, since only
+  that can select. It carries its own arithmetic check: for plain MPPI `m = 0` and `s = σ₀` at every sample,
+  so the three parts cancel and the panel reports a total spread of **exactly zero**. Switch to the restored
+  weights and the shrink term takes essentially the whole spread — 57.6 of 57.4, correlated at **0.999** —
+  which is the mechanism of V16 made visible: an effective size near one picks the rollout the barrier
+  corrected least. Two contrasts come free. The **printed variance form** shows a shrink spread of only 7.7,
+  because its optimum never collapses the covariance; and the **ESS budget** flattens it to 0.459, which is
+  precisely what holding `E_q[w²]` at κ per step buys. `node live_demo/xval_logsplit.js`
+  (`xval_logsplit.log`) records all five, beside the Python figures from
+  `tests/logratio_decomposition.py`.
 
 `live_demo/xval_obstruction.js` checks the panel against this section: run at the default start state it
 reproduces every figure in the table above — the interval `[-1/π, 1/π]`, the cap, the floor, the

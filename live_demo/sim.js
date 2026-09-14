@@ -85,9 +85,10 @@
     const umax = opt.umax || null;
     const S = new Float64Array(Kact), w = new Float64Array(Kact);
     const iv = new Float64Array(Kact);                  // sum_t I_{k,t}, the barrier's own intervention cost
+    const lrShift = new Float64Array(Kact), lrNoise = new Float64Array(Kact), lrShrink = new Float64Array(Kact);
     const traj = new Float32Array(Kact * (T + 1) * 2);  // xy of every sample (for drawing)
     const eps = new Float64Array(Kact * T * 2);
-    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN };
+    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN, split: null };
     const NS = 65;
     const actFlags = new Uint8Array(Kact * T);          // 1 where the barrier constraint was active for that (sample, step)
     function clipU(v, om) { if (!umax) return [v, om]; return [Math.max(-umax[0], Math.min(umax[0], v)), Math.max(-umax[1], Math.min(umax[1], om))]; }
@@ -97,7 +98,7 @@
       // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
       // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the row.
       const X = new Float64Array(Kact * 3);
-      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; }
+      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; lrShift[k] = 0; lrNoise[k] = 0; lrShrink[k] = 0; }
       let nAct = 0, nInf = 0, varSum = 0, satN = 0, satOk = 0;
       const logq = new Float64Array(Kact);
       for (let t = 0; t < T; t++) {
@@ -185,6 +186,18 @@
               logq[k] += (-0.5 * (ev / sig_v) ** 2 - Math.log(sig_v)) - (-0.5 * ((ev - m) / sfl) ** 2 - Math.log(sfl));
             }
           } else { ev = sig_v * xi_v; eo = sig_om * xi_o; varSum += 1; }
+          // THE LOG DENSITY RATIO, SPLIT.  With ev = m + s*xi the exact ratio log p/q separates into
+          //   sum_t [ -(1/2)((m+s xi)/s0)^2 - log s0 ]  +  sum_t [ (1/2) xi^2 ]  +  sum_t [ log s ]
+          //        mean shift                                noise                    shrink
+          // and those three add back to logq exactly.  Only variation ACROSS samples can select, so the
+          // panel compares their spreads: the shrink term carries almost all of it, which is why an
+          // effective size near one picks the rollout the barrier corrected least (FINDINGS.md section 4).
+          if (record) {
+            const sfl = Math.max(s, 1e-9), r0 = ev / sig_v;
+            lrShift[k] += -0.5 * r0 * r0 - Math.log(sig_v);
+            lrNoise[k] += 0.5 * xi_v * xi_v;
+            lrShrink[k] += Math.log(sfl);
+          }
           // delivered satisfaction on the drawn control (tolerance for boundary ties) — every controller
           const uv = ubv + ev;
           const ok = (c1 * uv >= b1 - 1e-7 * (1 + Math.abs(b1))) && (c2 * uv >= b2 - 1e-7 * (1 + Math.abs(b2)));
@@ -208,6 +221,22 @@
         if (isDet) { let c = 0; for (let t = 0; t < T; t++) c += eps[(k * T + t) * 2] / (sig_v * sig_v) * U[2 * t] + eps[(k * T + t) * 2 + 1] / (sig_om * sig_om) * U[2 * t + 1]; S[k] += lamUse * c; }
       }
       if (isIv) { let ivs = 0; for (let k = 0; k < Kact; k++) { S[k] += mu * lam * iv[k]; ivs += iv[k]; } st.iv = ivs / Kact; }
+      if (record) {                                   // spreads across samples, and how much of the total the shrink explains
+        let ma = 0, mb = 0, mc = 0;
+        for (let k = 0; k < Kact; k++) { ma += lrShift[k]; mb += lrNoise[k]; mc += lrShrink[k]; }
+        ma /= Kact; mb /= Kact; mc /= Kact;
+        let va = 0, vb = 0, vc = 0, vt = 0, cov = 0; const mt = ma + mb + mc;
+        for (let k = 0; k < Kact; k++) {
+          const da = lrShift[k] - ma, db = lrNoise[k] - mb, dc = lrShrink[k] - mc;
+          const dt = da + db + dc;
+          va += da * da; vb += db * db; vc += dc * dc; vt += dt * dt; cov += dc * dt;
+        }
+        const sd = v => Math.sqrt(v / Math.max(Kact - 1, 1));
+        const sdc = sd(vc), sdt = sd(vt);
+        st.split = { shift: sd(va), noise: sd(vb), shrink: sdc, total: sdt,
+                     corr: (sdc > 1e-12 && sdt > 1e-12) ? (cov / Math.max(Kact - 1, 1)) / (sdc * sdt) : NaN,
+                     applied: isCorr, filtered: isScbf };
+      }
       st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
       if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which the row binds, per horizon step
       return logq;

@@ -152,6 +152,7 @@ progress{width:100%;height:8px;margin-top:6px}
       <div class="inst">
         <div class="instcard"><div class="k"><span>Inside this cycle — the row the filter works on at t = 0, in units of its nominal spread</span><select id="rvsel" class="mini" aria-label="Row view controller" hidden></select></div><canvas id="rv" width="1300" height="428"></canvas><div class="rvtext" id="rvtext"></div></div>
         <div class="instcard" id="obcard"><div class="k"><span>Can any Gaussian do this? — the two walls against the importance weight, at this state</span></div><canvas id="ob" width="1300" height="300"></canvas><div class="rvtext" id="obtext"></div></div>
+        <div class="instcard" id="lscard"><div class="k"><span>Why the restored weights select &mdash; the log density ratio, split into its three parts</span></div><canvas id="ls" width="1300" height="250"></canvas><div class="rvtext" id="lstext"></div></div>
         <div class="instcard" id="tgcard"><div class="k"><span>Thrust — azimuth thruster inside its 700 N disk · bow thruster against its speed cap</span><span id="tgnote" style="text-transform:none;letter-spacing:0"></span></div><canvas id="tg" width="1300" height="372"></canvas></div>
       </div>
     </div>
@@ -265,9 +266,10 @@ progress{width:100%;height:8px;margin-top:6px}
     const umax = opt.umax || null;
     const S = new Float64Array(Kact), w = new Float64Array(Kact);
     const iv = new Float64Array(Kact);                  // sum_t I_{k,t}, the barrier's own intervention cost
+    const lrShift = new Float64Array(Kact), lrNoise = new Float64Array(Kact), lrShrink = new Float64Array(Kact);
     const traj = new Float32Array(Kact * (T + 1) * 2);  // xy of every sample (for drawing)
     const eps = new Float64Array(Kact * T * 2);
-    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN };
+    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN, split: null };
     const NS = 65;
     const actFlags = new Uint8Array(Kact * T);          // 1 where the barrier constraint was active for that (sample, step)
     function clipU(v, om) { if (!umax) return [v, om]; return [Math.max(-umax[0], Math.min(umax[0], v)), Math.max(-umax[1], Math.min(umax[1], om))]; }
@@ -277,7 +279,7 @@ progress{width:100%;height:8px;margin-top:6px}
       // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
       // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the row.
       const X = new Float64Array(Kact * 3);
-      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; }
+      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; lrShift[k] = 0; lrNoise[k] = 0; lrShrink[k] = 0; }
       let nAct = 0, nInf = 0, varSum = 0, satN = 0, satOk = 0;
       const logq = new Float64Array(Kact);
       for (let t = 0; t < T; t++) {
@@ -365,6 +367,18 @@ progress{width:100%;height:8px;margin-top:6px}
               logq[k] += (-0.5 * (ev / sig_v) ** 2 - Math.log(sig_v)) - (-0.5 * ((ev - m) / sfl) ** 2 - Math.log(sfl));
             }
           } else { ev = sig_v * xi_v; eo = sig_om * xi_o; varSum += 1; }
+          // THE LOG DENSITY RATIO, SPLIT.  With ev = m + s*xi the exact ratio log p/q separates into
+          //   sum_t [ -(1/2)((m+s xi)/s0)^2 - log s0 ]  +  sum_t [ (1/2) xi^2 ]  +  sum_t [ log s ]
+          //        mean shift                                noise                    shrink
+          // and those three add back to logq exactly.  Only variation ACROSS samples can select, so the
+          // panel compares their spreads: the shrink term carries almost all of it, which is why an
+          // effective size near one picks the rollout the barrier corrected least (FINDINGS.md section 4).
+          if (record) {
+            const sfl = Math.max(s, 1e-9), r0 = ev / sig_v;
+            lrShift[k] += -0.5 * r0 * r0 - Math.log(sig_v);
+            lrNoise[k] += 0.5 * xi_v * xi_v;
+            lrShrink[k] += Math.log(sfl);
+          }
           // delivered satisfaction on the drawn control (tolerance for boundary ties) — every controller
           const uv = ubv + ev;
           const ok = (c1 * uv >= b1 - 1e-7 * (1 + Math.abs(b1))) && (c2 * uv >= b2 - 1e-7 * (1 + Math.abs(b2)));
@@ -388,6 +402,22 @@ progress{width:100%;height:8px;margin-top:6px}
         if (isDet) { let c = 0; for (let t = 0; t < T; t++) c += eps[(k * T + t) * 2] / (sig_v * sig_v) * U[2 * t] + eps[(k * T + t) * 2 + 1] / (sig_om * sig_om) * U[2 * t + 1]; S[k] += lamUse * c; }
       }
       if (isIv) { let ivs = 0; for (let k = 0; k < Kact; k++) { S[k] += mu * lam * iv[k]; ivs += iv[k]; } st.iv = ivs / Kact; }
+      if (record) {                                   // spreads across samples, and how much of the total the shrink explains
+        let ma = 0, mb = 0, mc = 0;
+        for (let k = 0; k < Kact; k++) { ma += lrShift[k]; mb += lrNoise[k]; mc += lrShrink[k]; }
+        ma /= Kact; mb /= Kact; mc /= Kact;
+        let va = 0, vb = 0, vc = 0, vt = 0, cov = 0; const mt = ma + mb + mc;
+        for (let k = 0; k < Kact; k++) {
+          const da = lrShift[k] - ma, db = lrNoise[k] - mb, dc = lrShrink[k] - mc;
+          const dt = da + db + dc;
+          va += da * da; vb += db * db; vc += dc * dc; vt += dt * dt; cov += dc * dt;
+        }
+        const sd = v => Math.sqrt(v / Math.max(Kact - 1, 1));
+        const sdc = sd(vc), sdt = sd(vt);
+        st.split = { shift: sd(va), noise: sd(vb), shrink: sdc, total: sdt,
+                     corr: (sdc > 1e-12 && sdt > 1e-12) ? (cov / Math.max(Kact - 1, 1)) / (sdc * sdt) : NaN,
+                     applied: isCorr, filtered: isScbf };
+      }
       st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
       if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which the row binds, per horizon step
       return logq;
@@ -833,7 +863,7 @@ function makeEngine(SIM){
         if (r.done){ out.push({stepped:false, outside:r.outside, minh:r.minh, done:true, reached:r.reached, ttf:r.ttf, x:r.x.slice()}); continue; }
         const outBefore = r.outside; const hStep = stepRunner(r, s); const c = r.c;
         out.push({stepped:true, x:r.x.slice(), prev:r.prev.slice(), subs:r.subs ? r.subs.map(v=>v.slice()) : null, hStep, outside:r.outside, minh:r.minh, done:r.done, reached:r.reached, ttf:r.ttf, hit: r.outside > outBefore,
-          stats:{ess:c.stats.ess, act:c.stats.act, vr:c.stats.var, sat:c.stats.sat}, row0:c.stats.row0, prof: c.stats.actProfile ? Array.from(c.stats.actProfile) : null, thr:r.thr || null, gust: r.gust ? r.gust.slice() : null, fan: snapshotFan(c)});
+          stats:{ess:c.stats.ess, act:c.stats.act, vr:c.stats.var, sat:c.stats.sat}, row0:c.stats.row0, split:c.stats.split, prof: c.stats.actProfile ? Array.from(c.stats.actProfile) : null, thr:r.thr || null, gust: r.gust ? r.gust.slice() : null, fan: snapshotFan(c)});
       }
       s.k++; return {k: s.k, runners: out};
     },
@@ -891,7 +921,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   function syncIvCtrl(){ const corr = sceneKind()==="corridor";
     $("ivctrl").hidden = !(corr && ivInPlay());
     $("budctrl").hidden = !(corr && kindInPlay("scbf_bud"));
-    $("obcard").hidden = !corr; }
+    $("obcard").hidden = !corr; $("lscard").hidden = !corr; }
   function raceKinds(){ return [...$("racechecks").querySelectorAll("input:checked")].map(c=>c.value).slice(0,4); }
   function opts(){
     const K = +$("K").value, seed = +$("seed").value, delta = DELTAS[+$("delta").value], mult = +$("noise").value;
@@ -936,8 +966,8 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   }
   // ---------------------------------------------------------------- state on the main thread: shells of every runner, filled from the engine's frames
   function shellRunner(kind, o, sc){
-    if (sc==="corridor"){ const env = new SIM.Corridor(false); return {kind, env, x:[0,0.5,0], prev:[0,0.5,0], path:[[0,0.5]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, thr:null, prof:null, fan:null}; }
-    const H = SIM.harbour(o.scenario); return {kind, H, x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], path:[[0,0]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, thr:null, prof:null, fan:null};
+    if (sc==="corridor"){ const env = new SIM.Corridor(false); return {kind, env, x:[0,0.5,0], prev:[0,0.5,0], path:[[0,0.5]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null}; }
+    const H = SIM.harbour(o.scenario); return {kind, H, x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], path:[[0,0]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null};
   }
   function newState(){
     const o = opts(); const sc = sceneKind(); const mode = $("mode").value;
@@ -951,11 +981,11 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
     const s = state; if (hover) { hover = null; $("tip").hidden = true; }
     f.runners.forEach((fr, i) => { const r = s.runners[i];
       if (fr.stepped){ r.prev = fr.prev; r.x = fr.x; r.subs = fr.subs; r.path.push([fr.x[0], fr.x[1]]); r.hmin.push(fr.hStep); r.ess.push(fr.stats.ess); r.act.push(fr.stats.act); r.vr.push(fr.stats.vr); r.sat.push(fr.stats.sat);
-        r.row0 = fr.row0; r.thr = fr.thr; r.gust = fr.gust; r.prof = fr.prof; r.fan = fr.fan; r.planned = true; }
+        r.row0 = fr.row0; r.split = fr.split; r.thr = fr.thr; r.gust = fr.gust; r.prof = fr.prof; r.fan = fr.fan; r.planned = true; }
       r.outside = fr.outside; r.minh = fr.minh; r.done = fr.done; r.reached = fr.reached; r.ttf = fr.ttf; });
     s.k = f.k; s.lastHits = s.runners.filter((r,i)=>f.runners[i].hit);
     if ($("t_pause").checked && running && s.lastHits.length) s.pauseHit = true;
-    s.frames.push({k: s.k, x: s.runners.map(r=>r.x.slice()), fan: s.runners.map((r,i)=> f.runners[i].stepped ? r.fan : null), row0: s.runners.map(r=>r.row0), prof: s.runners.map(r=>r.prof), thr: s.runners.map(r=>r.thr), gust: s.runners.map(r=>r.gust ? r.gust.slice() : null),
+    s.frames.push({k: s.k, x: s.runners.map(r=>r.x.slice()), fan: s.runners.map((r,i)=> f.runners[i].stepped ? r.fan : null), row0: s.runners.map(r=>r.row0), split: s.runners.map(r=>r.split), prof: s.runners.map(r=>r.prof), thr: s.runners.map(r=>r.thr), gust: s.runners.map(r=>r.gust ? r.gust.slice() : null),
       st: s.runners.map(r=>({out:r.outside, minh:r.minh, ess:r.ess[r.ess.length-1], act:r.act[r.act.length-1], vr:r.vr[r.vr.length-1], sat:r.sat.length?r.sat[r.sat.length-1]:NaN, done:r.done, reached:r.reached, ttf:r.ttf, dist:goalDist(r, s)}))});
     if (story) storyOnStep(s);
     if (s.runners.every(r=>r.done)) finishRun();
@@ -1231,7 +1261,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       for (const r of s.runners) drawAgent(m, s, r, frac, col(r.kind));
     }
     drawBadges(m, s, tAbs, replay);
-    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac); drawObstruction(replay);
+    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac); drawObstruction(replay); drawLogSplit(replay);
   }
   function drawSparks(cursorK){
     const s = state; if (!s) return;
@@ -1445,6 +1475,67 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       + `against the cost-weighted target <b>${f(floorF)}</b> (dashed) &nbsp;·&nbsp; existence test <b>r − l ${ok ? ">" : "<"} √2·z·σ₀</b> — ${f(width)} ${ok ? ">" : "<"} ${f(Math.SQRT2*z*s0)}`
       + (ok ? " — <b>satisfied here</b>: a non-degenerate feasible proposal with finite weight variance exists at this state."
             : ` — <b>fails by a factor of ${(Math.SQRT2*z*s0/Math.max(width,1e-12)).toFixed(1)}</b>: at this state every non-degenerate Gaussian meeting both corrected wall constraints has infinite exact importance-weight variance. Not the optimiser's fault — no objective, mean or correlation can repair it.`);
+  }
+  // ---------------------------------------------------------------- the log density ratio, split
+  // log p/q = sum_t[-(1/2)((m+s xi)/s0)^2 - log s0] + sum_t[(1/2)xi^2] + sum_t[log s], and only variation
+  // ACROSS samples can select.  Plain MPPI must show a total spread of exactly zero -- with m = 0 and
+  // s = s0 the three terms cancel -- which is the arithmetic check that the split is the right one.
+  function drawLogSplit(replay){
+    const s = state; if (!s || s.sc !== "corridor") return;
+    const c = $("ls"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return;
+    if (c.width !== cw*2 || c.height !== ch*2) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), good = css("--good");
+    const i = rvRunnerIndex(s); const r = s.runners[i]; const sp = replay ? (replay.split ? replay.split[i] : null) : r.split;
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    if (!sp){ g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif";
+      g.fillText("step or run: the three parts of the log density ratio are compared here", 24, Hh/2); $("lstext").innerHTML = ""; return; }
+    const colr = col(r.kind);
+    const rows = [["mean shift", sp.shift, muted], ["noise", sp.noise, muted], ["shrink  Σ log s", sp.shrink, colr]];
+    const hi = Math.max(sp.shift, sp.noise, sp.shrink, sp.total, 1e-9);
+
+    g.fillStyle = ink; g.font = "500 22px IBM Plex Sans, sans-serif";
+    const title = `${SHORT[r.kind]} · spread across the ${s.o.K} samples`;
+    g.fillText(title, 24, 30); const tw = g.measureText(title).width;
+    const chip = sp.applied ? "these weights are applied" : (sp.filtered ? "these weights are discarded" : "no filter — the parts cancel");
+    g.font = "500 17px IBM Plex Sans, sans-serif"; const cwid = g.measureText(chip).width + 22;
+    g.fillStyle = sp.applied ? good : line; g.globalAlpha = sp.applied ? 0.22 : 0.6;
+    g.beginPath(); g.roundRect(24 + tw + 14, 11, cwid, 28, 14); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = sp.applied ? good : ink; g.fillText(chip, 24 + tw + 25, 31);
+
+    const padL = 230, padR = 120, y0 = 66, bh = 34, gap = 16;
+    const X = v => padL + (W - padL - padR) * Math.min(v / hi, 1);
+    rows.forEach((row, j) => {
+      const [name, val, cc] = row, y = y0 + j * (bh + gap);
+      g.fillStyle = muted; g.font = "19px IBM Plex Sans, sans-serif"; g.textAlign = "right";
+      g.fillText(name, padL - 16, y + bh/2 + 7);
+      g.fillStyle = line; g.globalAlpha = 0.5; g.fillRect(padL, y, W - padL - padR, bh); g.globalAlpha = 1;
+      g.fillStyle = cc; g.globalAlpha = cc === colr ? 0.85 : 0.5;
+      g.fillRect(padL, y, Math.max(X(val) - padL, 2), bh); g.globalAlpha = 1;
+      g.fillStyle = ink; g.font = "500 19px IBM Plex Mono, monospace"; g.textAlign = "left";
+      g.fillText(val.toFixed(2), W - padR + 14, y + bh/2 + 7);
+    });
+    // the total, as a rule beneath
+    const yt = y0 + 3 * (bh + gap) + 6;
+    g.strokeStyle = line; g.lineWidth = 2; g.beginPath(); g.moveTo(padL, yt); g.lineTo(W - padR, yt); g.stroke();
+    g.strokeStyle = ink; g.lineWidth = 3; g.beginPath(); g.moveTo(padL, yt); g.lineTo(X(sp.total), yt); g.stroke();
+    g.fillStyle = muted; g.font = "19px IBM Plex Sans, sans-serif"; g.textAlign = "right";
+    g.fillText("total", padL - 16, yt + 7);
+    g.fillStyle = ink; g.font = "500 19px IBM Plex Mono, monospace"; g.textAlign = "left";
+    g.fillText(sp.total.toFixed(2), W - padR + 14, yt + 7);
+
+    const f2 = v => v.toFixed(2);
+    const share = sp.total > 1e-9 ? sp.shrink / sp.total : 0;
+    let txt;
+    if (!sp.filtered)
+      txt = `no filter acts, so <b>m = 0</b> and <b>s = σ₀</b> at every sample and the three parts cancel exactly: the total spread is <b>${f2(sp.total)}</b>. That zero is the arithmetic check that this is the right split.`;
+    else if (isFinite(sp.corr))
+      txt = `the shrink term carries <b>${f2(sp.shrink)}</b> of the <b>${f2(sp.total)}</b> total spread and correlates with it at <b>${sp.corr >= 0 ? "+" : ""}${sp.corr.toFixed(3)}</b>` +
+            (share > 0.8 ? ` — the selection <b>is</b> the shrink: an effective size near one picks the rollout the barrier corrected least over the whole horizon.`
+                         : ` — here the shrink does <b>not</b> dominate, so the weights are not acting as a selector at this state.`) +
+            (sp.applied ? "" : " This controller discards these weights, so the spread shown is what it is <em>throwing away</em>.");
+    else txt = `the shrink term has no spread at this state.`;
+    $("lstext").innerHTML = txt;
   }
   // ---------------------------------------------------------------- thrust gauges
   const tgEase = {src:{}, prev:{}, cur:{}};
