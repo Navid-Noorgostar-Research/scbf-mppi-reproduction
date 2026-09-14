@@ -49,7 +49,8 @@
     const z = normPpf(1 - opt.delta), alpha = z;
     const goal = [4, 0.5], penalty = 1000;
     const isDet = kind === "det", isScbf = kind.startsWith("scbf");
-    const form = kind === "scbf_var" ? "variance" : "std", isCorr = kind === "scbf_is";
+    const form = kind === "scbf_var" ? "variance" : "std";
+    const isCorr = kind === "scbf_is" || kind === "scbf_bud";   // the budget is what makes the weights exist
     // INTERVENTION PENALTY.  I = |m| + (sigma_0 - s) is the per-sample problem's own objective value at
     // its optimum -- how hard the barrier had to push on this sample -- which Algorithm 1 computes at
     // every sample and then discards.  Charging it in the running cost, w propto exp(-(S + mu*lam*sum_t I)/lam),
@@ -58,6 +59,25 @@
     // correction reaches by accident.  Matches tests/gpu_closed_loop.py (kind "intervention"), which
     // adds no log-density term, so this controller is not the IS one with an extra cost.
     const isIv = kind === "scbf_iv", mu = opt.mu === undefined ? 0.5 : opt.mu;
+    // BUDGETED PER-SAMPLE PROBLEM (scbf_mppi/ess_budget.py).  The exact second moment of the Gaussian
+    // importance weight is  E_q[w^2] = b^2/sqrt(2b^2-1) * exp(m^2/(s0^2(2b^2-1)))  with s = b*s0.  Holding
+    // it at kappa per step and inverting for the mean shift gives the budget
+    //     |m| <= s0 * sqrt( (2b^2-1) * log( kappa*sqrt(2b^2-1) / b^2 ) ),
+    // inadmissible wherever that logarithm's argument falls to 1 or below, and chaining it over T steps
+    // delivers ESS/K >= kappa^-T.  With the budget in place the weights EXIST, so this controller always
+    // applies them -- unlike Algorithm 1, which cannot.
+    const isBud = kind === "scbf_bud";
+    const essTarget = opt.essTarget === undefined ? 0.10 : opt.essTarget;
+    const NB = 97, SQRT_HALF = Math.SQRT1_2, BEPS = 1e-3;
+    const kappaB = Math.pow(essTarget, -1 / T);
+    const sG = new Float64Array(NB), mmaxG = new Float64Array(NB);
+    for (let i = 0; i < NB; i++) {
+      const be = SQRT_HALF + BEPS + (1 - SQRT_HALF - BEPS) * i / (NB - 1);
+      const d = 2 * be * be - 1;
+      const inner = Math.log(Math.max(kappaB * Math.sqrt(d) / (be * be), 1e-300));
+      sG[i] = be * sv;
+      mmaxG[i] = inner > 0 ? sv * Math.sqrt(d * inner) : NaN;
+    }
     const iters = 4, shrink = 0.5, M = 125;
     const Kact = isDet ? M : K;
     const U = new Float64Array(T * 2);                 // nominal plan
@@ -108,6 +128,35 @@
           }
           if (isScbf) {
             if (active) {
+            if (isBud) {
+              // ess_budget.solve_rows_budgeted, one constrained channel, two rows.  Search the beta grid
+              // for the cheapest (mean shift, covariance shrink) that satisfies BOTH walls and stays inside
+              // the budget box |m| <= mmax(beta); if no beta manages both, fall back to the proposal that
+              // maximises the worst row's delivered margin while still respecting the budget.
+              let best = Infinity, bm = 0, bs = sig_v, okAny = false;
+              let bestZ = -Infinity, bzm = 0, bzs = sig_v;
+              for (let i = 0; i < NB; i++) {
+                const mm = mmaxG[i]; if (!(mm === mm)) continue;          // NaN: no mean shift admissible here
+                const sj = sG[i], pen = z * Math.abs(c1) * sj;
+                const rr1 = b1 + pen - c1 * ubv, rr2 = b2 + pen - c2 * ubv;
+                let lo2 = -Infinity, hi2 = Infinity, zok = true;
+                if (c1 > 1e-12) lo2 = Math.max(lo2, rr1 / c1); else if (c1 < -1e-12) hi2 = Math.min(hi2, rr1 / c1); else if (rr1 > 0) zok = false;
+                if (c2 > 1e-12) lo2 = Math.max(lo2, rr2 / c2); else if (c2 < -1e-12) hi2 = Math.min(hi2, rr2 / c2); else if (rr2 > 0) zok = false;
+                const LO = Math.max(lo2, -mm), HI = Math.min(hi2, mm);
+                if (zok && LO <= HI) {
+                  let mi = Math.min(Math.max(0, LO), HI); if (!isFinite(mi)) mi = 0;
+                  const cost = Math.abs(mi) + (sig_v - sj);
+                  if (cost < best) { best = cost; bm = mi; bs = sj; okAny = true; }
+                }
+                let mb = isFinite(lo2) ? lo2 : 0;
+                mb = Math.max(-mm, Math.min(mm, mb)); if (!isFinite(mb)) mb = 0;
+                const g1 = (c1 * (ubv + mb) - b1) / Math.max(Math.abs(c1) * sj, 1e-300);
+                const g2 = (c2 * (ubv + mb) - b2) / Math.max(Math.abs(c2) * sj, 1e-300);
+                const zw = Math.min(g1, g2);
+                if (zw > bestZ) { bestZ = zw; bzm = mb; bzs = sj; }
+              }
+              if (okAny) { m = bm; s = bs; } else { m = bzm; s = bzs; nInf++; }
+            } else {
               let best = Infinity, bm = 0, bs = sig_v, feasAny = false;
               for (let j = 0; j < NS; j++) {
                 const sj = sig_v * j / (NS - 1);
@@ -125,6 +174,7 @@
               }
               if (!feasAny) nInf++;
               m = bm; s = bs;
+              }
             }
             if (isIv) iv[k] += Math.abs(m) + (sig_v - s);   // = 0 on samples the filter left alone
             varSum += (s * s) / (sig_v * sig_v);

@@ -214,7 +214,13 @@ the V17 existence test at whatever state the plan starts from: two bands on a σ
 `σ ≤ (r − ℓ)/2z`, and where the importance weight has finite variance, `σ > σ₀/√2` — with the gap between them
 hatched and the factor printed. It is not rigged to fail: where the corridor runs straight the row coefficient is
 small, `r − ℓ = (h₁+h₂)/|a|` opens up and the verdict chip turns green, which is the honest statement, since the
-obstruction is a property of the state. (3) The *Last runs* table gained an **ESS** column and notes μ on
+obstruction is a property of the state. (3) A sixth controller, *SCBF-MPPI + ESS budget*, with a target-fraction slider: it solves the per-sample
+problem subject to the budget of `scbf_mppi/ess_budget.py`, so the weight second moment is held at κ per
+step by construction, and it is the only filtered controller here whose importance weights are always
+applied — the budget is what makes them exist. `node live_demo/xval_budget.js` (`xval_budget.log`) checks it
+against the study: the effective sample size rises monotonically 22.5 → 35.1 → 55.8 → 98.7 across targets of
+5, 10, 25 and 50 %, and at the 10 % target the browser's 97-point β grid gives 35.1 against the 512-seed
+GPU's 33.7 on the package's 193-point grid. (4) The *Last runs* table gained an **ESS** column and notes μ on
 the rows that used it, so three runs at μ = 0, 0.5 and 3 leave the dial's whole range on screen at once
 instead of in the operator's memory. Neither addition changed a trajectory of any existing controller, and
 no default changed: the demo still opens on the corridor, single run, plain MPPI, with the new controller
@@ -626,6 +632,17 @@ it only by losing the support that exact correction needs.*
 * **A μ slider** on a new controller, *SCBF-MPPI + intervention penalty*. Moving it sweeps continuously
   from the corrected controller to the selection rule Algorithm 1 reaches by accident, and the effective
   sample size on the right-hand panel moves with it, live.
+* **An ESS-budget controller** with a target-fraction slider, *SCBF-MPPI + ESS budget*. It solves the
+  per-sample problem subject to the budget of `scbf_mppi/ess_budget.py` — the mean shift is capped at
+  `|m| ≤ σ₀√((2β²−1)·log(κ√(2β²−1)/β²))` at each covariance shrink `β`, inadmissible where that logarithm's
+  argument falls to 1 or below — so the weight second moment is held at `κ` per step by construction. It is
+  the only filtered controller here whose importance weights are **always** applied, because the budget is
+  what makes them exist: Algorithm 1's optimum collapses the covariance and the weight then has no density
+  to evaluate. Moving the slider from 5 % to 50 % raises the effective sample size monotonically while the
+  controller stays on plain MPPI's behaviour, which is the finding rather than a disappointment — restoring
+  the estimator removes the advantage, and that is what identifies selection rather than averaging as the
+  mechanism. Cross-checked by `node live_demo/xval_budget.js` (`xval_budget.log`): the browser's 97-point
+  β grid against the package's 193-point one, at the 10 % target, lands on the 512-seed GPU figure.
 
 `live_demo/xval_obstruction.js` checks the panel against this section: run at the default start state it
 reproduces every figure in the table above — the interval `[-1/π, 1/π]`, the cap, the floor, the

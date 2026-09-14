@@ -5,11 +5,11 @@
 <style>
 :root{
   --bg:#F4F7F9; --surface:#FFFFFF; --ink:#1B2732; --muted:#5B6B78; --line:#D9E0E6; --water0:#DCE9F1; --water1:#EEF4F8; --wall:#20303C; --grid:rgba(32,48,60,0.07);
-  --mppi:#1B8AA6; --scbf:#5B4FB0; --var:#C2482A; --is:#2E7D4F; --det:#9C6A12; --printed:#1B8AA6; --iv:#B0367F; --accent:#1B8AA6; --focus:#F2A900; --active:#E08A00;
+  --mppi:#1B8AA6; --scbf:#5B4FB0; --var:#C2482A; --is:#2E7D4F; --det:#9C6A12; --printed:#1B8AA6; --iv:#B0367F; --bud:#0F7A6C; --accent:#1B8AA6; --focus:#F2A900; --active:#E08A00;
   --good:#2E7D4F; --bad:#C2482A; --obst:#8A9BA8; --obstcore:#3A4A57; --goal:#1B2732;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; } }
-:root[data-theme="dark"]{ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --bud:#3FBFA8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; } }
+:root[data-theme="dark"]{ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --bud:#3FBFA8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45;padding:16px 16px 32px}
@@ -105,6 +105,11 @@ progress{width:100%;height:8px;margin-top:6px}
       </div>
       <label for="delta">Chance level 1−δ <span class="val" id="deltav">0.997</span></label>
       <input type="range" id="delta" min="0" max="3" step="1" value="0">
+      <div id="budctrl" hidden>
+        <label for="esstgt">ESS budget — target fraction <span class="val" id="esstgtv">10 %</span></label>
+        <input type="range" id="esstgt" min="0" max="3" step="1" value="1">
+        <p class="note" style="margin:4px 0 0">Caps the weight second moment per step so that ESS/K ≥ target holds by construction. The weights are always applied here — the budget is what makes them exist.</p>
+      </div>
       <div id="ivctrl" hidden>
         <label for="mu">Intervention penalty μ <span class="val" id="muv">0.5</span></label>
         <input type="range" id="mu" min="0" max="6" step="1" value="4">
@@ -224,7 +229,8 @@ progress{width:100%;height:8px;margin-top:6px}
     const z = normPpf(1 - opt.delta), alpha = z;
     const goal = [4, 0.5], penalty = 1000;
     const isDet = kind === "det", isScbf = kind.startsWith("scbf");
-    const form = kind === "scbf_var" ? "variance" : "std", isCorr = kind === "scbf_is";
+    const form = kind === "scbf_var" ? "variance" : "std";
+    const isCorr = kind === "scbf_is" || kind === "scbf_bud";   // the budget is what makes the weights exist
     // INTERVENTION PENALTY.  I = |m| + (sigma_0 - s) is the per-sample problem's own objective value at
     // its optimum -- how hard the barrier had to push on this sample -- which Algorithm 1 computes at
     // every sample and then discards.  Charging it in the running cost, w propto exp(-(S + mu*lam*sum_t I)/lam),
@@ -233,6 +239,25 @@ progress{width:100%;height:8px;margin-top:6px}
     // correction reaches by accident.  Matches tests/gpu_closed_loop.py (kind "intervention"), which
     // adds no log-density term, so this controller is not the IS one with an extra cost.
     const isIv = kind === "scbf_iv", mu = opt.mu === undefined ? 0.5 : opt.mu;
+    // BUDGETED PER-SAMPLE PROBLEM (scbf_mppi/ess_budget.py).  The exact second moment of the Gaussian
+    // importance weight is  E_q[w^2] = b^2/sqrt(2b^2-1) * exp(m^2/(s0^2(2b^2-1)))  with s = b*s0.  Holding
+    // it at kappa per step and inverting for the mean shift gives the budget
+    //     |m| <= s0 * sqrt( (2b^2-1) * log( kappa*sqrt(2b^2-1) / b^2 ) ),
+    // inadmissible wherever that logarithm's argument falls to 1 or below, and chaining it over T steps
+    // delivers ESS/K >= kappa^-T.  With the budget in place the weights EXIST, so this controller always
+    // applies them -- unlike Algorithm 1, which cannot.
+    const isBud = kind === "scbf_bud";
+    const essTarget = opt.essTarget === undefined ? 0.10 : opt.essTarget;
+    const NB = 97, SQRT_HALF = Math.SQRT1_2, BEPS = 1e-3;
+    const kappaB = Math.pow(essTarget, -1 / T);
+    const sG = new Float64Array(NB), mmaxG = new Float64Array(NB);
+    for (let i = 0; i < NB; i++) {
+      const be = SQRT_HALF + BEPS + (1 - SQRT_HALF - BEPS) * i / (NB - 1);
+      const d = 2 * be * be - 1;
+      const inner = Math.log(Math.max(kappaB * Math.sqrt(d) / (be * be), 1e-300));
+      sG[i] = be * sv;
+      mmaxG[i] = inner > 0 ? sv * Math.sqrt(d * inner) : NaN;
+    }
     const iters = 4, shrink = 0.5, M = 125;
     const Kact = isDet ? M : K;
     const U = new Float64Array(T * 2);                 // nominal plan
@@ -283,6 +308,35 @@ progress{width:100%;height:8px;margin-top:6px}
           }
           if (isScbf) {
             if (active) {
+            if (isBud) {
+              // ess_budget.solve_rows_budgeted, one constrained channel, two rows.  Search the beta grid
+              // for the cheapest (mean shift, covariance shrink) that satisfies BOTH walls and stays inside
+              // the budget box |m| <= mmax(beta); if no beta manages both, fall back to the proposal that
+              // maximises the worst row's delivered margin while still respecting the budget.
+              let best = Infinity, bm = 0, bs = sig_v, okAny = false;
+              let bestZ = -Infinity, bzm = 0, bzs = sig_v;
+              for (let i = 0; i < NB; i++) {
+                const mm = mmaxG[i]; if (!(mm === mm)) continue;          // NaN: no mean shift admissible here
+                const sj = sG[i], pen = z * Math.abs(c1) * sj;
+                const rr1 = b1 + pen - c1 * ubv, rr2 = b2 + pen - c2 * ubv;
+                let lo2 = -Infinity, hi2 = Infinity, zok = true;
+                if (c1 > 1e-12) lo2 = Math.max(lo2, rr1 / c1); else if (c1 < -1e-12) hi2 = Math.min(hi2, rr1 / c1); else if (rr1 > 0) zok = false;
+                if (c2 > 1e-12) lo2 = Math.max(lo2, rr2 / c2); else if (c2 < -1e-12) hi2 = Math.min(hi2, rr2 / c2); else if (rr2 > 0) zok = false;
+                const LO = Math.max(lo2, -mm), HI = Math.min(hi2, mm);
+                if (zok && LO <= HI) {
+                  let mi = Math.min(Math.max(0, LO), HI); if (!isFinite(mi)) mi = 0;
+                  const cost = Math.abs(mi) + (sig_v - sj);
+                  if (cost < best) { best = cost; bm = mi; bs = sj; okAny = true; }
+                }
+                let mb = isFinite(lo2) ? lo2 : 0;
+                mb = Math.max(-mm, Math.min(mm, mb)); if (!isFinite(mb)) mb = 0;
+                const g1 = (c1 * (ubv + mb) - b1) / Math.max(Math.abs(c1) * sj, 1e-300);
+                const g2 = (c2 * (ubv + mb) - b2) / Math.max(Math.abs(c2) * sj, 1e-300);
+                const zw = Math.min(g1, g2);
+                if (zw > bestZ) { bestZ = zw; bzm = mb; bzs = sj; }
+              }
+              if (okAny) { m = bm; s = bs; } else { m = bzm; s = bzs; nInf++; }
+            } else {
               let best = Infinity, bm = 0, bs = sig_v, feasAny = false;
               for (let j = 0; j < NS; j++) {
                 const sj = sig_v * j / (NS - 1);
@@ -300,6 +354,7 @@ progress{width:100%;height:8px;margin-top:6px}
               }
               if (!feasAny) nInf++;
               m = bm; s = bs;
+              }
             }
             if (isIv) iv[k] += Math.abs(m) + (sig_v - s);   // = 0 on samples the filter left alone
             varSum += (s * s) / (sig_v * sig_v);
@@ -796,12 +851,13 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const rgba = (hex, a) => { const h = hex.replace("#",""); const v = h.length===3 ? h.split("").map(c=>c+c).join("") : h; const n = parseInt(v, 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; };
   const CTRLS = {
-    corridor: [["mppi","MPPI (baseline)"],["scbf_var","SCBF-MPPI as printed (variance form)"],["scbf_std","SCBF-MPPI corrected (std form)"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_iv","SCBF-MPPI + intervention penalty μ"],["det","Det. MPPI 4×125 (Homburger et al.)"]],
+    corridor: [["mppi","MPPI (baseline)"],["scbf_var","SCBF-MPPI as printed (variance form)"],["scbf_std","SCBF-MPPI corrected (std form)"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_iv","SCBF-MPPI + intervention penalty μ"],["scbf_bud","SCBF-MPPI + ESS budget (weights valid)"],["det","Det. MPPI 4×125 (Homburger et al.)"]],
     vessel:   [["mppi","MPPI (baseline)"],["printed","SCBF as printed, rel. degree 1 (no effect)"],["scbf","SCBF-MPPI, second-order barrier"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_var","SCBF-MPPI, variance form as printed"],["det","Det. MPPI 4×125 (Homburger et al.)"]]
   };
-  const SHORT = {mppi:"MPPI", scbf_var:"SCBF as printed", scbf_std:"SCBF corrected", scbf_is:"SCBF + IS", scbf_iv:"SCBF + penalty μ", det:"Det. MPPI", scbf:"SCBF-MPPI", printed:"as printed (rd 1)"};
-  const COLOR = {mppi:"--mppi", scbf_var:"--var", scbf_std:"--scbf", scbf_is:"--is", scbf_iv:"--iv", det:"--det", scbf:"--scbf", printed:"--printed"};
+  const SHORT = {mppi:"MPPI", scbf_var:"SCBF as printed", scbf_std:"SCBF corrected", scbf_is:"SCBF + IS", scbf_iv:"SCBF + penalty μ", scbf_bud:"SCBF + ESS budget", det:"Det. MPPI", scbf:"SCBF-MPPI", printed:"as printed (rd 1)"};
+  const COLOR = {mppi:"--mppi", scbf_var:"--var", scbf_std:"--scbf", scbf_is:"--is", scbf_iv:"--iv", scbf_bud:"--bud", det:"--det", scbf:"--scbf", printed:"--printed"};
   const MUS = [0, 0.1, 0.2, 0.3, 0.5, 1.0, 3.0];   // the swept grid of tests/gpu_closed_loop.py
+  const ESSTGT = [0.05, 0.10, 0.25, 0.50];          // target asymptotic ESS fraction for the budget
   const NOTES = {
     corridor: "Unicycle, Δt = 0.05 s, horizon 20, λ = 1, Σ₀ = diag(1.0², 1.5²). σ ×1.0 = 0.1, the level at which the paper's Table I reproduces (σ = I as stated leaves the corridor with probability 1).",
     static: "Solgenia (8.5 m, 3.1 t), published model, forces as inputs, 1 s control interval, 15 s horizon, Σ₀ = diag(350², 350², 120²) N². Noise ×1.0 = force noise of intensity s_F√(2τ_c), s_F = (120 N, 300 N, 400 N m); the gust is the same intensity, coloured. The current is added to the plant only — the controller's model does not know it (experiment V3). Circles = obstacle + 5 m ego radius. Dashed fronts: ψ₁ = dh/dt + α₁h = 0 at the velocity the controller believes; dotted: the true one.",
@@ -830,12 +886,16 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
     $("vesselctrl").hidden = sceneKind()!=="vessel"; $("tgcard").hidden = sceneKind()!=="vessel";
     syncIvCtrl();
   }
-  function ivInPlay(){ return $("mode").value === "race" ? raceKinds().includes("scbf_iv") : $("ctrl").value === "scbf_iv"; }
-  function syncIvCtrl(){ const on = sceneKind()==="corridor" && ivInPlay(); $("ivctrl").hidden = !on; $("obcard").hidden = sceneKind()!=="corridor"; }
+  function kindInPlay(k){ return $("mode").value === "race" ? raceKinds().includes(k) : $("ctrl").value === k; }
+  function ivInPlay(){ return kindInPlay("scbf_iv"); }
+  function syncIvCtrl(){ const corr = sceneKind()==="corridor";
+    $("ivctrl").hidden = !(corr && ivInPlay());
+    $("budctrl").hidden = !(corr && kindInPlay("scbf_bud"));
+    $("obcard").hidden = !corr; }
   function raceKinds(){ return [...$("racechecks").querySelectorAll("input:checked")].map(c=>c.value).slice(0,4); }
   function opts(){
     const K = +$("K").value, seed = +$("seed").value, delta = DELTAS[+$("delta").value], mult = +$("noise").value;
-    if (sceneKind()==="corridor") return {K, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1*mult, delta, seed, maxSteps:250, mult, mu: MUS[+$("mu").value]};
+    if (sceneKind()==="corridor") return {K, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1*mult, delta, seed, maxSteps:250, mult, mu: MUS[+$("mu").value], essTarget: ESSTGT[+$("esstgt").value]};
     const dist = $("dist").value; const cs = +$("cur").value; const dir = DIRS[+$("curdir").value]; const ang = dir[1]*Math.PI/180;
     return {scenario:$("scene").value, K, T:15, lam:300, s0:[350,350,120], delta, seed, disturbance: (mult>0 && dist!=="none") ? dist : "none", sF:[120*mult,300*mult,400*mult], tauc:5, maxTime:150, mult, current: cs>0 ? [cs*Math.cos(ang), cs*Math.sin(ang)] : null, curSpeed: cs, curDir: dir[0]};
   }
@@ -957,7 +1017,8 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       $("s_e").textContent = isFinite(v.ess) ? v.ess.toFixed(0) : "–";
       $("s_e_n").textContent = r.kind==="scbf_iv"
         ? `of ${s.o.K} · μ = ${s.o.mu} charged on the barrier's own intervention cost — μ = 0 is the corrected controller, large μ is the selection rule Algorithm 1 reaches by accident`
-        : (r.kind==="scbf_is" ? `of ${s.o.K} · the omitted density correction restored: an effective size near one is selection, not averaging` : `of ${s.o.K} samples`);
+        : (r.kind==="scbf_bud" ? `of ${s.o.K} · budget holds ESS/K ≥ ${(100*s.o.essTarget).toFixed(0)} % by construction, so the density correction is always applied`
+        : (r.kind==="scbf_is" ? `of ${s.o.K} · the omitted density correction restored: an effective size near one is selection, not averaging` : `of ${s.o.K} samples`));
       const isP = r.kind==="printed", isD = r.kind==="det"; const detNote = isD ? " · averaged over the 4 inner iterations (125 samples, σ₀·1, ½, ¼, ⅛)" : "";
       $("s_a").textContent = v.n ? (100*v.actM).toFixed(0)+" %" : "–";
       $("s_a_n").textContent = isP ? "of sample-timesteps the printed row 0 ≥ b binds — it can never be modified (gain Φ⁻¹(1−δ), the V1 setting), so this share moves with the 1−δ slider while the path stays MPPI's, bit for bit" : (isS ? "of sample-timesteps on which the chance constraint bound and the filter modified the draw" : "of sample-timesteps on which the chance constraint (corrected std form) would bind — nothing filters" + detNote);
@@ -1460,6 +1521,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   $("mode").addEventListener("change", ()=>{ $("singlectrl").hidden = $("mode").value==="race"; $("racectrl").hidden = $("mode").value!=="race"; syncIvCtrl(); reset(); });
   $("ctrl").addEventListener("change", ()=>{ syncIvCtrl(); reset(); });
   $("mu").addEventListener("input", ()=>{ $("muv").textContent = MUS[+$("mu").value].toFixed(MUS[+$("mu").value] % 1 ? 1 : 0); }); $("mu").addEventListener("change", reset);
+  $("esstgt").addEventListener("input", ()=>{ $("esstgtv").textContent = (100*ESSTGT[+$("esstgt").value]).toFixed(0)+" %"; }); $("esstgt").addEventListener("change", reset);
   $("K").addEventListener("input", ()=>{ $("Kv").textContent = $("K").value; }); $("K").addEventListener("change", reset);
   $("noise").addEventListener("input", ()=>{ $("noisev").textContent = "×"+(+$("noise").value).toFixed(1); }); $("noise").addEventListener("change", reset);
   $("dist").addEventListener("change", reset);
