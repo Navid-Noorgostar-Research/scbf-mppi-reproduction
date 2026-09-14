@@ -43,22 +43,31 @@
   Corridor.prototype.minh = function (x, y) { const w = this.w(x); return Math.min(y - w, w + this.alpha - y); };
 
   function corridorMakeController(env, kind, opt) {
-    // kind: mppi | scbf_var | scbf_std | scbf_is | det ; opt: {K,T,lam,sv,som,sigma,delta,seed,umax}
+    // kind: mppi | scbf_var | scbf_std | scbf_is | scbf_iv | det ; opt: {K,T,lam,sv,som,sigma,delta,seed,umax,mu}
     const K = opt.K, T = opt.T, lam = opt.lam, sv = opt.sv, som = opt.som, sigEnv = opt.sigma;
     const rng = new Rng(opt.seed * 7919 + 17);
     const z = normPpf(1 - opt.delta), alpha = z;
     const goal = [4, 0.5], penalty = 1000;
     const isDet = kind === "det", isScbf = kind.startsWith("scbf");
     const form = kind === "scbf_var" ? "variance" : "std", isCorr = kind === "scbf_is";
+    // INTERVENTION PENALTY.  I = |m| + (sigma_0 - s) is the per-sample problem's own objective value at
+    // its optimum -- how hard the barrier had to push on this sample -- which Algorithm 1 computes at
+    // every sample and then discards.  Charging it in the running cost, w propto exp(-(S + mu*lam*sum_t I)/lam),
+    // keeps a valid estimator because I is a deterministic function of the SOLVE and not of the noise.
+    // mu = 0 is the corrected controller; large mu reproduces the selection rule the omitted density
+    // correction reaches by accident.  Matches tests/gpu_closed_loop.py (kind "intervention"), which
+    // adds no log-density term, so this controller is not the IS one with an extra cost.
+    const isIv = kind === "scbf_iv", mu = opt.mu === undefined ? 0.5 : opt.mu;
     const iters = 4, shrink = 0.5, M = 125;
     const Kact = isDet ? M : K;
     const U = new Float64Array(T * 2);                 // nominal plan
     const Rv = lam / (sv * sv), Rom = lam / (som * som);
     const umax = opt.umax || null;
     const S = new Float64Array(Kact), w = new Float64Array(Kact);
+    const iv = new Float64Array(Kact);                  // sum_t I_{k,t}, the barrier's own intervention cost
     const traj = new Float32Array(Kact * (T + 1) * 2);  // xy of every sample (for drawing)
     const eps = new Float64Array(Kact * T * 2);
-    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0 };
+    const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN };
     const NS = 65;
     const actFlags = new Uint8Array(Kact * T);          // 1 where the barrier constraint was active for that (sample, step)
     function clipU(v, om) { if (!umax) return [v, om]; return [Math.max(-umax[0], Math.min(umax[0], v)), Math.max(-umax[1], Math.min(umax[1], om))]; }
@@ -68,7 +77,7 @@
       // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
       // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the row.
       const X = new Float64Array(Kact * 3);
-      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; }
+      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; }
       let nAct = 0, nInf = 0, varSum = 0, satN = 0, satOk = 0;
       const logq = new Float64Array(Kact);
       for (let t = 0; t < T; t++) {
@@ -117,6 +126,7 @@
               if (!feasAny) nInf++;
               m = bm; s = bs;
             }
+            if (isIv) iv[k] += Math.abs(m) + (sig_v - s);   // = 0 on samples the filter left alone
             varSum += (s * s) / (sig_v * sig_v);
             if (record && t === 0 && k === 0) { st.row0.mu = m; st.row0.s = s; }
             ev = m + s * xi_v; eo = sig_om * xi_o;
@@ -147,6 +157,7 @@
         S[k] += dx * dx + dy * dy;
         if (isDet) { let c = 0; for (let t = 0; t < T; t++) c += eps[(k * T + t) * 2] / (sig_v * sig_v) * U[2 * t] + eps[(k * T + t) * 2 + 1] / (sig_om * sig_om) * U[2 * t + 1]; S[k] += lamUse * c; }
       }
+      if (isIv) { let ivs = 0; for (let k = 0; k < Kact; k++) { S[k] += mu * lam * iv[k]; ivs += iv[k]; } st.iv = ivs / Kact; }
       st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
       if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which the row binds, per horizon step
       return logq;

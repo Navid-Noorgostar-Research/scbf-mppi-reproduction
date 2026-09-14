@@ -201,6 +201,25 @@ never stalls while 500 rollouts are planned (frame times while racing four contr
 the boats are interpolated through the 0.25 s RK4 sub-steps, and the fan, the fronts, the row view and the gauges ease between cycles.
 The Step button queues one step per click; the batch runs in the same thread and no longer freezes the tab.
 
+**Added 15 September — the two new results, as instruments.** (1) *SCBF-MPPI + intervention penalty*, a sixth
+corridor controller with a **μ slider**. It charges `I = |m| + (σ₀ − s)`, the per-sample problem's own objective
+value at its optimum, as an extra running cost: `w_k ∝ exp(−(S_k + μ λ Σ_t I_{k,t})/λ)`. μ = 0 is the corrected
+controller and large μ is the selection rule Algorithm 1 reaches by accident, so moving the slider sweeps
+continuously between them while the effective sample size on the right-hand panel follows, live. Cross-checked
+against the study by `node live_demo/xval_intervention.js` (`xval_intervention.log`): at μ = 0 it reproduces the
+corrected controller **to machine precision**, so the penalty does not leak into the baseline, and over 24 seeds
+the effective size falls monotonically 280.2 → 258.8 → 197.8 → 143.0 → 68.1 → 6.8 → 2.4 across μ = 0 … 3 while
+the median minimum barrier rises from −0.074 to +0.189. (2) *“Can any Gaussian do this?”*, a panel that evaluates
+the V17 existence test at whatever state the plan starts from: two bands on a σ axis — what the two walls allow,
+`σ ≤ (r − ℓ)/2z`, and where the importance weight has finite variance, `σ > σ₀/√2` — with the gap between them
+hatched and the factor printed. It is not rigged to fail: where the corridor runs straight the row coefficient is
+small, `r − ℓ = (h₁+h₂)/|a|` opens up and the verdict chip turns green, which is the honest statement, since the
+obstruction is a property of the state. (3) The *Last runs* table gained an **ESS** column and notes μ on
+the rows that used it, so three runs at μ = 0, 0.5 and 3 leave the dial's whole range on screen at once
+instead of in the operator's memory. Neither addition changed a trajectory of any existing controller, and
+no default changed: the demo still opens on the corridor, single run, plain MPPI, with the new controller
+sitting sixth in the list and the new panel below the row view.
+
 The three diagnostics are defined for every controller. The barrier rows are evaluated on every (sample, timestep) pair of every
 controller; *constraint active* is the share of pairs on which the nominal proposal (μ = 0, Σ = Σ₀) violates the chance constraint —
 for the SCBF variants that is where problem (8) modified the draw, for MPPI and deterministic MPPI it is where it *would* have
@@ -521,11 +540,11 @@ the best controller measured here. Over 512 corridor seeds at the repository's o
 
 | controller | reached | median collision | median min h | ever unsafe | runaway | ESS |
 |---|---|---|---|---|---|---|
-| plain MPPI | 97.5 % | 0.0461 | −0.051 | 95.1 % | 0 / 512 | 269.6 |
-| Algorithm 1, as printed | 76.8 % | 0.0240 | −0.045 | 72.3 % | 5 / 512 | 304.0 |
-| Algorithm 1, corrected constraint | 35.2 % | 0.0400 | −0.086 | 84.8 % | 16 / 512 | 295.5 |
-| corrected **+ the omitted weights** | 100.0 % | 0.0000 | **+0.167** | **12.1 %** | 0 / 512 | **2.0** |
-| intervention penalty, μ = 0.5 | 99.4 % | 0.0000 | +0.133 | 16.8 % | 3 / 512 | **88.7** |
+| plain MPPI | 97.5 % | 0.0461 | −0.051 | 95.1 % | 0 / 512 | 160.1 |
+| Algorithm 1, as printed | 76.8 % | 0.0240 | −0.045 | 72.3 % | 5 / 512 | 240.3 |
+| Algorithm 1, corrected constraint | 35.2 % | 0.0400 | −0.086 | 84.8 % | 16 / 512 | 280.1 |
+| corrected **+ the omitted weights** | 100.0 % | 0.0000 | **+0.167** | **12.1 %** | 0 / 512 | **1.9** |
+| intervention penalty, μ = 0.5 | 99.4 % | 0.0000 | +0.133 | 16.8 % | 3 / 512 | **69.4** |
 
 An effective sample size of two is not averaging. It is selection, and the dominant term in the log
 density ratio is `log s`, so the rollout it selects is the one the barrier had to correct least over the
@@ -543,10 +562,14 @@ part is what destroys the sample size.
 
 **What this does not establish.** The intervention penalty is not demonstrated to be a better controller.
 Its runaway-episode rate of 3 of 512 cannot be distinguished from zero by Fisher's exact test (p = 0.249),
-but it is not monotone in μ across the sweep (7, 9, 3, 8, 1), so the tail is unresolved at this seed
+but it is not monotone in μ: across μ = 0, 0.1, 0.2, 0.3, 0.5, 1 and 3 the runaway counts are
+16, 13, 7, 9, 3, 8, 1 of 512, so the tail is unresolved at this seed
 count, and a safety argument rests on the tail. Separately, the budgeted per-sample problem in
-`scbf_mppi/ess_budget.py` does exactly what it was built to do — the weight budget binds to five decimals
-and the effective size rises from 2.0 to 65 — and buys no control benefit, landing on plain MPPI. That is
+`scbf_mppi/ess_budget.py` does exactly what it was built to do — the weight budget binds to machine precision (2·10⁻¹⁶ across the 113 admissible β)
+and the effective size rises from 1.9 to 33.7 — and buys no control benefit, landing on plain MPPI. (Its
+10 % target bounds the **density-ratio factor** alone; the realised episode mean multiplies that by the cost
+softmax, which is itself only 160.1 of 500 for plain MPPI, so 33.7 is the product and not a missed target.)
+That is
 the finding rather than a disappointment: restoring the estimator removes the advantage, which is what
 identifies selection rather than averaging as the mechanism.
 
@@ -554,9 +577,81 @@ identifies selection rather than averaging as the mechanism.
 python tests/gpu_closed_loop.py --seeds 512    # needs CUDA; the table above
 ```
 
-`FINDINGS.md` states every result with the assumptions it needs, separates the classical importance-
-sampling mathematics from what is new here, and lists the four claims made during this work and later
-withdrawn.
+**V17 — a sharper obstruction, and both it and the μ dial made interactive.** Section V15 says the
+*optimiser* collapses the covariance. At the corridor's own start state a stronger statement holds, and it
+depends on nothing that an implementation is free to choose — not the objective, not the mean, not the
+norm on the factor, not correlations with the turn-rate channel.
+
+The corridor's two walls constrain the **same** forward-speed variable from opposite sides. Meeting both
+corrected chance constraints requires `ℓ + zσ ≤ μ ≤ r − zσ`, so a Gaussian exists only for
+`σ ≤ (r − ℓ)/2z`. Finite variance of the exact importance weight requires `σ > σ₀/√2`. A usable Gaussian
+therefore exists **exactly when**
+
+```
+r − ℓ  >  √2 · z · σ₀
+```
+
+At `x = 0, y = 0.5, θ = 0` with `σ₀ = 1` and `δ = 0.003`, evaluated against this repository's own
+`Corridor.scbf_rows`:
+
+| | |
+|---|---|
+| largest σ both walls allow | 0.115843 |
+| smallest σ giving finite weight variance | 0.707107 |
+| the test | 0.636620 > 3.885950 — **fails by a factor of six** |
+
+So at that state every non-degenerate Gaussian first-speed proposal satisfying both corrected wall
+constraints has infinite exact importance-weight variance. Carried to the full cost-weighted target,
+divergence holds whenever `σ² < (2/σ₀² + 4(T+1)Δt²/λ)⁻¹`, which is 0.452489 here, and every chance-feasible
+Gaussian is capped at 0.013420 — well inside it. The MPPI cost does not rescue the example. *The
+construction and the full-target extension are due to an external review of commit `33497d1`, not to this
+repository; they are recorded because they were verified here to the digit and because they subsume V15's
+statement. Infinite variance does not mean a particular finite run fails, and a singular proposal escapes
+it only by losing the support that exact correction needs.*
+
+**Both results are now instruments in the live demo rather than paragraphs.** The demo gained:
+
+* **“Can any Gaussian do this?”** — the test above, evaluated live at whatever state the plan starts from.
+  Two bands on a σ axis: what the two walls allow, and where the importance weight has finite variance.
+  At the start state they do not touch, and the panel prints the factor. It is not rigged to fail: where the corridor runs
+  straight the coefficient `a` is small, `r − ℓ = (h₁+h₂)/|a|` opens up, and the verdict chip flips to
+  green — which is the honest statement, since the obstruction is a property of the state and not of the
+  method everywhere.
+* **A μ slider** on a new controller, *SCBF-MPPI + intervention penalty*. Moving it sweeps continuously
+  from the corrected controller to the selection rule Algorithm 1 reaches by accident, and the effective
+  sample size on the right-hand panel moves with it, live.
+
+`live_demo/xval_obstruction.js` checks the panel against this section: run at the default start state it
+reproduces every figure in the table above — the interval `[-1/π, 1/π]`, the cap, the floor, the
+full-target threshold and the factor of six — to 5·10⁻⁷, reading the rows from the browser core rather
+than from the Python package (`xval_obstruction.log`). `live_demo/xval_intervention.js` cross-checks the
+browser controller against the study, and is the check that matters for it: at μ = 0 it reproduces the corrected controller **to machine precision**, so the
+penalty is not leaking into the baseline, and over 24 seeds the effective sample size falls monotonically
+280.2 → 258.8 → 197.8 → 143.0 → 68.1 → 6.8 → 2.4 across μ = 0 … 3 while the median minimum barrier rises
+from −0.074 to +0.189. `live_demo/xval_intervention.log` is that run.
+
+**Two defects in this repository, both found from outside it, both fixed.** A transpose in
+`vessel/solver_nd.py` reported `‖P a‖` where the sampling covariance needs `‖Pᵀa‖`; the regression guard
+then proved the damage was confined to one diagnostic field, and an intermediate claim of mine that it
+also sat on the sampling path was wrong. And the GPU closed-loop harness averaged the effective sample
+size over cycles in which a finished seed's planner was still running at the goal, inflating the column by
+1.68× for plain MPPI and by *different* factors for different controllers. Both are written up in
+`FINDINGS.md` §5b and §5c, with what they cost and what caught them.
+
+**On novelty, checked rather than assumed.** Every claim above was put to a four-way prior-art search —
+academic index, citation graph, open web, and implementations — with the searchers told to *refute*. Each
+citation it returned was then read directly and the condition verified in the source. The result is that
+**nothing here is a new theorem**, and one claim is prior art outright: charging a safety filter's own
+effort as an extra λ-scaled running cost in the MPPI exponent is Gandhi, Almubarak, Aoyama and Theodorou,
+arXiv:2204.05963 (2022), Algorithm 1, and Robust MPPI before it, and the reason it is valid at all is
+Section III-B of MPPI's own founding paper, *Likelihood Ratio as Additional Running Cost*
+(arXiv:1509.01149). The two-sided chance-constraint cap is Lubin, Bienstock and Vielma
+(arXiv:1507.01995, Lemma 16); the finite-variance floor is textbook; the χ² bound is
+Hammersley–Chapman–Robbins with an indicator test function, which Polyanskiy and Wu set as a reader
+exercise. What survives is composition and measurement: **where** the optimum of this paper's own
+per-sample program lies, that the covariance its barrier shrinks **is** the proposal covariance, and what
+both cost when measured. `FINDINGS.md` §7 states each position with its citation, and §5b–§5d record the
+two defects found in this repository and the setting that must be quoted with the V15 table.
 
 ## Reproducing it
 

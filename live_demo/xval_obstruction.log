@@ -1,0 +1,17 @@
+Corridor start state x = 0, y = 0.5, theta = 0;  sigma0 = 1,  z = 2.747781
+
+  quantity                           panel   FINDINGS 2b  agree
+  --------------------------------------------------------------
+  admissible speed lower l       -0.318310     -0.318310  yes
+  admissible speed upper r        0.318310      0.318310  yes
+  interval width r - l            0.636620      0.636620  yes
+  cap (r-l)/2z                    0.115843      0.115843  yes
+  floor sigma0/sqrt(2)            0.707107      0.707107  yes
+  full-target floor squared       0.452489      0.452489  yes
+  sqrt(2) z sigma0                3.885950      3.885950  yes
+  cap squared                     0.013419      0.013420  yes
+
+  verdict chip: no Gaussian at all   (expected: no Gaussian at all)
+  fails by a factor of 6.1   (expected: 6.1)
+
+  worst absolute disagreement with FINDINGS.md section 2b: 5.13e-7

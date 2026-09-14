@@ -1,0 +1,20 @@
+corridor, 24 seeds, K=500, delta=0.003  (live-demo JavaScript core)
+
+  controller                reached  med coll  med min h   ever<0      ESS  med ttf
+  --------------------------------------------------------------------------------
+  MPPI                       100.0%    0.0352     -0.038      88%    164.3      118
+  SCBF corrected (std)        50.0%    0.0314     -0.074      79%    280.2      248
+  SCBF + IS                  100.0%    0.0000     +0.191       8%      1.9      110
+    + penalty mu=0            50.0%    0.0314     -0.074      79%    280.2      248
+    + penalty mu=0.1          83.3%    0.0000     +0.019      46%    258.8      174
+    + penalty mu=0.2          91.7%    0.0000     +0.056      33%    197.8      125
+    + penalty mu=0.3         100.0%    0.0000     +0.095      13%    143.0      112
+    + penalty mu=0.5         100.0%    0.0000     +0.147      13%     68.1      102
+    + penalty mu=1           100.0%    0.0000     +0.189      17%      6.8      103
+    + penalty mu=3            91.7%    0.0000     +0.172       8%      2.4      119
+
+  mu = 0 reproduces the corrected controller: YES, to machine precision
+  ESS across mu = 0 .. 3: 280.2  258.8  197.8  143.0  68.1  6.8  2.4
+  monotonically falling: YES
+
+

@@ -61,8 +61,12 @@ the ones approaching the obstacles.
 spectral norm on the covariance factor. Non-singular feasible proposals still exist if the mean moves
 further into the safe region; the obstruction is the objective's preferred solution, not feasibility.
 
-This is the strongest claim here and the only one an independent novelty review rated as possibly new to
-the literature rather than only to this paper.
+A four-way prior-art search later rated this a **composition of known parts** rather than a new result:
+the hypothesis it shows Algorithm 1 violating is written into MPPI's own covariance-shaping theorem
+(Williams, Aldrich, Theodorou, arXiv:1509.01149, Theorem 1, "under the condition that each `A_{t_i}` is
+invertible"), and the loss of the optimality guarantee is conceded by Tao et al. themselves after (11).
+What is new is only *where the optimum lies*, and that `s* = 0` is therefore the generic case in the one
+regime where the filter acts. Section 7 states that position with its citations.
 
 ## 2b. Stronger than the collapse: at the corridor's own start state, no Gaussian works at all
 
@@ -93,6 +97,12 @@ constraints has infinite exact importance-weight variance. Extending to the full
 divergence follows whenever `sigma_q^2 < (2/sigma_0^2 + 4(T+1)dt^2/lambda)^-1`, which at `T = 20`,
 `dt = 0.05`, `lambda = 1` is 0.452489 — and every chance-feasible Gaussian, capped at 0.013420, is
 inside it. The MPPI cost does not rescue the example.
+
+Both halves of this are published. The two-sided Gaussian cap is Lubin, Bienstock and Vielma,
+arXiv:1507.01995, Lemma 16 (63)-(65) — the per-row pair used here is exactly their axis-aligned
+approximation — and the finite-variance floor for a Gaussian-to-Gaussian weight is textbook (Owen ch. 9).
+What is not in either is that in this method they bind the **same object**, because the covariance the
+barrier rows shrink *is* the importance-sampling proposal covariance. Section 7 has the full position.
 
 Every figure in this section was checked against `Corridor.scbf_rows` in this repository and reproduces
 exactly. The construction and the full-target extension are due to an external review of commit
@@ -126,10 +136,14 @@ equality-attaining proposal at `K = 500` and `delta = 0.003`, no sample lands in
 divergence at all. So this bounds recovery of the nominal law, and constrains the MPPI estimator only
 when `pi(A) > delta`. It is not an impossibility result for every safe MPPI variant.
 
-*The ingredients are classical.* `ESS/K -> 1/(1+chi2)` and the chi-square characterisation of importance
-sampling efficiency: Kong 1992; Agapiou, Papaspiliopoulos, Sanz-Alonso, Stuart, *Statistical Science*
-2017; Chatterjee and Diaconis, *Ann. Appl. Prob.* 2018. The Gaussian tail condition is textbook, Owen
-ch. 9. What is assembled here is the composition, not the inequalities.
+*The ingredients are classical, and so is the inequality.* The bound is Hammersley-Chapman-Robbins with
+the test function taken to be the indicator of the violation set: Polyanskiy and Wu, *Information Theory:
+From Coding to Learning*, give the variational form of chi-square at (7.73) and the Bernoulli value at
+Prop. 7.2, and set the event rearrangement as a reader **exercise**. `ESS/K -> 1/(1+chi2)` is Kong 1992,
+with rigorous versions in Agapiou, Papaspiliopoulos, Sanz-Alonso, Stuart, *Statistical Science* 2017 and
+Chatterjee and Diaconis, *Ann. Appl. Prob.* 2018. The Gaussian tail condition is textbook, Owen ch. 9.
+Nothing mathematical here is new; what is assembled is the reading of it as a price every
+constraint-satisfying proposal in sampling-based MPC pays.
 
 The Gaussian corollary, `E[w^2] < infinity` iff `s > s0/sqrt(2)`, is the **scalar** case. In general the
 condition is the matrix one, `2 Sigma_q - Sigma_p` positive definite, and an anisotropic shrink can fail
@@ -139,11 +153,32 @@ it while its largest ratio still exceeds `1/sqrt(2)`.
 
 Restoring the omitted weights gives, in the corridor over 512 seeds, the **best** controller tested:
 100 % goal-reaching, the fastest time, a median collision rate of zero and a median minimum barrier of
-+0.167, at an asymptotic effective sample size of **2.0** out of 500.
++0.167, at an asymptotic effective sample size of **1.9** out of 500.
 
 That is not path-integral averaging. At an effective size near one the update selects a single sample,
 and the dominant term in the log density ratio is `log s`, so the sample it selects is the one the
 barrier had to correct least over the whole horizon.
+
+That last step is measured rather than asserted. Only variation *across samples* can select, so split the
+per-sample ratio into its three pieces — with `sigma_0 = 1` and `ev = m + s xi`,
+
+```
+log p/q  =  sum_t [-0.5 ((m + s xi)/s0)^2 - log s0]  +  sum_t [0.5 xi^2]  +  sum_t [log s]
+                 mean shift                                noise              shrink
+```
+
+— and compare their standard deviations over the K samples. Replaying the proposal of six cycles of a real
+episode (the rebuilt total matches the controller's own `logq` to 1.1e-13, so the split is exact):
+
+| | sd across samples |
+|---|---|
+| mean-shift term | 2.49 |
+| noise term | 3.10 |
+| **shrink term, `sum_t log s`** | **44.65** |
+| total | 44.88 |
+
+The shrink term is fourteen to eighteen times the spread of either other term, and the total is correlated
+with it at **+0.994**. The selection is the shrink.
 
 Charging for that explicitly turns the accident into a dial. Let `I = |m| + (s0 - s)` be the per-sample
 problem's own objective value, which the paper computes and discards, and weight by
@@ -155,11 +190,39 @@ w_k  proportional to  exp( -( S_k + mu lambda sum_t I_k,t ) / lambda )
 `mu = 0` reproduces the corrected controller to the digit and `mu` large reproduces the accidental rule,
 with every value between a valid estimator, because `I` depends on the solve and not on the noise.
 Over 512 seeds, `mu = 0.5` gives 99.4 % reached, median collision zero, median minimum barrier +0.133, at
-an effective sample size of 88.7 rather than 2.0.
+an effective sample size of 69.4 rather than 1.9.
+
+The whole dial, over 512 seeds:
+
+| μ | reached | median collision | median min h | ever unsafe | runaway | ESS |
+|---|---|---|---|---|---|---|
+| 0 | 35.2 % | 0.0400 | −0.086 | 84.8 % | 16 / 512 | 280.1 |
+| 0.1 | 76.6 % | 0.0160 | −0.036 | 62.5 % | 13 / 512 | 254.7 |
+| 0.2 | 93.2 % | 0.0000 | +0.048 | 33.8 % | 7 / 512 | 199.9 |
+| 0.3 | 97.3 % | 0.0000 | +0.088 | 22.3 % | 9 / 512 | 146.0 |
+| 0.5 | 99.4 % | 0.0000 | +0.133 | 16.8 % | 3 / 512 | 69.4 |
+| 1 | 98.4 % | 0.0000 | +0.163 | 17.0 % | 8 / 512 | 7.6 |
+| 3 | 99.6 % | 0.0000 | +0.152 | 14.8 % | 1 / 512 | 2.0 |
+
+The browser core reproduces it independently at 24 seeds — 280.2, 258.8, 197.8, 143.0, 68.1, 6.8, 2.4
+against the 512-seed 280.1, 254.7, 199.9, 146.0, 69.4, 7.6, 2.0 — which is the cross-check that the live
+demo shows the same object this table does (`live_demo/xval_intervention.log`).
+
+**This mechanism is not new, and the section should not be read as proposing it.** Charging a safety
+filter's own effort as an extra lambda-scaled running cost inside the MPPI exponent is published: Gandhi,
+Almubarak, Aoyama, Theodorou, arXiv:2204.05963 (2022), Algorithm 1 accumulates
+`S_hat += q(x) + (lambda(1-beta)/2) k_fb' Sigma^-1 k_fb`, with the same tunable multiplier, and Robust
+MPPI (RA-L 2021) is the same construction a year earlier. The reason it is a valid estimator is Section
+III-B of MPPI's founding paper, "Likelihood Ratio as Additional Running Cost". What is specific here is
+only that the scalar charged is the SCBF program's own optimal objective value, and that this filter
+re-solves a per-sample covariance as well as a mean, so the exact ratio carries a determinant term and a
+cheap deterministic surrogate is attractive for a reason that does not arise in that prior work. Section 7
+states the position in full.
 
 **What this does not establish.** It is not demonstrated to be a better controller. Its runaway-episode
 rate is 3 of 512, which Fisher's exact test cannot distinguish from zero (p = 0.249), but that rate is
-not monotone in `mu` (7, 9, 3, 8, 1 across the sweep), so the tail is unresolved at this seed count.
+not monotone in `mu` — across `mu` = 0, 0.1, 0.2, 0.3, 0.5, 1, 3 the counts are 16, 13, 7, 9, 3, 8, 1 of 512 — so the
+tail is unresolved at this seed count.
 The typical-case statistics move smoothly with `mu`; the tail does not, and a safety argument rests on
 the tail.
 
@@ -195,6 +258,78 @@ stored `results/*.json` still carry the old value for that one field.
 An intermediate claim of mine, that the error also sat on the sampling path, was wrong. It came from
 exercising `_solve_one_row` with a non-diagonal factor, which the real call path never does.
 
+## 5c. A second defect in this repository's own harness, found because three numbers disagreed
+
+The same quantity — plain MPPI's episode-mean effective sample size in the corridor at K = 500 — was
+reported three times and three ways:
+
+| source | seeds | value |
+|---|---|---|
+| this repository's shipped `E1_table1.json` (CPU) | 30 | 159.91 |
+| an external review's independent prototype | 30 | 170.62 |
+| this work's GPU closed-loop study | 512 | **269.62** |
+
+The GPU was the odd one out, and it was wrong. `tests/gpu_closed_loop.py` freezes a finished seed's
+**state** but keeps calling the planner for it on every remaining outer iteration, and divided by a global
+cycle counter rather than a per-seed one. `simulate.run_episode` breaks at the goal. Measured on the CPU,
+by flying eight episodes and then continuing to plan at the parked state:
+
+```
+mean ESS over the cycles actually flown      179.93
+mean ESS over the cycles parked at the goal  381.06       <- the cost landscape there is flat
+the GPU's statistic, over 250 cycles         263.21       <- 1.46x inflation
+```
+
+Those eight seeds are a demonstration of the mechanism, not the reported figure; on the 512 seeds the
+column actually shipped with, plain MPPI's 269.62 becomes 160.1, an inflation of **1.68x**.
+
+Worse than a constant factor: how much a controller idles, and whether its filter still acts once parked,
+both differ by controller, so the column was inflated by **different** factors per row and could not be
+read across rows. Plain MPPI was inflated 1.68x; the two controllers whose weights had already collapsed
+were barely touched, because at the corridor's goal the wall is at its steepest --
+`w'(4) = pi/2`, so `|a| = 1.5708` at zero heading -- and BOTH chance constraints are violated there even
+at zero input, by 4.316 against a bound of -0.5, so the filter is fully active although the state sits in
+the middle of the corridor with half a metre of clearance on each side.
+
+Fixed by gating the accumulator with the same `alive` mask `nstep` already used. Verified three ways:
+
+* CPU and GPU now agree **per seed** to 2.8e-08 relative, on ESS, time-to-goal and minimum barrier;
+* at 512 seeds the GPU reports **160.1** against the repository's own shipped CPU value of 159.91;
+* the external review's 170.62 at 30 seeds is ordinary seed noise, not a disagreement: the shipped 30
+  runs have a per-seed range of 99.1 to 226.9 and a standard deviation of 34.4, so a 95 % interval on
+  their mean is [147.6, 172.2] — which contains 170.62 and excludes 269.62 by nine standard errors.
+
+**Scope.** Only the ESS column of the V16 table. `reached`, `ttf`, `collision_rate` and `min_h` were
+already gated by `alive` and are unchanged — confirmed by diffing the per-seed arrays against the run made
+before the fix, which is kept as `results/corridor_V16_before_ess_fix.json` so the diff can be redone: every
+one of `reached`, `ttf`, `collision_rate` and `min_h` agrees to 0.0e+00 on all twelve controllers, and the
+ESS inflation ranges from 0.95x to 1.93x across them, which is what "different factors per row" means. The V15 sweep in `tests/gpu_ess_scaling.py` is unaffected: it
+evaluates weightings at snapshot states and never averages over an episode.
+
+**What this cost.** The inflated column was the evidence for "restoring the weights collapses the sample
+size, and the intervention penalty buys it back". The conclusion survives, because the collapse to ~2 and
+the recovery with `mu` are both far larger than a 1.5x accounting error, but the *magnitude* of the
+recovery was overstated, and the corrected numbers are the ones in section 4 and in the README.
+
+The defect was caught only because an outside number disagreed with mine. `tests/gpu_ess_scaling.py`'s own
+docstring had recorded the right value — "an episode mean of about 160 of 500 for plain MPPI" — as a
+sanity anchor for a different harness, and this work did not notice that its own closed-loop harness
+contradicted it. That is the second time in this project a confident number was wrong and a disagreement
+with something already shipped was what found it.
+
+## 5d. A setting that must be quoted with the V15 table
+
+`tests/gpu_ess_scaling.py` builds its reference episode and its controllers from the **class** defaults,
+so its sweep runs at `sigma_v = 0.5`, while `experiments.DEFAULT`, the shipped corridor tables and the
+closed-loop study all use `sigma_v = 1.0`. The sweep is internally consistent — all three weightings are
+evaluated at the same states with the same draws — but its absolute values are not comparable with the
+rest of this repository. The shipped sweep uses eight snapshot states and three repetitions; generating
+six the same way and evaluating plain MPPI at them gives a median effective sample size at K = 500 of
+176.7 at `sigma_v = 0.5` against 3.9 at `sigma_v = 1.0`, because the larger input spread carries the
+reference episode further down the corridor — to x = 2.79 rather than 1.58 by the same step — into states
+where the cost softmax concentrates. The sweep's **conclusion** is a statement about scaling in K and is unaffected; its
+**absolute numbers** belong to `sigma_v = 0.5` and are quoted that way from here on.
+
 ## 6. Reproducing
 
 ```
@@ -204,9 +339,92 @@ python -m scbf_mppi.vessel.ext.selftest_ext  #   2 min, 26 checks
 python tests/test_regression.py check        #   3 min, twelve configurations, bit for bit
 python tests/gpu_ess_scaling.py              #  needs CUDA; CPU/GPU gate then the K sweep
 python tests/gpu_closed_loop.py --seeds 512  #  needs CUDA; the closed-loop table above
+python tests/logratio_decomposition.py       #  30 s, the section 4 split of the log density ratio
+node   live_demo/xval_obstruction.js         #   1 s, section 2b against the browser core
+node   live_demo/xval_intervention.js 24     #   2 min, the mu dial against section 4
 ```
 
 The two GPU scripts refuse to report anything unless they first reproduce the CPU implementation on the
 same seed and noise. That gate exists because three separate harness faults in this work produced
 confident wrong answers, and every one was caught by disagreeing with a number this repository already
 shipped.
+
+## 7. Novelty, checked against the literature rather than assumed
+
+Each of the four claims above was put to a four-way prior-art search — an academic-index sweep, a
+citation-graph sweep, an open-web sweep and an implementation sweep — with the searchers instructed to
+**refute** novelty rather than confirm it. Every citation below was then read directly and the quoted
+condition verified in the source, because a wrong citation is worse than none. The result is that nothing
+here is a new theorem, one claim is prior art outright, and the honest description of the rest is
+*composition*.
+
+| claim | verdict |
+|---|---|
+| §2 the shaping optimum is singular | new composition of known parts |
+| §2b no Gaussian exists at that state | new composition of known parts |
+| §3 the chi-square efficiency floor | new composition of known parts — nothing mathematical is new |
+| §4 the intervention penalty | **known prior art** |
+
+**§4 is not new, and this matters most.** Charging a safety filter's own effort as an extra λ-scaled
+running cost inside the MPPI exponent is published. Gandhi, Almubarak, Aoyama and Theodorou, *Safety in
+Augmented Importance Sampling* (arXiv:2204.05963, 2022), Algorithm 1, accumulates
+
+```
+S_hat_n  +=  q(x) + (lambda (1 - beta) / 2) k_fb' Sigma^-1 k_fb
+```
+
+— the safe controller's own per-sample feedback `k_fb`, charged into the sampled cost with a tunable
+multiplier `(1 - beta)`, inside a free-energy derivation. Its parent, Robust MPPI (Gandhi, Vlahov, Gibson,
+Williams, Theodorou, RA-L 2021), is the same construction a year earlier. More fundamentally, the *reason*
+it works is Section III-B of MPPI's own founding paper, Williams, Aldrich and Theodorou (arXiv:1509.01149),
+titled "Likelihood Ratio as Additional Running Cost": a change of sampling law appears in the estimator
+exactly as an added running cost. So the mechanism is not merely known, it is the mechanism MPPI is built
+on.
+
+What is left is narrow and should be stated narrowly: the scalar charged here is the SCBF program's **own
+optimal objective value** `|m| + (sigma_0 - s)`, which the paper computes at every sample and discards,
+and the setting differs in one way that matters — RMPPI and SAIS shift the mean under a fixed covariance,
+so their exact Radon-Nikodym derivative is available in closed form, whereas Algorithm 1 re-solves a
+per-sample mean **and** covariance factor, so the exact ratio carries a determinant term and the collapse
+documented in §2 and §4. A cheap deterministic surrogate is attractive here for a reason that does not
+arise there. The `mu -> large` equivalence is measured and directional, not proved.
+
+**§2 and §2b are compositions of published inequalities.** Verified in the sources:
+
+* Williams, Aldrich and Theodorou (arXiv:1509.01149), Theorem 1, states the covariance-shaping likelihood
+  ratio only "under the condition that each `A_{t_i}` is invertible and each `Gamma_i` is invertible" — so
+  the hypothesis that §2 shows Algorithm 1 violates is written into MPPI's own covariance-shaping theorem.
+* Lubin, Bienstock and Vielma, *Two-sided linear chance constraints and extensions* (arXiv:1507.01995),
+  Lemma 16, equations (63)-(65), gives the two-sided Gaussian cap; the per-row pair used here is exactly
+  their axis-aligned approximation `A_eps`, which they note is the form Bienstock et al. use in practice.
+* The finite-variance floor for a Gaussian-to-Gaussian importance weight is textbook (Owen ch. 9) and
+  published in matrix form.
+* Tao et al. themselves write, immediately after (11), that the update "cannot guarantee the optimality
+  anymore", and their Remark 1 already derives the variance cap.
+
+The residue in §2 is *where the optimum lies* — that the program separates into the directional standard
+deviation `s = ||P'a||`, that the objective is piecewise linear in `s` with its only kink at `slack/z`, and
+therefore that `s* = 0` is the **generic** outcome in precisely the regime where the filter acts, rather
+than an edge case. The residue in §2b is the observation that the cap and the floor bind the *same object*,
+because in this method the covariance the barrier shrinks **is** the importance-sampling proposal
+covariance. Both are pointers, not theorems.
+
+A caveat that sharpens §2 rather than weakening it, and which the sections already reflect: the collapse
+belongs to the **standard-deviation** form, the corrected constraint. For the **variance** form the paper
+actually prints, the objective is strictly convex on the active branch and the optimum is bounded away from
+zero — which is why §2 measures 13.0 % of samples degenerate with the corrected form and **0.0 %** with the
+printed one. The degeneracy is a property of the constraint the paper claims to enforce, not of the
+inequality it typesets.
+
+**§3 is a two-line corollary of a textbook identity.** The chi-square floor is Hammersley-Chapman-Robbins
+with the test function taken to be the indicator of the violation set; Polyanskiy and Wu (*Information
+Theory: From Coding to Learning*, CUP, Ch. 7) give the variational form at (7.73), the Bernoulli value at
+Prop. 7.2, and set the event rearrangement as a reader exercise. The `ESS = K/(1 + chi2)` half is Kong
+(1992), with rigorous versions in Agapiou et al. (2017) and Chatterjee and Diaconis (2018). Nothing
+mathematical here is new. What is not standard is the *reading*: that this is a price every constraint-
+satisfying proposal in sampling-based MPC pays, and a floor no shaping scheme can engineer around.
+
+**How this should be said out loud.** "None of the measure theory or the inequalities are mine, and the
+intervention penalty is Theodorou's group's construction from 2021-22 — what I did was locate the optimum
+of this paper's own per-sample program, notice that the object its barrier shrinks is the proposal
+covariance itself, and measure what that costs."

@@ -119,6 +119,26 @@ minus signs into a cp1252 console and died with a `UnicodeEncodeError` before pr
 console encoding is now set in `scbf_mppi/__init__.py`, so `python -m scbf_mppi.selftest` works on a stock
 Windows install without setting `PYTHONUTF8`.
 
+## 5b. The two GPU scripts, which `requirements.txt` deliberately does not pin
+
+`tests/gpu_ess_scaling.py` and `tests/gpu_closed_loop.py` are the only files here that need a GPU, and the
+CUDA wheels are large and machine-specific, so they are kept out of the pinned stack. What was used:
+
+```
+python -m pip install cupy-cuda12x nvidia-cublas-cu12 nvidia-cuda-runtime-cu12 nvidia-cufft-cu12                       nvidia-curand-cu12 nvidia-cusolver-cu12 nvidia-cusparse-cu12 nvidia-nvjitlink-cu12
+```
+
+cupy 14.2.0 against the pip-installed CUDA 12 runtime. On Windows those wheels put their DLLs under
+`site-packages/nvidia/*/bin`, which is not on the loader path, so importing cupy fails with a bare
+"CUDA path could not be detected" unless the directories are registered first; `load_cupy()` in both
+scripts does that with `os.add_dll_directory` before the import, which is why they are imported through it
+rather than with a plain `import cupy`.
+
+Neither script reports anything until it has reproduced the CPU implementation on the same seed and the
+same draws. That gate is not decoration: three separate harness faults in this work produced confident
+wrong answers, and every one was caught by disagreeing with a number this repository had already shipped
+(`FINDINGS.md` §5c is the most recent, and the most expensive).
+
 ## 6. The machine
 
 ```

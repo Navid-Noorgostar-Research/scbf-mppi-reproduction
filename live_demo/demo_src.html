@@ -3,11 +3,11 @@
 <style>
 :root{
   --bg:#F4F7F9; --surface:#FFFFFF; --ink:#1B2732; --muted:#5B6B78; --line:#D9E0E6; --water0:#DCE9F1; --water1:#EEF4F8; --wall:#20303C; --grid:rgba(32,48,60,0.07);
-  --mppi:#1B8AA6; --scbf:#5B4FB0; --var:#C2482A; --is:#2E7D4F; --det:#9C6A12; --printed:#1B8AA6; --accent:#1B8AA6; --focus:#F2A900; --active:#E08A00;
+  --mppi:#1B8AA6; --scbf:#5B4FB0; --var:#C2482A; --is:#2E7D4F; --det:#9C6A12; --printed:#1B8AA6; --iv:#B0367F; --accent:#1B8AA6; --focus:#F2A900; --active:#E08A00;
   --good:#2E7D4F; --bad:#C2482A; --obst:#8A9BA8; --obstcore:#3A4A57; --goal:#1B2732;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; } }
-:root[data-theme="dark"]{ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; } }
+:root[data-theme="dark"]{ --bg:#0F171E; --surface:#16222B; --ink:#E8EEF2; --muted:#9AAAB6; --line:#2B3A46; --water0:#0F2230; --water1:#152C3C; --wall:#C9D6E0; --grid:rgba(201,214,224,0.08); --mppi:#3FB3CF; --scbf:#9A8FE8; --var:#E6785C; --is:#5DBB86; --det:#D9A64A; --printed:#3FB3CF; --iv:#E67FB8; --accent:#3FB3CF; --obst:#5C6E7C; --obstcore:#C9D6E0; --goal:#E8EEF2; --bad:#E6785C; }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45;padding:16px 16px 32px}
@@ -102,6 +102,11 @@ progress{width:100%;height:8px;margin-top:6px}
       </div>
       <label for="delta">Chance level 1−δ <span class="val" id="deltav">0.997</span></label>
       <input type="range" id="delta" min="0" max="3" step="1" value="0">
+      <div id="ivctrl" hidden>
+        <label for="mu">Intervention penalty μ <span class="val" id="muv">0.5</span></label>
+        <input type="range" id="mu" min="0" max="6" step="1" value="4">
+        <p class="note" style="margin:4px 0 0">μ = 0 is the corrected controller; μ → ∞ is the selection rule Algorithm 1 reaches by accident. Watch the effective sample size as you move it.</p>
+      </div>
       <label for="seed">Seed <span class="val" id="seedv">1</span></label>
       <input type="range" id="seed" min="0" max="29" step="1" value="1">
       <label for="speed">Playback <span class="val" id="speedv">1× real time</span></label>
@@ -138,6 +143,7 @@ progress{width:100%;height:8px;margin-top:6px}
       </div>
       <div class="inst">
         <div class="instcard"><div class="k"><span>Inside this cycle — the row the filter works on at t = 0, in units of its nominal spread</span><select id="rvsel" class="mini" aria-label="Row view controller" hidden></select></div><canvas id="rv" width="1300" height="428"></canvas><div class="rvtext" id="rvtext"></div></div>
+        <div class="instcard" id="obcard"><div class="k"><span>Can any Gaussian do this? — the two walls against the importance weight, at this state</span></div><canvas id="ob" width="1300" height="300"></canvas><div class="rvtext" id="obtext"></div></div>
         <div class="instcard" id="tgcard"><div class="k"><span>Thrust — azimuth thruster inside its 700 N disk · bow thruster against its speed cap</span><span id="tgnote" style="text-transform:none;letter-spacing:0"></span></div><canvas id="tg" width="1300" height="372"></canvas></div>
       </div>
     </div>
@@ -147,7 +153,7 @@ progress{width:100%;height:8px;margin-top:6px}
         <div class="stat"><div class="k">time</div><div class="v" id="s_t">0</div></div>
         <div class="stat"><div class="k">collision steps</div><div class="v" id="s_c">0</div></div>
         <div class="stat"><div class="k">min h</div><div class="v" id="s_h">–</div></div>
-        <div class="stat"><div class="k">ESS</div><div class="v" id="s_e">–</div></div>
+        <div class="stat"><div class="k">ESS</div><div class="v" id="s_e">–</div><div class="n" id="s_e_n"></div></div>
         <div class="stat"><div class="k">constraint active</div><div class="v" id="s_a">–</div><div class="n" id="s_a_n"></div></div>
         <div class="stat"><div class="k">var kept</div><div class="v" id="s_v">–</div><div class="n" id="s_v_n"></div></div>
         <div class="stat wide"><div class="k">delivered Pr(a·u ≥ b) on active pairs</div><div class="v" id="s_p">–</div><div class="n" id="s_p_n"></div></div>
@@ -155,7 +161,7 @@ progress{width:100%;height:8px;margin-top:6px}
       </div>
       <div id="racestats" hidden><table id="lb"><thead><tr><th>#</th><th>controller</th><th class="num">coll</th><th class="num">min h</th><th class="num">t</th><th class="num">ESS</th><th class="num">binds</th></tr></thead><tbody id="lbb"></tbody></table><p class="note">Ranked by collision steps, then time to goal (estimated from the remaining distance while a run is still going). Same seed → identical disturbance realisation for every controller (common random numbers). <em>binds</em> = share of sample-timesteps on which the barrier chance constraint binds; for MPPI and det. MPPI it would bind — nothing filters. Det. MPPI: ESS and binds averaged over its 4 inner iterations (125 samples each).</p></div>
       <h2 style="margin-top:14px">Last runs <span class="val" id="histn"></span></h2>
-      <table id="ht"><thead><tr><th></th><th>run</th><th class="num">coll</th><th class="num">min h</th><th class="num">t</th></tr></thead><tbody id="htb"><tr><td colspan="5" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr></tbody></table>
+      <table id="ht"><thead><tr><th></th><th>run</th><th class="num">coll</th><th class="num">min h</th><th class="num">t</th><th class="num">ESS</th></tr></thead><tbody id="htb"><tr><td colspan="6" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr></tbody></table>
       <div class="row"><button id="clearhist">Clear history</button></div>
       <h2 style="margin-top:14px">Batch (this scene, this controller)</h2>
       <table id="bt"><thead><tr><th>metric</th><th class="num">mean</th><th class="num">±95 %</th></tr></thead><tbody id="btb"><tr><td colspan="3" style="color:var(--muted)">run a batch to fill</td></tr></tbody></table>
@@ -235,11 +241,12 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const rgba = (hex, a) => { const h = hex.replace("#",""); const v = h.length===3 ? h.split("").map(c=>c+c).join("") : h; const n = parseInt(v, 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; };
   const CTRLS = {
-    corridor: [["mppi","MPPI (baseline)"],["scbf_var","SCBF-MPPI as printed (variance form)"],["scbf_std","SCBF-MPPI corrected (std form)"],["scbf_is","SCBF-MPPI + IS correction"],["det","Det. MPPI 4×125 (Homburger et al.)"]],
+    corridor: [["mppi","MPPI (baseline)"],["scbf_var","SCBF-MPPI as printed (variance form)"],["scbf_std","SCBF-MPPI corrected (std form)"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_iv","SCBF-MPPI + intervention penalty μ"],["det","Det. MPPI 4×125 (Homburger et al.)"]],
     vessel:   [["mppi","MPPI (baseline)"],["printed","SCBF as printed, rel. degree 1 (no effect)"],["scbf","SCBF-MPPI, second-order barrier"],["scbf_is","SCBF-MPPI + IS correction"],["scbf_var","SCBF-MPPI, variance form as printed"],["det","Det. MPPI 4×125 (Homburger et al.)"]]
   };
-  const SHORT = {mppi:"MPPI", scbf_var:"SCBF as printed", scbf_std:"SCBF corrected", scbf_is:"SCBF + IS", det:"Det. MPPI", scbf:"SCBF-MPPI", printed:"as printed (rd 1)"};
-  const COLOR = {mppi:"--mppi", scbf_var:"--var", scbf_std:"--scbf", scbf_is:"--is", det:"--det", scbf:"--scbf", printed:"--printed"};
+  const SHORT = {mppi:"MPPI", scbf_var:"SCBF as printed", scbf_std:"SCBF corrected", scbf_is:"SCBF + IS", scbf_iv:"SCBF + penalty μ", det:"Det. MPPI", scbf:"SCBF-MPPI", printed:"as printed (rd 1)"};
+  const COLOR = {mppi:"--mppi", scbf_var:"--var", scbf_std:"--scbf", scbf_is:"--is", scbf_iv:"--iv", det:"--det", scbf:"--scbf", printed:"--printed"};
+  const MUS = [0, 0.1, 0.2, 0.3, 0.5, 1.0, 3.0];   // the swept grid of tests/gpu_closed_loop.py
   const NOTES = {
     corridor: "Unicycle, Δt = 0.05 s, horizon 20, λ = 1, Σ₀ = diag(1.0², 1.5²). σ ×1.0 = 0.1, the level at which the paper's Table I reproduces (σ = I as stated leaves the corridor with probability 1).",
     static: "Solgenia (8.5 m, 3.1 t), published model, forces as inputs, 1 s control interval, 15 s horizon, Σ₀ = diag(350², 350², 120²) N². Noise ×1.0 = force noise of intensity s_F√(2τ_c), s_F = (120 N, 300 N, 400 N m); the gust is the same intensity, coloured. The current is added to the plant only — the controller's model does not know it (experiment V3). Circles = obstacle + 5 m ego radius. Dashed fronts: ψ₁ = dh/dt + α₁h = 0 at the velocity the controller believes; dotted: the true one.",
@@ -263,14 +270,17 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
     if ([...sel.options].some(o=>o.value===cur)) sel.value = cur;
     const rc = $("racechecks"); rc.innerHTML = "";
     const def = sceneKind()==="corridor" ? ["mppi","scbf_var","scbf_is","det"] : ["mppi","scbf","scbf_is","det"];
-    for (const [v,l] of CTRLS[sceneKind()]) { const lab = document.createElement("label"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.value = v; cb.checked = def.includes(v); cb.addEventListener("change", ()=>{ const n = rc.querySelectorAll("input:checked").length; if (n > 4) { cb.checked = false; } reset(); }); lab.appendChild(cb); const sw = document.createElement("i"); sw.className = "sw"; sw.style.background = col(v); lab.appendChild(sw); lab.appendChild(document.createTextNode(l)); rc.appendChild(lab); }
+    for (const [v,l] of CTRLS[sceneKind()]) { const lab = document.createElement("label"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.value = v; cb.checked = def.includes(v); cb.addEventListener("change", ()=>{ const n = rc.querySelectorAll("input:checked").length; if (n > 4) { cb.checked = false; } syncIvCtrl(); reset(); }); lab.appendChild(cb); const sw = document.createElement("i"); sw.className = "sw"; sw.style.background = col(v); lab.appendChild(sw); lab.appendChild(document.createTextNode(l)); rc.appendChild(lab); }
     $("scenenote").textContent = NOTES[$("scene").value];
     $("vesselctrl").hidden = sceneKind()!=="vessel"; $("tgcard").hidden = sceneKind()!=="vessel";
+    syncIvCtrl();
   }
+  function ivInPlay(){ return $("mode").value === "race" ? raceKinds().includes("scbf_iv") : $("ctrl").value === "scbf_iv"; }
+  function syncIvCtrl(){ const on = sceneKind()==="corridor" && ivInPlay(); $("ivctrl").hidden = !on; $("obcard").hidden = sceneKind()!=="corridor"; }
   function raceKinds(){ return [...$("racechecks").querySelectorAll("input:checked")].map(c=>c.value).slice(0,4); }
   function opts(){
     const K = +$("K").value, seed = +$("seed").value, delta = DELTAS[+$("delta").value], mult = +$("noise").value;
-    if (sceneKind()==="corridor") return {K, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1*mult, delta, seed, maxSteps:250, mult};
+    if (sceneKind()==="corridor") return {K, T:20, lam:1.0, sv:1.0, som:1.5, sigma:0.1*mult, delta, seed, maxSteps:250, mult, mu: MUS[+$("mu").value]};
     const dist = $("dist").value; const cs = +$("cur").value; const dir = DIRS[+$("curdir").value]; const ang = dir[1]*Math.PI/180;
     return {scenario:$("scene").value, K, T:15, lam:300, s0:[350,350,120], delta, seed, disturbance: (mult>0 && dist!=="none") ? dist : "none", sF:[120*mult,300*mult,400*mult], tauc:5, maxTime:150, mult, current: cs>0 ? [cs*Math.cos(ang), cs*Math.sin(ang)] : null, curSpeed: cs, curDir: dir[0]};
   }
@@ -347,7 +357,8 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   function finishRun(){
     const s = state; s.done = true; running = false; $("run").textContent = "Run";
     for (const r of s.runners) {
-      history.unshift({sc:s.sc, scenario:s.o.scenario||"corridor", kind:r.kind, seed:s.o.seed, K:s.o.K, mult:s.o.mult, path:r.path.slice(), coll:r.outside, minh:r.minh, ttf:r.ttf, reached:r.reached, mode:s.mode, cur:s.o.curSpeed||0, curDir:s.o.curDir||"", dist:s.o.disturbance||"white"});
+      const essMean = r.ess.length ? r.ess.reduce((a,b)=>a+b,0)/r.ess.length : NaN;   // over the cycles flown, as the package averages it
+      history.unshift({sc:s.sc, scenario:s.o.scenario||"corridor", kind:r.kind, seed:s.o.seed, K:s.o.K, mult:s.o.mult, path:r.path.slice(), coll:r.outside, minh:r.minh, ttf:r.ttf, reached:r.reached, mode:s.mode, cur:s.o.curSpeed||0, curDir:s.o.curDir||"", dist:s.o.disturbance||"white", ess:essMean, mu:(r.kind==="scbf_iv" ? s.o.mu : null)});
     }
     history = history.slice(0, 4);
     replayFrames = s.frames; $("replaybox").hidden = false; $("replay").max = String(s.frames.length-1); $("replay").value = $("replay").max; setReplayLabel();
@@ -389,6 +400,9 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       $("s_t").textContent = (v.done && v.ttf!==null && !replay) ? fmtTime(s, v.ttf) : fmtTime(s, k);
       $("s_c").textContent = v.out; $("s_h").textContent = isFinite(v.minh) ? (v.minh>=0?"+":"")+v.minh.toFixed(2)+(s.sc==="corridor"?"":" m") : "–";
       $("s_e").textContent = isFinite(v.ess) ? v.ess.toFixed(0) : "–";
+      $("s_e_n").textContent = r.kind==="scbf_iv"
+        ? `of ${s.o.K} · μ = ${s.o.mu} charged on the barrier's own intervention cost — μ = 0 is the corrected controller, large μ is the selection rule Algorithm 1 reaches by accident`
+        : (r.kind==="scbf_is" ? `of ${s.o.K} · the omitted density correction restored: an effective size near one is selection, not averaging` : `of ${s.o.K} samples`);
       const isP = r.kind==="printed", isD = r.kind==="det"; const detNote = isD ? " · averaged over the 4 inner iterations (125 samples, σ₀·1, ½, ¼, ⅛)" : "";
       $("s_a").textContent = v.n ? (100*v.actM).toFixed(0)+" %" : "–";
       $("s_a_n").textContent = isP ? "of sample-timesteps the printed row 0 ≥ b binds — it can never be modified (gain Φ⁻¹(1−δ), the V1 setting), so this share moves with the 1−δ slider while the path stays MPPI's, bit for bit" : (isS ? "of sample-timesteps on which the chance constraint bound and the filter modified the draw" : "of sample-timesteps on which the chance constraint (corrected std form) would bind — nothing filters" + detNote);
@@ -406,9 +420,9 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   }
   function renderHistory(){
     $("histn").textContent = history.length ? history.length+" kept" : "";
-    if (!history.length) { $("htb").innerHTML = '<tr><td colspan="5" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr>'; return; }
+    if (!history.length) { $("htb").innerHTML = '<tr><td colspan="6" style="color:var(--muted)">finished runs appear here (last 4 kept as ghosts)</td></tr>'; return; }
     const distName = {white:"white", ou:"gust", none:"no noise"};
-    $("htb").innerHTML = history.map((h,i)=>`<tr><td><span class="dot" style="background:${col(h.kind)}"></span></td><td>${SHORT[h.kind]}<br><span style="color:var(--muted)">${h.scenario} · seed ${h.seed} · ${h.kind==="det" ? "4×125" : "K "+h.K} · noise ×${h.mult.toFixed(1)}${h.sc==="vessel" ? " · "+(distName[h.dist]||h.dist) : ""}${h.cur ? " · current "+h.cur.toFixed(1)+" m/s "+h.curDir : ""}${h.reached?"":" · not reached"}</span></td><td class="num">${h.coll}</td><td class="num">${isFinite(h.minh)?h.minh.toFixed(1):"–"}</td><td class="num">${h.ttf!==null?(h.sc==="corridor"?(h.ttf*SIM.CDT).toFixed(1):h.ttf):"–"}</td></tr>`).join("");
+    $("htb").innerHTML = history.map((h,i)=>`<tr><td><span class="dot" style="background:${col(h.kind)}"></span></td><td>${SHORT[h.kind]}<br><span style="color:var(--muted)">${h.scenario} · seed ${h.seed} · ${h.kind==="det" ? "4×125" : "K "+h.K} · noise ×${h.mult.toFixed(1)}${h.sc==="vessel" ? " · "+(distName[h.dist]||h.dist) : ""}${h.cur ? " · current "+h.cur.toFixed(1)+" m/s "+h.curDir : ""}${h.mu!==null&&h.mu!==undefined ? " · μ "+h.mu : ""}${h.reached?"":" · not reached"}</span></td><td class="num">${h.coll}</td><td class="num">${isFinite(h.minh)?h.minh.toFixed(1):"–"}</td><td class="num">${h.ttf!==null?(h.sc==="corridor"?(h.ttf*SIM.CDT).toFixed(1):h.ttf):"–"}</td><td class="num">${isFinite(h.ess)?h.ess.toFixed(0):"–"}</td></tr>`).join("");
   }
   // ---------------------------------------------------------------- drawing: map, water, scene
   function makeMap(s, replay){
@@ -601,7 +615,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       for (const r of s.runners) drawAgent(m, s, r, frac, col(r.kind));
     }
     drawBadges(m, s, tAbs, replay);
-    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac);
+    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac); drawObstruction(replay);
   }
   function drawSparks(cursorK){
     const s = state; if (!s) return;
@@ -727,6 +741,95 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
     else txt = `<b>${st.name}</b>: no filter — Pr(a·u ≥ b) = <b>${f3(st.pr0)}</b> for the proposal as drawn (the method claims ${(1-s.o.delta).toFixed(3)}; before input clipping) · the nominal mean sits ${st.z0.toFixed(2)} σ₀ above b; the corrected form needs ${st.z.toFixed(2)} σ₀, the printed one ${(st.vTick).toFixed(2)} σ₀ · ${forms}${r.kind==="det" ? " · first of the 4 inner iterations" : ""}${st.active ? "" : " · the nominal satisfies it here"}`;
     $("rvtext").innerHTML = txt;
   }
+  // ---------------------------------------------------------------- can any Gaussian do this?
+  // The corridor's two walls constrain the SAME forward-speed channel from opposite sides, so both
+  // chance constraints hold only inside l + z·σ ≤ μ ≤ r − z·σ, which needs σ ≤ (r−l)/(2z).  The exact
+  // importance weight dp/dq has finite variance only for σ > σ₀/√2.  A usable Gaussian therefore exists
+  // exactly when r − l > √2·z·σ₀ — a test on the state, independent of the optimiser, the objective,
+  // the mean, and any correlation with the turn-rate channel.  This panel evaluates it live.
+  function drawObstruction(replay){
+    const s = state; if (!s || s.sc !== "corridor") return;
+    const c = $("ob"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return;
+    if (c.width !== cw*2 || c.height !== ch*2) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), bad = css("--bad"), good = css("--good"), surface = css("--surface");
+    const i = rvRunnerIndex(s); const r = s.runners[i]; const r0 = replay ? replay.row0[i] : r.row0;
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    if (!r0 || !r0.rows || r0.rows.length < 2){ g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif";
+      g.fillText("step or run: the test is evaluated on the state the plan starts from", 24, Hh/2); $("obtext").innerHTML = ""; return; }
+    // the admissible speed interval [l, r] of the two walls, from the rows this repository's own code built
+    let lo = -Infinity, hi = Infinity;
+    for (const row of r0.rows){ if (row.a > 1e-12) lo = Math.max(lo, row.b/row.a); else if (row.a < -1e-12) hi = Math.min(hi, row.b/row.a); }
+    const width = hi - lo, z = r0.z, s0 = r0.sig;
+    // Degenerate geometries.  Neither was seen in 720 sampled states (the smallest row coefficient was
+    // 4e-3, giving a finite width of 242), but a blank or nonsensical panel is not worth the risk.
+    if (!isFinite(width) || width <= 0){
+      g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif";
+      g.fillText(isFinite(width) ? "the two walls are already jointly infeasible at the nominal mean — no proposal of any shape satisfies both"
+                                 : "the row coefficient vanishes at this state: neither wall constrains the speed channel, so the test does not bind", 24, Hh/2);
+      $("obtext").innerHTML = isFinite(width)
+        ? `admissible speed interval is empty (r − l = ${width.toFixed(6)}): the obstruction question does not arise, because the corrected chance constraints cannot both hold at any mean.`
+        : `L_g h = 0 along the constrained channel here, so r − l is unbounded and every σ is admissible to the walls; the finite-variance floor σ > σ₀/√2 = ${(s0/Math.SQRT2).toFixed(6)} is the only live condition.`;
+      return;
+    }
+    const cap = width/(2*z);                         // largest σ meeting both chance constraints
+    const floorN = s0/Math.SQRT2;                    // smallest σ with finite variance against the NOMINAL law
+    const T = 20, dt = 0.05, lam = s.o.lam;
+    const floorF = Math.sqrt(1/(2/(s0*s0) + 4*(T+1)*dt*dt/lam));   // ... against the cost-weighted target
+    const ok = width > Math.SQRT2*z*s0;
+    // Where the corridor runs straight the row coefficient is small and the cap runs to hundreds of sigma;
+    // letting the axis follow would squeeze the interesting region to nothing, so it is bounded and the
+    // band is drawn running off the right edge instead.
+    const axHi = Math.max(1.15*s0, 1.15*floorN, Math.min(1.25*cap, 2.2*s0));
+    const capClipped = cap > axHi;
+    const padL = 150, padR = 40, yBar = 96, barH = 46, yAx = yBar + barH + 30;
+    const X = v => padL + (W - padL - padR)*Math.min(v, axHi)/axHi;
+    // title + verdict chip
+    g.fillStyle = ink; g.font = "500 22px IBM Plex Sans, sans-serif";
+    const title = `both walls on the same speed channel · corridor width ${(width*Math.abs(r0.rows[0].a)).toFixed(2)} m / |a| = ${Math.abs(r0.rows[0].a).toFixed(3)}`;
+    g.fillText(title, 24, 30); const tw = g.measureText(title).width;
+    const chip = ok ? "a Gaussian exists here" : "no Gaussian at all";
+    g.font = "500 17px IBM Plex Sans, sans-serif"; const cwid = g.measureText(chip).width + 22;
+    g.fillStyle = ok ? good : bad; g.globalAlpha = 0.22; g.beginPath(); g.roundRect(24 + tw + 14, 11, cwid, 28, 14); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = ok ? good : bad; g.fillText(chip, 24 + tw + 25, 31);
+    // the two bands
+    g.fillStyle = good; g.globalAlpha = 0.26; g.fillRect(X(0), yBar, Math.max(X(cap)-X(0), 2), barH); g.globalAlpha = 1;
+    g.strokeStyle = good; g.lineWidth = 2.5;
+    if (capClipped){ g.beginPath(); g.moveTo(X(0), yBar); g.lineTo(W - padR, yBar); g.moveTo(X(0), yBar+barH); g.lineTo(W - padR, yBar+barH); g.moveTo(X(0), yBar); g.lineTo(X(0), yBar+barH); g.stroke();
+      g.beginPath(); g.moveTo(W - padR - 16, yBar + barH/2 - 11); g.lineTo(W - padR, yBar + barH/2); g.lineTo(W - padR - 16, yBar + barH/2 + 11); g.stroke(); }
+    else g.strokeRect(X(0), yBar, Math.max(X(cap)-X(0), 2), barH);
+    g.fillStyle = css("--mppi"); g.globalAlpha = 0.2; g.fillRect(X(floorN), yBar, W - padR - X(floorN), barH); g.globalAlpha = 1;
+    g.strokeStyle = css("--mppi"); g.lineWidth = 2.5; g.beginPath(); g.moveTo(X(floorN), yBar); g.lineTo(W - padR, yBar); g.moveTo(X(floorN), yBar+barH); g.lineTo(W - padR, yBar+barH); g.moveTo(X(floorN), yBar); g.lineTo(X(floorN), yBar+barH); g.stroke();
+    // the gap nothing can occupy
+    if (!ok){
+      g.save(); g.beginPath(); g.rect(X(cap), yBar, X(floorN)-X(cap), barH); g.clip();
+      g.strokeStyle = bad; g.lineWidth = 2; g.globalAlpha = 0.5;
+      for (let x = X(cap) - barH; x < X(floorN) + barH; x += 14){ g.beginPath(); g.moveTo(x, yBar+barH); g.lineTo(x+barH, yBar); g.stroke(); }
+      g.globalAlpha = 1; g.restore();
+      g.strokeStyle = bad; g.lineWidth = 2; g.strokeRect(X(cap), yBar, X(floorN)-X(cap), barH);
+      const mid = (X(cap)+X(floorN))/2; g.fillStyle = bad; g.font = "600 20px IBM Plex Sans, sans-serif"; g.textAlign = "center";
+      if (X(floorN)-X(cap) > 300) g.fillText("every Gaussian here is either infeasible or has infinite weight variance", mid, yBar - 14);
+      g.textAlign = "left";
+    }
+    // the full cost-weighted floor, as a second tick
+    g.strokeStyle = css("--var"); g.lineWidth = 2; g.setLineDash([6,5]); g.beginPath(); g.moveTo(X(floorF), yBar - 8); g.lineTo(X(floorF), yBar + barH + 8); g.stroke(); g.setLineDash([]);
+    // axis
+    g.strokeStyle = line; g.lineWidth = 2; g.beginPath(); g.moveTo(padL, yAx); g.lineTo(W - padR, yAx); g.stroke();
+    g.fillStyle = muted; g.font = "19px IBM Plex Sans, sans-serif"; g.textAlign = "right"; g.fillText("σ of the proposal", padL - 14, yAx + 7); g.textAlign = "center";
+    for (let k = 0; k <= 4; k++){ const v = axHi*k/4; g.strokeStyle = line; g.beginPath(); g.moveTo(X(v), yAx); g.lineTo(X(v), yAx + 8); g.stroke(); g.fillStyle = muted; g.font = "18px IBM Plex Mono, monospace"; g.fillText(v.toFixed(2), X(v), yAx + 30); }
+    // band labels
+    g.font = "500 19px IBM Plex Sans, sans-serif"; g.textAlign = "center";
+    g.fillStyle = good; if (X(cap)-X(0) > 170) g.fillText("both walls satisfiable", (X(0)+X(cap))/2, yBar + 29);
+    else { g.textAlign = "left"; g.fillText("both walls satisfiable", X(cap) + 12, yBar - 16); g.textAlign = "center"; }
+    g.fillStyle = css("--mppi"); g.fillText("finite weight variance", (X(floorN) + W - padR)/2, yBar + 29);
+    g.textAlign = "left";
+    // the numbers
+    const f = v => v.toFixed(6);
+    $("obtext").innerHTML = `largest σ both walls allow <b>${f(cap)}</b> = (r − l)/2z &nbsp;·&nbsp; smallest σ with finite exact weight variance <b>${f(floorN)}</b> = σ₀/√2 &nbsp;·&nbsp; `
+      + `against the cost-weighted target <b>${f(floorF)}</b> (dashed) &nbsp;·&nbsp; existence test <b>r − l ${ok ? ">" : "<"} √2·z·σ₀</b> — ${f(width)} ${ok ? ">" : "<"} ${f(Math.SQRT2*z*s0)}`
+      + (ok ? " — <b>satisfied here</b>: a non-degenerate feasible proposal with finite weight variance exists at this state."
+            : ` — <b>fails by a factor of ${(Math.SQRT2*z*s0/Math.max(width,1e-12)).toFixed(1)}</b>: at this state every non-degenerate Gaussian meeting both corrected wall constraints has infinite exact importance-weight variance. Not the optimiser's fault — no objective, mean or correlation can repair it.`);
+  }
   // ---------------------------------------------------------------- thrust gauges
   const tgEase = {src:{}, prev:{}, cur:{}};
   function drawGauges(replay, frac){
@@ -799,8 +902,9 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   $("stepb").addEventListener("click", function(){ this.blur(); if (!state || state.done) reset(); stop(); stepOnce(); });
   $("reset").addEventListener("click", function(){ this.blur(); reset(); });
   $("scene").addEventListener("change", ()=>{ fillCtrls(); reset(); });
-  $("mode").addEventListener("change", ()=>{ $("singlectrl").hidden = $("mode").value==="race"; $("racectrl").hidden = $("mode").value!=="race"; reset(); });
-  $("ctrl").addEventListener("change", reset);
+  $("mode").addEventListener("change", ()=>{ $("singlectrl").hidden = $("mode").value==="race"; $("racectrl").hidden = $("mode").value!=="race"; syncIvCtrl(); reset(); });
+  $("ctrl").addEventListener("change", ()=>{ syncIvCtrl(); reset(); });
+  $("mu").addEventListener("input", ()=>{ $("muv").textContent = MUS[+$("mu").value].toFixed(MUS[+$("mu").value] % 1 ? 1 : 0); }); $("mu").addEventListener("change", reset);
   $("K").addEventListener("input", ()=>{ $("Kv").textContent = $("K").value; }); $("K").addEventListener("change", reset);
   $("noise").addEventListener("input", ()=>{ $("noisev").textContent = "×"+(+$("noise").value).toFixed(1); }); $("noise").addEventListener("change", reset);
   $("dist").addEventListener("change", reset);

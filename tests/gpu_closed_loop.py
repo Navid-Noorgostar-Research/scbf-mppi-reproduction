@@ -192,7 +192,7 @@ def episode_batch(cp, kind, seeds, *, ess_target=0.10, form="std", is_correction
     nstep = cp.zeros(S)
     hmin = cp.full(S, cp.inf)
     ess_sum = cp.zeros(S)
-    ess_n = 0
+    ess_n = cp.zeros(S)
 
     for k in range(c_["max_steps"]):
         xi = cp.asarray(np.stack([r.standard_normal((K, T, 2)) for r in prop]))      # (S,K,T,2)
@@ -238,8 +238,18 @@ def episode_batch(cp, kind, seeds, *, ess_target=0.10, form="std", is_correction
         logw -= logw.max(axis=1, keepdims=True)
         w = cp.exp(logw)
         w /= w.sum(axis=1, keepdims=True)
-        ess_sum += 1.0 / (w ** 2).sum(axis=1)
-        ess_n += 1
+        # ESS is averaged over the cycles this seed actually FLEW.  A seed that has reached the goal has its
+        # STATE frozen, but the planner keeps being called for it, and parked at the goal the cost landscape
+        # is flat, so those cycles carry a much larger ESS than the flight does -- measured on the CPU, 390
+        # against 180 for plain MPPI.  Counting them inflated the mean by 1.46x and, because the inflation
+        # depends on how long each controller idles and on whether its filter still acts at the goal, it
+        # inflated the controllers by DIFFERENT factors, so the column could not be read across rows.
+        # simulate.run_episode breaks at the goal; gating by the same `alive` mask nstep uses is what makes
+        # the GPU statistic the CPU's.  `done` here is still the pre-cycle value, so the cycle that reaches
+        # the goal is counted, exactly as the CPU counts it before breaking.
+        live = ~done
+        ess_sum += cp.where(live, 1.0 / (w ** 2).sum(axis=1), 0.0)
+        ess_n += live
         U = U + (w[:, :, None, None] * eps).sum(1)
 
         u0 = U[:, 0, :]
@@ -259,7 +269,7 @@ def episode_batch(cp, kind, seeds, *, ess_target=0.10, form="std", is_correction
 
     return {"reached": cp.asnumpy(done), "ttf": cp.asnumpy(ttf).astype(float),
             "collision_rate": cp.asnumpy(outside / cp.maximum(nstep, 1)),
-            "min_h": cp.asnumpy(hmin), "ess": cp.asnumpy(ess_sum / max(ess_n, 1))}
+            "min_h": cp.asnumpy(hmin), "ess": cp.asnumpy(ess_sum / cp.maximum(ess_n, 1.0))}
 
 
 def main():
