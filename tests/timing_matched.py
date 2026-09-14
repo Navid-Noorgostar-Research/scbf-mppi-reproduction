@@ -53,10 +53,14 @@ def reference_states(scenario, cycles, seed=0):
 
 
 def time_controller(make, xs, H, warmup=5):
+    """Time one controller along a FIXED state sequence, and record the two quantities that drive the
+    per-sample solve cost: how often a barrier row is active at all, and how often two are active at once.
+    The multi-row case leaves the closed form and enters a candidate search with LP vertex enumeration, so
+    it is far more expensive -- and two controllers put their samples in different places by construction,
+    which is the part a matched-state test cannot remove."""
     c = make(H)
     c.t = 0.0
-    ts = []
-    act = []
+    ts, act, multi = [], [], []
     for k, x in enumerate(xs):
         t0 = time.perf_counter()
         c.plan(x)                       # the state is FED IN, so every controller sees the same sequence
@@ -64,7 +68,11 @@ def time_controller(make, xs, H, warmup=5):
         if k >= warmup:
             ts.append(dt)
             act.append(c.last.get("activation_frac", np.nan))
-    return float(np.median(ts)), float(np.mean(ts)), float(np.nanmean(act)) if act else float("nan")
+            multi.append(c.last.get("multi_violation_frac", np.nan))
+    with np.errstate(invalid="ignore"):
+        a = float(np.nanmean(act)) if any(np.isfinite(v) for v in act) else float("nan")
+        m = float(np.nanmean(multi)) if any(np.isfinite(v) for v in multi) else float("nan")
+    return float(np.median(ts)), float(np.mean(ts)), a, m
 
 
 if __name__ == "__main__":
@@ -89,11 +97,12 @@ if __name__ == "__main__":
         ("Deterministic MPPI 4x125", lambda H: VesselDetMPPI(H, seed=0)),
     ]
     out = {"scenario": a.scenario, "cycles": a.cycles, "control interval s": sg.DT_CTRL, "matched": {}}
-    print(f"\n{'controller':<34s}{'median s':>10s}{'mean s':>10s}{'activation':>12s}")
+    print(f"\n{'controller':<34s}{'median s':>10s}{'mean s':>10s}{'active':>9s}{'two rows':>10s}")
     for name, mk in rows:
-        med, mean, act = time_controller(mk, xs, H)
-        out["matched"][name] = {"median_s": med, "mean_s": mean, "activation_frac": act}
-        print(f"{name:<34s}{med:10.4f}{mean:10.4f}{act:12.3f}", flush=True)
+        med, mean, act, multi = time_controller(mk, xs, H)
+        out["matched"][name] = {"median_s": med, "mean_s": mean,
+                                "activation_frac": act, "multi_violation_frac": multi}
+        print(f"{name:<34s}{med:10.4f}{mean:10.4f}{act:9.3f}{multi:10.3f}", flush=True)
 
     # the shipped, unmatched numbers, for comparison
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
