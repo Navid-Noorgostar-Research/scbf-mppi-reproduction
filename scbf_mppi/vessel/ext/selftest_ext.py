@@ -219,6 +219,74 @@ def test_adaptive():
                          _closed_loop(VesselSCBFMPPI(hb.harbour_static(), is_correction=True, seed=0), H, 8)))
 
 
+def test_why_astern():
+    """The claims about WHY the boats go astern, turned into measurements.
+
+    Two of these were first written down from a plausible argument and then found to be wrong, which is the
+    reason they are a test now rather than a sentence in a document:
+
+      * "the planar model is invariant under turning the heading 180 deg and reversing surge and sway" is
+        FALSE in general -- the terms that are even in (u, v), such as X_rr r^2, break it.  It is exactly
+        true only when sway and yaw rate are zero, i.e. in straight-line motion.
+      * "turning from dead astern takes about 16 s" was an estimate, not a measurement.  The turn alone takes
+        about 11 s at full lateral thrust, and rebuilding headway takes 6 to 7 s more.
+    """
+    rng = np.random.default_rng(0)
+
+    # (a) straight-line motion: reversing surge reverses the surge drag exactly, same magnitude
+    worst_pure = 0.0
+    for u in np.linspace(-3.0, 3.0, 41):
+        f = sg.f_nu(np.array([[u, 0.0, 0.0]]))[0]
+        fm = sg.f_nu(np.array([[-u, 0.0, 0.0]]))[0]
+        worst_pure = max(worst_pure, float(np.abs(fm - np.array([-f[0], -f[1], f[2]])).max()))
+    check("in straight-line motion the model cannot tell ahead from astern", worst_pure < 1e-12,
+          f"worst residual {worst_pure:.1e} m/s^2")
+
+    # (b) but the full 3-DOF model is NOT invariant once the boat is turning
+    worst_gen = 0.0
+    for _ in range(400):
+        nu = np.array([rng.uniform(-2.5, 2.5), rng.uniform(-0.8, 0.8), rng.uniform(-0.4, 0.4)])
+        f = sg.f_nu(nu[None])[0]
+        fm = sg.f_nu(np.array([[-nu[0], -nu[1], nu[2]]]))[0]
+        worst_gen = max(worst_gen, float(np.abs(fm - np.array([-f[0], -f[1], f[2]])).max()))
+    check("the symmetry is NOT exact once sway or yaw rate is non-zero", worst_gen > 1e-3,
+          f"worst residual {worst_gen:.3f} m/s^2 -- do not claim exact invariance")
+
+    # (c) steady top speed is the same ahead and astern
+    def top_speed(sign):
+        x = np.zeros(6); U = np.array([sign * sg.F_AT_MAX, 0.0, 0.0])
+        for _ in range(4000):
+            x = sg.step(x[None], U[None], 0.05, n_sub=1)[0]
+        return abs(x[3])
+    va, vb = top_speed(+1), top_speed(-1)
+    check("steady top speed is the same ahead and astern", abs(va - vb) < 1e-6,
+          f"{va:.2f} m/s ahead, {vb:.2f} m/s astern")
+
+    # (d) what the manoeuvre the heading term asks for actually costs
+    def turn_time(u0):
+        x = np.array([0.0, 0.0, 0.0, u0, 0.0, 0.0]); U = np.array([0.0, -sg.F_AT_MAX, 0.0])
+        t = 0.0; turned = 0.0; prev = x[2]
+        while t < 60.0:
+            x = sg.step(x[None], U[None], 0.05, n_sub=1)[0]
+            d = (x[2] - prev + np.pi) % (2 * np.pi) - np.pi
+            turned += abs(d); prev = x[2]; t += 0.05
+            if turned >= np.pi:
+                return t
+        return float("inf")
+
+    def recover_time(u0):
+        x = np.array([0.0, 0.0, 0.0, u0, 0.0, 0.0]); U = np.array([sg.F_AT_MAX, 0.0, 0.0])
+        t = 0.0
+        while t < 60.0 and x[3] < 0.0:
+            x = sg.step(x[None], U[None], 0.05, n_sub=1)[0]; t += 0.05
+        return t
+
+    tt, rt = turn_time(-1.9), recover_time(-1.9)
+    check("a 180 deg turn plus rebuilding headway exceeds the 15 s horizon", tt + rt > 15.0,
+          f"turn {tt:.1f} s at full lateral thrust, headway {rt:.1f} s more, total {tt+rt:.1f} s")
+    check("the turn alone is about 11 s, not 16", 9.0 < tt < 13.0, f"{tt:.1f} s")
+
+
 def test_factory():
     for cfg in [dict(name="x", kind="mppi"), dict(name="x", kind="scbf"),
                 dict(name="x", kind="mppi_filter", filter=dict(delta=None)),
@@ -237,7 +305,7 @@ def test_factory():
 if __name__ == "__main__":
     print("V9-V12 additions — selftest")
     for fn in (test_defaults_match_shipped, test_rows_with_current, test_heading_cost,
-               test_observer, test_filter, test_adaptive, test_factory):
+               test_why_astern, test_observer, test_filter, test_adaptive, test_factory):
         print(f"\n{fn.__name__}")
         fn()
     n_bad = sum(1 for v in OK if not v)
