@@ -375,9 +375,9 @@ that σ = I is incompatible with Table I, and that the constraint as printed del
 Everything else — the wall-clock cost, the activation fraction, the collapse of the corrected constraint, the mechanism
 separation — is a property of the method as specified, in the regime where its own baseline numbers reproduce.
 
-## Beyond the reproduction: four questions the critique opens (`scbf_mppi/vessel/ext/`)
+## Beyond the reproduction: five questions the critique opens (`scbf_mppi/vessel/ext/`, `tests/`)
 
-The reproduction ends with a set of objections. These four experiments turn the sharpest of them into
+The reproduction ends with a set of objections. These five experiments turn the sharpest of them into
 measurements. They are additions, not corrections: no shipped result file is touched, and
 `tests/test_regression.py` re-runs twelve shipped configurations and requires bit-identical trajectories
 after every change here.
@@ -415,6 +415,58 @@ omits, the median effective sample size is 13 of 500. V12 retunes the temperatur
 a target, exploiting `log w(λ) = −J/λ − C + log q` so one rollout batch gives the whole family of weights.
 It reports ESS together with the norm of the control update and the fraction of runs that reach the goal,
 because ESS bought by flattening the weights is not a rescue.
+
+**V14 — the deadline, which a median does not describe.** Everything above reports a median cycle time.
+A controller that runs in a fixed interval is not judged on its average; it is judged on the cycle that
+overruns, because that is the cycle where the vessel gets no new command and holds the previous one for
+another second while a ferry closes at 3 m/s. `tests/timing_deadline.py` measures the whole per-cycle
+distribution at the same matched operating point, 275 cycles per controller, and asks how many would have
+missed a one-second interval.
+
+```
+python tests/timing_deadline.py          # ~20 min, writes results/vessel_V14_deadline_*.json
+python tests/figure_deadline.py          # writes figures/fig_V14_deadline.png
+```
+
+![the deadline study](figures/fig_V14_deadline.png)
+
+In the crossing harbour, with the corrected standard-deviation constraint and K = 500:
+
+| | median | p90 | p99 | max | cycles over 1 s |
+|---|---|---|---|---|---|
+| MPPI | 0.026 s | 0.032 s | 0.044 s | 0.047 s | 0 of 275 |
+| deterministic MPPI | 0.067 s | 0.077 s | 0.100 s | 0.108 s | 0 of 275 |
+| SCBF-MPPI, variance form as printed | 0.052 s | 0.360 s | 0.515 s | 0.585 s | 0 of 275 |
+| SCBF-MPPI + IS correction | 0.225 s | 0.898 s | 1.111 s | 1.177 s | **14 of 275** |
+| SCBF-MPPI, std form as claimed | 0.263 s | 1.016 s | 1.219 s | 1.430 s | **33 of 275** |
+
+The median says 0.26 s, a 74 % margin. The 90th percentile is already over the interval, and 12 % of cycles
+miss it. Quoting the median for this method is not a small inaccuracy; it inverts the answer.
+
+**Why the tail exists, measured rather than asserted.** The correlation between a cycle's wall clock and the
+fraction of its sample-timesteps with *two* barrier rows active at once is **r = 0.99**. Two active rows are
+where the per-sample problem leaves its closed form and enters a candidate search with LP vertex
+enumeration. So the slow cycles are the cluttered ones, and the controller is slowest exactly where the
+scene is most dangerous. In the static harbour, where two rows bind on 17.7 % of sample-timesteps instead of
+27.5 %, nothing misses at all.
+
+**The connection to the main criticism.** The variance form the paper prints is five times cheaper at the
+median than the standard-deviation form its own derivation needs, and it never misses the interval. It is
+cheap for the same reason it is wrong: its margin is smaller by a factor σ, so it binds on 4.5 % of
+sample-timesteps instead of 27.5 % and mostly leaves the closed form alone. Correcting the constraint to
+what Theorem 2 actually requires raises the delivered probability on this vessel row from 0.952 to
+0.997, and from 0.916 to 0.997 in the corridor, **and** turns a controller that always meets its
+deadline into one that misses 12 % of them. That is the real price of the correction, and it is not
+visible in any average.
+
+**What fits.** Sweeping the sample count, the largest K whose 99th percentile still fits one second is
+**250 in the crossing harbour and 500 in the static one**. Real time therefore costs a halving of K in the
+cluttered scene, which is the parameter the method's performance depends on most.
+
+Honest limits, which belong beside every number above. This is CPython on a laptop with BLAS pinned to one
+thread, chosen so the figures are comparable with the shipped ones; it is not an estimate of optimised code
+on the vessel's computer. And a general-purpose operating system offers no deadline guarantee in any case,
+so what is measured is the algorithm's demand, not a scheduling guarantee.
 
 ## Reproducing it
 
