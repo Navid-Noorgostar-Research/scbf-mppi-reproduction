@@ -1,0 +1,70 @@
+{
+ "device": "NVIDIA GeForce RTX 3080 Laptop GPU",
+ "states": 8,
+ "reps": 3,
+ "rows": [
+  {
+   "K": 500,
+   "ess_plain_mppi": 125.14502768106632,
+   "ess_paper_no_is": 1.6694565725767323,
+   "ess_corrected": 1.0000646613502333,
+   "corrected_frac_of_K": 0.0020001293227004664,
+   "n": 24,
+   "s_per_cycle": 0.17144580682118735
+  },
+  {
+   "K": 2000,
+   "ess_plain_mppi": 422.6209171705766,
+   "ess_paper_no_is": 2.9412479146954915,
+   "ess_corrected": 1.0000165763794864,
+   "corrected_frac_of_K": 0.0005000082881897431,
+   "n": 24,
+   "s_per_cycle": 0.16034493843714395
+  },
+  {
+   "K": 8000,
+   "ess_plain_mppi": 1720.8350832721974,
+   "ess_paper_no_is": 9.697527958352074,
+   "ess_corrected": 1.000237555798476,
+   "corrected_frac_of_K": 0.0001250296944748095,
+   "n": 24,
+   "s_per_cycle": 0.15567484498023987
+  },
+  {
+   "K": 32000,
+   "ess_plain_mppi": 6822.885804991745,
+   "ess_paper_no_is": 3.048131333604406,
+   "ess_corrected": 1.0000026007837075,
+   "corrected_frac_of_K": 3.125008127449086e-05,
+   "n": 24,
+   "s_per_cycle": 0.19626003503799438
+  },
+  {
+   "K": 128000,
+   "ess_plain_mppi": 27254.551973613008,
+   "ess_paper_no_is": 9.801278639695115,
+   "ess_corrected": 1.00713511170053,
+   "corrected_frac_of_K": 7.868243060160391e-06,
+   "n": 24,
+   "s_per_cycle": 0.42051197091738385
+  },
+  {
+   "K": 512000,
+   "ess_plain_mppi": 108953.50958468422,
+   "ess_paper_no_is": 19.58409804615033,
+   "ess_corrected": 1.019119505166806,
+   "corrected_frac_of_K": 1.9904677835289182e-06,
+   "n": 24,
+   "s_per_cycle": 1.3211200733979542
+  },
+  {
+   "K": 1000000,
+   "ess_plain_mppi": 212325.6471761174,
+   "ess_paper_no_is": 50.25757024721484,
+   "ess_corrected": 1.0017802101921824,
+   "corrected_frac_of_K": 1.0017802101921825e-06,
+   "n": 24,
+   "s_per_cycle": 2.5207307636737823
+  }
+ ]
+}

@@ -367,6 +367,9 @@ The reduced animations on this page are in `media/`. All of them regenerate from
 
 </details>
 
+`FINDINGS.md` states each result with the assumptions it needs, separates the standard mathematics
+from what is new here, and lists the four claims made during this work that were later withdrawn.
+
 ## Reading the results honestly
 
 Everything here is a reimplementation from the paper's text: where the paper is silent, the assumption is listed above and can be
