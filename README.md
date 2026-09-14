@@ -378,9 +378,9 @@ that σ = I is incompatible with Table I, and that the constraint as printed del
 Everything else — the wall-clock cost, the activation fraction, the collapse of the corrected constraint, the mechanism
 separation — is a property of the method as specified, in the regime where its own baseline numbers reproduce.
 
-## Beyond the reproduction: five questions the critique opens (`scbf_mppi/vessel/ext/`, `tests/`)
+## Beyond the reproduction: seven questions the critique opens (`scbf_mppi/vessel/ext/`, `tests/`)
 
-The reproduction ends with a set of objections. These five experiments turn the sharpest of them into
+The reproduction ends with a set of objections. These seven experiments turn the sharpest of them into
 measurements. They are additions, not corrections: no shipped result file is touched, and
 `tests/test_regression.py` re-runs twelve shipped configurations and requires bit-identical trajectories
 after every change here.
@@ -470,6 +470,93 @@ Honest limits, which belong beside every number above. This is CPython on a lapt
 thread, chosen so the figures are comparable with the shipped ones; it is not an estimate of optimised code
 on the vessel's computer. And a general-purpose operating system offers no deadline guarantee in any case,
 so what is measured is the algorithm's demand, not a scheduling guarantee.
+
+**V15 — the weights the method omits, and why they cannot simply be restored.** Algorithm 1 reshapes the
+sampling distribution per sample and per timestep and then uses MPPI's cost-weighted average unchanged.
+That average is a path-integral estimator only if the samples are reweighted by the density ratio between
+the law actually sampled and the one the derivation assumes. The paper does not mention the reweighting;
+it notes after (11) only that the update "cannot guarantee the optimality anymore" and is "more
+conservative", without proof.
+
+It is not conservatism. For one active row, with the objective of (8) and the corrected constraint, the
+cost as a function of the retained row standard deviation has slope `z/‖a‖∞ − 1/‖a‖₂` on the binding
+branch, which is positive whenever
+
+```
+z  >  ‖a‖∞ / ‖a‖₂
+```
+
+Since `‖a‖∞/‖a‖₂ ≤ 1` always, every δ ≤ 0.1587 satisfies it, so the optimum is `s* = max(0, slack/z)` and
+is **exactly zero whenever the nominal mean already violates the row**. The proposal is then mutually
+singular with the base measure: the free-energy identity MPPI is derived from needs absolute continuity
+and does not hold, the weight `dp/dq` does not exist, and any implementation must invent a regulariser
+whose constant then decides the closed-loop result. Verified against the exact conic solve at the
+predicted threshold; measured at 13.0 % of samples at t = 0 in the corridor with the corrected form and
+0.0 % with the printed one. *Stated with its assumptions: single active row, unconstrained mean, and a
+Frobenius or spectral norm on the covariance factor. Non-singular feasible proposals still exist if the
+mean moves further into the safe region; the obstruction is the objective's preferred solution.*
+
+```
+python tests/gpu_ess_scaling.py      # needs CUDA; CPU/GPU gate, then the sweep in K
+```
+
+Pushed to a million samples at warm operating points, plain MPPI's asymptotic effective sample size tracks
+the budget while the corrected estimator's does not move at all:
+
+| rollouts K | plain MPPI | Algorithm 1 as printed | with the weights restored |
+|---|---|---|---|
+| 500 | 125 | 1.7 | 1.00 |
+| 1,000,000 | 212,326 | 50.3 | 1.00 |
+
+Two cautions on how to read that, both of which cost an earlier version of this work its conclusion.
+`ESS/K → 1/(1+χ²)` is an **asymptotic** efficiency and not a cap on a finite run: for a proposal attaining
+the bound, no sample lands in the violation set in 21.5 % of runs at K = 500, δ = 0.003, and the measured
+value is then exactly 500. And this is the **corridor**. On the vessel the collapse is not caused by the
+density correction at all — decomposed per cycle, the median effective size from the cost softmax alone is
+3.3, from the weights alone 157.4, and from both 3.1, so there it is the λ = 300 temperature against a
+20,000 m² penalty. The two systems behave differently and neither result transfers to the other.
+
+**V16 — where the advantage actually comes from, and a dial that spans it.** Restoring the weights gives
+the best controller measured here. Over 512 corridor seeds at the repository's own settings:
+
+| controller | reached | median collision | median min h | ever unsafe | runaway | ESS |
+|---|---|---|---|---|---|---|
+| plain MPPI | 97.5 % | 0.0461 | −0.051 | 95.1 % | 0 / 512 | 269.6 |
+| Algorithm 1, as printed | 76.8 % | 0.0240 | −0.045 | 72.3 % | 5 / 512 | 304.0 |
+| Algorithm 1, corrected constraint | 35.2 % | 0.0400 | −0.086 | 84.8 % | 16 / 512 | 295.5 |
+| corrected **+ the omitted weights** | 100.0 % | 0.0000 | **+0.167** | **12.1 %** | 0 / 512 | **2.0** |
+| intervention penalty, μ = 0.5 | 99.4 % | 0.0000 | +0.133 | 16.8 % | 3 / 512 | **88.7** |
+
+An effective sample size of two is not averaging. It is selection, and the dominant term in the log
+density ratio is `log s`, so the rollout it selects is the one the barrier had to correct least over the
+whole horizon. Charging for that explicitly turns the accident into a parameter. Let `I = |m| + (σ₀ − s)`
+be the per-sample problem's own objective value, which the paper computes at every sample and discards:
+
+```
+w_k  ∝  exp( −( S_k + μ λ Σ_t I_{k,t} ) / λ )
+```
+
+`μ = 0` reproduces the corrected controller to the digit, large `μ` reproduces the accidental rule, and
+every value between is a valid estimator, because `I` is a deterministic function of the solve rather than
+of the noise. The systematic part of the omitted correction is the useful safety preference; the noise
+part is what destroys the sample size.
+
+**What this does not establish.** The intervention penalty is not demonstrated to be a better controller.
+Its runaway-episode rate of 3 of 512 cannot be distinguished from zero by Fisher's exact test (p = 0.249),
+but it is not monotone in μ across the sweep (7, 9, 3, 8, 1), so the tail is unresolved at this seed
+count, and a safety argument rests on the tail. Separately, the budgeted per-sample problem in
+`scbf_mppi/ess_budget.py` does exactly what it was built to do — the weight budget binds to five decimals
+and the effective size rises from 2.0 to 65 — and buys no control benefit, landing on plain MPPI. That is
+the finding rather than a disappointment: restoring the estimator removes the advantage, which is what
+identifies selection rather than averaging as the mechanism.
+
+```
+python tests/gpu_closed_loop.py --seeds 512    # needs CUDA; the table above
+```
+
+`FINDINGS.md` states every result with the assumptions it needs, separates the classical importance-
+sampling mathematics from what is new here, and lists the four claims made during this work and later
+withdrawn.
 
 ## Reproducing it
 
