@@ -214,14 +214,14 @@ def fig_V11():
     ax.barh(ys, ttf, color=COL["mppi"], alpha=0.85, height=0.55)
     ax.set_yticks(ys)
     ax.set_yticklabels([n.split("| ", 1)[1] for n in names], fontsize=9)
-    ax.set_xlabel("time to the goal [s]")
+    ax.set_xlabel("time to the goal [s]   (of 30 seeds)")
     ax.set_title("the cost of not knowing", fontsize=11.5, color=COL["ink"])
-    ax.set_xlim(0, max(ttf) * 1.95)
+    ax.set_xlim(0, max(ttf) * 2.05)
     for y, v, n in zip(ys, ttf, names):
         s = res[n]["summary"]
         t, tot = _touched(res[n])
-        ax.text(v, y, f"  {v:.0f} s · reached {s['reached_frac']*100:.0f}% · touched {t}/{tot}",
-                fontsize=8.5, va="center", color=COL["ink"])
+        ax.text(v, y, f"  {v:.0f} s  ·  {int(round(s['reached_frac']*tot))} reach  ·  {t} touch",
+                fontsize=8.4, va="center", color=COL["ink"])
 
     fig.suptitle("V11  an unmodelled 0.5 m/s current against a nominal delta of 0.003", fontsize=12.5,
                  color=COL["ink"], y=0.99)
