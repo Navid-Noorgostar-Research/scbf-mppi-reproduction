@@ -1,5 +1,28 @@
 # Reproduction: *Path Integral Methods with Stochastic Control Barrier Functions*
 
+<p align="center">
+  <img src="media/hero_crossing_ferry.gif" width="860" alt="Three controllers meeting a crossing ferry, path traced from the logged runs">
+</p>
+
+<p align="center">
+  <sub>
+  <b>MPPI</b> &middot; <b>SCBF-MPPI</b> &middot; <b>SCBF-MPPI + IS</b> meeting a ferry crossing at 3 m/s.
+  Each ring is that boat's 700&nbsp;N azimuth thrust limit; the readout is its live state.<br>
+  Nothing here is an illustration &mdash; every frame is the stored 1&nbsp;s state log of a run in
+  <code>results/</code>, drawn by a planar model, so no roll and no pitch.
+  </sub>
+</p>
+
+<p align="center">
+  <a href="https://arxiv.org/abs/2206.11985"><img alt="paper" src="https://img.shields.io/badge/paper-arXiv%3A2206.11985-b31b1b"></a>
+  <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
+  <img alt="licence" src="https://img.shields.io/badge/licence-MIT-3da639">
+  <img alt="regression" src="https://img.shields.io/badge/12%20shipped%20runs-reproduce%20bit%20for%20bit-2ea44f">
+  <img alt="videos" src="https://img.shields.io/badge/simulation%20videos-13-8957e5">
+</p>
+
+---
+
 Tao, Yoon, Kim, Hovakimyan, Voulgaris — arXiv:2206.11985 (June 2022); IEEE CDC 2022, pp. 1654–1659.
 
 This package re-implements the paper's Algorithm 1 (SCBF-MPPI) and its baseline (MPPI) on the paper's own
@@ -205,10 +228,121 @@ deterministic plant both cores reach the goal in 55–56 s on every seed. Every 
 comes from the Python package, not from the browser core.
 ## The simulation videos
 
-Thirteen clips are in `figures/`. Every one is drawn from a logged run of this package; none is an
-illustration. The 2-D clips are written by the animation scripts directly. The 3-D clips draw the same
-stored state logs through the offline viewer, which adds no physics: the model is planar, so there is no
-roll, pitch or heave in it and none is shown.
+Thirteen clips, all in `figures/`, each one drawn from a logged run of this package. None is an
+illustration and none is hand-animated. The animations below are the same runs, reduced for the page;
+click any still further down to play the full clip.
+
+### The corridor, which is the paper's own example
+
+<p align="center">
+  <img src="media/corridor_mppi_vs_scbf.gif" width="760" alt="MPPI and SCBF-MPPI through the sinusoidal corridor">
+</p>
+
+<p align="center"><sub>MPPI against SCBF-MPPI with the constraint exactly as the paper prints it, on the
+same seed. <code>python -m scbf_mppi.animate</code></sub></p>
+
+<p align="center">
+  <img src="media/corridor_three_forms.gif" width="700" alt="The corridor run with the printed and the corrected constraint side by side">
+</p>
+
+<p align="center"><sub>The same corridor with the constraint <em>as printed</em> beside the constraint
+<em>as claimed</em>. Correcting it is not free: the corrected form shrinks the sampling variance before it
+moves the mean, the robot stalls, and 12 of 30 seeds reach the goal against 22 of 30 as printed and 30 of
+30 for plain MPPI. <code>python -m scbf_mppi.animate --three</code></sub></p>
+
+### The vessel, which is the method carried to a real hull
+
+<p align="center">
+  <img src="media/vessel_crossing_ferry.gif" width="760" alt="The vessel meeting a crossing ferry">
+</p>
+
+<p align="center"><sub>MPPI against SCBF-MPPI with the second-order barrier, same seed, crossing ferry.
+The fan is 60 of the 500 sampled rollouts of each cycle, shaded by weight.
+<code>python -m scbf_mppi.vessel.animate</code></sub></p>
+
+<p align="center">
+  <img src="media/vessel_unknown_current.gif" width="700" alt="Three controllers under a gust and an unmodelled current, with the rejected candidate paths drawn">
+</p>
+
+<p align="center"><sub>Three controllers under a coloured gust and a 0.5 m/s cross-current the controller
+does not know about. At the end all 30 seeds of the experiment fade in behind the played one, with the
+runs that touched a circle drawn darker, so the single run on screen is put in its context rather than
+standing for the result. <code>python -m scbf_mppi.vessel.animate_current --ghosts</code></sub></p>
+
+<p align="center">
+  <img src="media/vessel_inside_one_cycle.gif" width="760" alt="One control cycle opened up: the barrier rows and the chosen input">
+</p>
+
+<p align="center"><sub>Inside one cycle. Left, the map with its sampled fan. Right, the distribution of
+a&middot;u along the barrier row's own normal: the nominal proposal, the filtered one, the threshold, and the
+two competing margins &mdash; z&middot;&sigma; as the derivation needs it, and &alpha;&middot;&sigma;&sup2; as the paper prints it. On the vessel
+their ratio is about 0.1. <code>python -m scbf_mppi.vessel.animate_rowspace</code></sub></p>
+
+### The same runs in three dimensions
+
+Nothing here is new physics. The viewer replays the identical stored state logs; the model is planar, so
+there is no roll, pitch or heave in it and none is drawn. What three dimensions add is two things a
+top-down plot hides: the candidate paths the controller chose between, and the thrust it is spending
+against its limit.
+
+Path traced in Blender (Cycles), 1920 &times; 1080. **Click a still to play it.**
+
+<table>
+<tr>
+<td width="33%" align="center">
+  <a href="figures/anim3d_pathtraced_ferry_chase.mp4"><img src="media/poster_pathtraced_ferry.png" alt="crossing ferry, path traced"></a><br>
+  <sub><b>crossing ferry</b> &middot; 38 s &middot; 33 MB</sub>
+</td>
+<td width="33%" align="center">
+  <a href="figures/anim3d_pathtraced_current_chase.mp4"><img src="media/poster_pathtraced_current.png" alt="unknown current, path traced"></a><br>
+  <sub><b>unknown current</b> &middot; 44 s &middot; 27 MB</sub>
+</td>
+<td width="33%" align="center">
+  <a href="figures/anim3d_pathtraced_current_orbit.mp4"><img src="media/poster_pathtraced_orbit.png" alt="unknown current from orbit, path traced"></a><br>
+  <sub><b>the same, from orbit</b> &middot; 45 s &middot; 23 MB</sub>
+</td>
+</tr>
+</table>
+
+Captured live from the offline viewer, 1600 &times; 900:
+
+<table>
+<tr>
+<td width="25%" align="center">
+  <a href="figures/anim3d_ferry_chase.mp4"><img src="media/poster_webgl_ferry.png" alt="ferry, chase camera"></a><br>
+  <sub>ferry, chase camera</sub>
+</td>
+<td width="25%" align="center">
+  <a href="figures/anim3d_current_chase.mp4"><img src="media/poster_webgl_current.png" alt="current, chase camera"></a><br>
+  <sub>current, chase camera</sub>
+</td>
+<td width="25%" align="center">
+  <a href="figures/anim3d_current_orbit.mp4"><img src="media/poster_webgl_orbit.png" alt="current, orbiting camera"></a><br>
+  <sub>current, orbiting camera</sub>
+</td>
+<td width="25%" align="center">
+  <a href="figures/anim3d_corridor_orbit.mp4"><img src="media/poster_webgl_corridor.png" alt="the corridor in three dimensions"></a><br>
+  <sub>the corridor in 3-D</sub>
+</td>
+</tr>
+</table>
+
+`live_demo/3d/README_3D.md` gives the exact command behind every 3-D clip, including the frame ranges.
+
+### One thing to notice before anyone points it out
+
+In several clips the boats travel **astern**. That is a property of the abstraction, not a bug and not
+the barrier: the input is an isotropic 700 N force, the damping is symmetric in surge, and the running
+cost penalises the size of the speed rather than its sign, so nothing in the problem prefers forwards.
+
+`scbf_mppi/vessel/ext/costs.py` adds a heading term and experiment V9 re-runs everything with it;
+`results/vessel_V9_heading.json` holds the outcome, and it changes one conclusion in the crossing-ferry
+scene. The planar model is *not* exactly invariant under reversing the boat: the worst mismatch over
+random states is 0.449 m/s², and it is exact only when the boat is not turning. `test_why_astern` in
+`scbf_mppi/vessel/ext/selftest_ext.py` measures both statements rather than asserting them.
+
+<details>
+<summary><b>Every clip, and the command that writes it</b></summary>
 
 | file | what it shows | written by |
 |---|---|---|
@@ -222,24 +356,16 @@ roll, pitch or heave in it and none is shown.
 | `anim3d_ferry_chase.mp4` | the ferry crossing, camera behind the course over ground | `live_demo/3d/capture_mp4.py` |
 | `anim3d_current_chase.mp4` | the current scene, same camera | `live_demo/3d/capture_mp4.py` |
 | `anim3d_current_orbit.mp4` | the current scene, orbiting camera | `live_demo/3d/capture_mp4.py` |
-| `anim3d_pathtraced_ferry_chase.mp4` | the ferry crossing, path traced at 1920×1080 | `live_demo/3d/blender_render.py` |
+| `anim3d_pathtraced_ferry_chase.mp4` | the ferry crossing, path traced at 1920 × 1080 | `live_demo/3d/blender_render.py` |
 | `anim3d_pathtraced_current_chase.mp4` | the current scene, path traced | `live_demo/3d/blender_render.py` |
 | `anim3d_pathtraced_current_orbit.mp4` | the current scene from orbit, path traced | `live_demo/3d/blender_render.py` |
 
-`live_demo/3d/README_3D.md` gives the exact command behind each 3-D clip, including the frame ranges.
+Two render passes that were superseded are deliberately not in the repository: an earlier 1600 × 900
+path-traced pair, and a larger encode of `anim3d_pathtraced_current_orbit.mp4` at the same resolution.
+The animated GIF beside each 2-D clip is not tracked either, being a lower-resolution copy of the mp4.
+The reduced animations on this page are in `media/`. All of them regenerate from the commands above.
 
-**One thing to notice before anyone points it out.** In several clips the boats travel astern. That is a
-property of the abstraction, not a bug and not the barrier: the input is an isotropic 700 N force, the
-damping is symmetric in surge, and the running cost penalises the size of the speed rather than its sign, so
-nothing in the problem prefers forwards. `scbf_mppi/vessel/ext/costs.py` adds a heading term and experiment
-V9 re-runs everything with it; `results/vessel_V9_heading.json` holds the outcome, and it changes one
-conclusion in the crossing-ferry scene. The planar model is *not* exactly invariant under reversing the
-boat: the worst mismatch over random states is 0.449 m/s², and it is exact only when the boat is not
-turning. `test_why_astern` in `scbf_mppi/vessel/ext/selftest_ext.py` measures both statements.
-
-Two render passes that were superseded are not in the repository: an earlier 1600×900 path-traced pair, and
-a larger encode of `anim3d_pathtraced_current_orbit.mp4` at the same resolution. The GIF beside each 2-D clip
-is not tracked either, being a lower-resolution copy of the mp4. All of them regenerate from the commands above.
+</details>
 
 ## Reading the results honestly
 
