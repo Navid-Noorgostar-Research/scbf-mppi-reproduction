@@ -68,6 +68,29 @@ invertible"), and the loss of the optimality guarantee is conceded by Tao et al.
 What is new is only *where the optimum lies*, and that `s* = 0` is therefore the generic case in the one
 regime where the filter acts. Section 7 states that position with its citations.
 
+
+**The cheapest safe Gaussian moves the other way.** Ask instead for the proposal that satisfies the same
+corrected row while minimising the exact weight second moment
+`E_q[w^2] = beta^2/sqrt(2 beta^2 - 1) exp(m^2/(sigma_0^2 (2 beta^2 - 1)))` with `s = beta sigma_0`. Solved
+numerically at `delta = 0.003`, that optimum **inflates** the covariance:
+
+| nominal slack | `s*` from (8) | `beta*` of the divergence-optimal safe proposal |
+|---|---|---|
+| +0.50 | 0.182 | 1.63 |
+| 0.00 | 0 | 2.28 |
+| −0.50 | 0 | 3.17 |
+| −1.00 | 0 | 4.28 |
+
+The reason is in the exponent: the mean-shift cost is `m^2/(sigma_0^2(2 beta^2 - 1))`, so a **wider**
+covariance makes a given shift cheaper, and it is worth buying width to pay less for the shift. Exactly
+where (8) drives the spread to zero, the sample-efficient choice widens it two- to four-fold. The two
+objectives are not merely different, they point in opposite directions — which is a compact way to say why
+(8)'s objective is the wrong one if the weights are ever going to be used.
+
+Neither half of this is new mathematics: the closed form is the Renyi-2 divergence between Gaussians
+(Liese and Vajda 1987; van Erven and Harremoes 2014), and the comparison is a numerical minimisation, not
+a theorem. It is an observation about the paper's own program.
+
 ## 2b. Stronger than the collapse: at the corridor's own start state, no Gaussian works at all
 
 Section 2 says the *optimiser* collapses the covariance. A sharper statement holds at the default start
