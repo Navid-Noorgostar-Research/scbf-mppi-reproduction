@@ -761,6 +761,19 @@ Proposition 1; the $\chi^2$ bound is Hammersley–Chapman–Robbins with the ind
 test function, which Polyanskiy and Wu set as a reader **exercise**; $\mathrm{ESS}/K \to 1/(1+\chi^2)$ is
 Kong 1992. The two-sided cap behind $r-\ell > \sqrt{2}z\sigma_0$ is Lubin, Bienstock and Vielma, Lemma 16.
 
+
+Every effective sample size in this document is the **full cost-weighted** one, $1/\sum_k w_k^2$ over the
+realised weights — the cost softmax and, where a controller applies it, the density ratio. It is not the
+density-ratio factor alone, which is what the $\chi^2$ bound above and the budget below actually govern. On
+the vessel the two are far apart: cost softmax alone 3.3, weights alone 157.4, both 3.1. A measured value
+can therefore sit below the bound without contradicting it.
+
+And the obstruction above belongs to the **Gaussian family**, not to safe sampling as such. A defensive
+mixture $q = wp + (1-w)q_1$ gives $\mathbb{E}_q[(dp/dq)^2] \le 1/w$ for any $w>0$ (Hesterberg 1995), so the
+variance is finite. But the chance constraint caps $w \le \delta/\delta_0 = 0.003999$ here, bounding the
+second moment above by 250.08 while the $\chi^2$ floor bounds it below by 187.69. The mixture converts an
+infinity into a number between 188 and 250 — it escapes the obstruction and pays the bound instead.
+
 **Prior art — and the one that most looked new.** Charging a safety filter's own effort as an extra
 $\lambda$-scaled running cost inside the MPPI exponent:
 

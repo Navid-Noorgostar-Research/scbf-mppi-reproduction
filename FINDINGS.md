@@ -110,6 +110,18 @@ exactly. The construction and the full-target extension are due to an external r
 because they subsume section 2's statement. Infinite variance does not imply that any particular finite
 run fails, and singular proposals escape it only by losing the support that exact correction needs.
 
+
+**The obstruction belongs to the Gaussian family, and the escape is not free.** A defensive mixture
+`q = w p + (1 - w) q1` satisfies `q >= w p` pointwise, so `dp/dq <= 1/w` and `E_q[(dp/dq)^2] <= 1/w` for
+any `w > 0` (Hesterberg 1995) — the infinite variance is a property of insisting on a *single* Gaussian,
+not of safe sampling as such. But the chance constraint caps the defensive weight: the base component alone
+contributes `w * delta0` of violation probability, so `w <= delta/delta0`. At this state the nominal
+violation probability is `delta0 = 0.750250` — which is exactly the two tail masses `0.375125` above — so
+`w <= 0.003999` and the second moment is bounded above by `250.08`. Section 3's floor bounds it below by
+`187.69`. The mixture therefore turns an infinity into a number between **188 and 250**: it escapes the
+obstruction and pays section 3's price instead, which is the same thing said twice. Asymptotically that is
+`ESS/K <= 1/187.69`, or 2.66 of 500.
+
 ## 3. A sample-efficiency bound, with its limits
 
 For any law `q` satisfying the per-sample constraint, with `delta0` the violation probability under the
@@ -162,6 +174,16 @@ at level `1 - delta` and needs `z' = 4.378` at these settings; it is not necessa
 The Gaussian corollary, `E[w^2] < infinity` iff `s > s0/sqrt(2)`, is the **scalar** case. In general the
 condition is the matrix one, `2 Sigma_q - Sigma_p` positive definite, and an anisotropic shrink can fail
 it while its largest ratio still exceeds `1/sqrt(2)`.
+
+
+**Which effective sample size is reported, everywhere in this repository.** Every ESS figure here — the
+tables, the demo panel, `ess_mean` in the result files — is the **full cost-weighted** effective size,
+`1/sum_k w_k^2` over the realised weights, which combine the cost softmax `exp(-S/lambda)` with the density
+ratio where a controller applies one. It is NOT the density-ratio factor alone. The distinction matters
+because the chi-square bound of this section governs only the density-ratio part: the two agree only when
+the cost softmax is flat, and on the vessel they are far apart (cost softmax alone 3.3, weights alone 157.4,
+both 3.1). So a measured ESS may sit below this section's bound without contradicting it, and the budget of
+section 7 targets the density-ratio factor rather than the number the tables print.
 
 ## 4. Where the paper's advantage actually comes from
 
