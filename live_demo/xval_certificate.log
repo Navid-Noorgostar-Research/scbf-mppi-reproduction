@@ -1,0 +1,13 @@
+certificate panel, browser core, 48 seeds, K=500, T=20
+
+controller              rollouts      M>=1      exits | M=0exits | M>=1
+plain MPPI             2.827.000      99.35%     14 of 18334     0.2831
+SCBF corrected         5.613.500       3.61%428295 of 5410838     0.0209
+
+against tests/certificate_conservatism.py (64 seeds, 4,033,000 rollouts, GPU):
+  Pr(exit | M >= 1)   browser 0.2831   python 0.2779   difference 0.0052
+  Pr(exit | M = 0)    browser 0.0007636085960510527   python 0.000545   (browser sample far too small to resolve this; count reported above)
+
+The contrast that matters for the panel is between the two controllers, not against Python:
+under the corrected filter the row holds by construction, so almost nothing is left to score,
+which is why the Python measurement is made on plain MPPI.

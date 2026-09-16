@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCBF-MPPI reproduction — contents</title>
+<style>
+  :root{
+    --bg:#fbfbf9; --surface:#fff; --ink:#15171a; --muted:#5d6570; --line:#dfe2e6;
+    --accent:#1f6f5c; --code:#f2f3f1;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#101214; --surface:#171a1d; --ink:#e8eaec; --muted:#98a0aa; --line:#282d32;
+    --accent:#5fb89e; --code:#1c2023;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#101214; --surface:#171a1d; --ink:#e8eaec; --muted:#98a0aa; --line:#282d32;
+    --accent:#5fb89e; --code:#1c2023;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); margin:0;
+       font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       padding-block:48px; padding-left:20px; padding-right:20px;}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 34px;font-size:15px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+     margin:38px 0 12px;font-weight:600}
+  a{color:var(--accent)}
+  .hero{display:block;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+        border-radius:10px;padding:20px 22px;text-decoration:none;color:inherit}
+  .hero:hover{border-color:var(--accent)}
+  .hero b{display:block;font-size:19px;margin-bottom:4px}
+  .hero span{color:var(--muted);font-size:14px}
+  ul.list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+  ul.list li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 15px}
+  ul.list a{text-decoration:none;font-weight:500}
+  ul.list a:hover{text-decoration:underline}
+  ul.list em{display:block;color:var(--muted);font-style:normal;font-size:13.5px;margin-top:3px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .grid a{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+          text-decoration:none;font-size:13.5px;display:block;word-break:break-word}
+  .grid a:hover{border-color:var(--accent)}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;
+      overflow-x:auto;font-size:13.5px;margin:0 0 10px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .note{color:var(--muted);font-size:13.5px;margin-top:10px}
+  footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Path integral methods with stochastic control barrier functions</h1>
+  <p class="sub">An independent reproduction and audit of arXiv:2206.11985 — corridor unicycle and
+     Solgenia harbour vessel. Everything on this page is served from the repository itself.</p>
+
+  <h2>Start here</h2>
+  <a class="hero" href="live_demo/safety_bench.html">
+    <b>The live demo →</b>
+    <span>Both scenarios in the browser, controllers side by side, with the instrument panels:
+    the row the filter works on, whether any Gaussian can satisfy it, the log density ratio split into
+    its three parts, the ESS budget, the intervention penalty, and the certificate scored against what
+    actually happened.</span>
+  </a>
+
+  <h2>Run it</h2>
+  <pre><code># serve this page and the demo (from the repository root)
+python -m http.server 8000        # any free port; 8000 may be taken
+# then open  http://localhost:8000/
+
+# the test suites
+python -m scbf_mppi.selftest              # corridor
+python -m scbf_mppi.vessel.selftest       # vessel
+python tests/test_regression.py check     # 12 shipped cases, bit for bit
+
+# the measurements behind the findings
+python tests/certificate_conservatism.py --seeds 64 --kind mppi    # needs CUDA
+python tests/mixture_recovery.py
+python tests/renyi_safe_gaussian.py --closed-loop                  # needs CUDA
+python tests/gpu_closed_loop.py --seeds 512                        # needs CUDA
+
+# rebuild the demo from its sources
+python live_demo/build.py</code></pre>
+  <p class="note">The GPU scripts need CuPy and a CUDA device; everything else is CPU-only.
+     <a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a> pins the versions and records what moved when
+     they moved.</p>
+
+  <h2>Documents</h2>
+  <ul class="list">
+    <li><a href="README.md">README.md</a><em>What was reproduced, how, and every equation the work uses
+        with its source.</em></li>
+    <li><a href="FINDINGS.md">FINDINGS.md</a><em>The findings, each with its own prior-art verdict —
+        including the ones withdrawn and the two defects found in this repository's own harness.</em></li>
+    <li><a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a><em>Pinned environment, measured version
+        drift, and the CUDA setup.</em></li>
+    <li><a href="RUN_IN_VSCODE.md">RUN_IN_VSCODE.md</a><em>Running the package from the editor.</em></li>
+  </ul>
+  <p class="note">Served over <code>http.server</code> these download as plain text; they render on the
+     repository page on GitHub.</p>
+
+  <h2>Recorded runs — corridor</h2>
+  <div class="grid">
+    <a href="figures/anim_mppi_vs_scbf.mp4">MPPI vs SCBF-MPPI</a>
+    <a href="figures/anim_corridor_three.mp4">Three forms side by side</a>
+    <a href="figures/anim3d_corridor_orbit.mp4">3-D orbit</a>
+    <a href="media/corridor_mppi_vs_scbf.gif">MPPI vs SCBF (gif)</a>
+    <a href="media/corridor_three_forms.gif">Three forms (gif)</a>
+  </div>
+
+  <h2>Recorded runs — Solgenia vessel</h2>
+  <div class="grid">
+    <a href="figures/anim_vessel_mppi_vs_scbf.mp4">MPPI vs SCBF-MPPI</a>
+    <a href="figures/anim_vessel_current.mp4">Unknown current</a>
+    <a href="figures/anim_vessel_current_ghosts.mp4">Unknown current, with ghosts</a>
+    <a href="figures/anim_vessel_rowspace.mp4">Inside one cycle, in row space</a>
+    <a href="figures/anim3d_ferry_chase.mp4">Crossing ferry, chase</a>
+    <a href="figures/anim3d_current_chase.mp4">Current, chase</a>
+    <a href="figures/anim3d_current_orbit.mp4">Current, orbit</a>
+    <a href="figures/anim3d_pathtraced_ferry_chase.mp4">Ferry, path traced</a>
+    <a href="figures/anim3d_pathtraced_current_chase.mp4">Current, path traced</a>
+    <a href="figures/anim3d_pathtraced_current_orbit.mp4">Orbit, path traced</a>
+    <a href="media/hero_crossing_ferry.gif">Crossing ferry (gif)</a>
+    <a href="media/vessel_crossing_ferry.gif">Crossing ferry, wide (gif)</a>
+    <a href="media/vessel_unknown_current.gif">Unknown current (gif)</a>
+    <a href="media/vessel_inside_one_cycle.gif">Inside one cycle (gif)</a>
+  </div>
+
+  <h2>Data</h2>
+  <ul class="list">
+    <li><a href="results/">results/</a><em>Every experiment's raw output as JSON — the corridor closed-loop
+        sweeps, the vessel scenarios, the deadline study, the delta and gain ablations.</em></li>
+    <li><a href="results_shipped_2026_09_12/">results_shipped_2026_09_12/</a><em>The frozen set the
+        regression test reproduces bit for bit.</em></li>
+    <li><a href="live_demo/">live_demo/</a><em>The browser core, the build script, and the
+        cross-validation logs that check each panel against the Python package.</em></li>
+  </ul>
+
+  <footer>
+    Directory links need a server that lists directories — <code>python -m http.server</code> does.
+  </footer>
+
+</div>
+</body>
+</html>

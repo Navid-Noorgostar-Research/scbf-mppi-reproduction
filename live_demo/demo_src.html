@@ -150,6 +150,8 @@ progress{width:100%;height:8px;margin-top:6px}
         <div class="instcard"><div class="k"><span>Inside this cycle — the row the filter works on at t = 0, in units of its nominal spread</span><select id="rvsel" class="mini" aria-label="Row view controller" hidden></select></div><canvas id="rv" width="1300" height="428"></canvas><div class="rvtext" id="rvtext"></div></div>
         <div class="instcard" id="obcard"><div class="k"><span>Can any Gaussian do this? — the two walls against the importance weight, at this state</span></div><canvas id="ob" width="1300" height="300"></canvas><div class="rvtext" id="obtext"></div></div>
         <div class="instcard" id="lscard"><div class="k"><span>Why the restored weights select &mdash; the log density ratio, split into its three parts</span></div><canvas id="ls" width="1300" height="250"></canvas><div class="rvtext" id="lstext"></div></div>
+        <div class="instcard" id="mxcard"><div class="k"><span>Does the mixture that escapes the obstruction actually estimate anything? &mdash; support against accuracy</span></div><canvas id="mx" width="1300" height="330"></canvas><div class="rvtext" id="mxtext"></div></div>
+        <div class="instcard" id="ctcard"><div class="k"><span>Is a row violation a collision? &mdash; the certificate scored against what actually happened</span></div><canvas id="ct" width="1300" height="270"></canvas><div class="rvtext" id="cttext"></div></div>
         <div class="instcard" id="tgcard"><div class="k"><span>Thrust — azimuth thruster inside its 700 N disk · bow thruster against its speed cap</span><span id="tgnote" style="text-transform:none;letter-spacing:0"></span></div><canvas id="tg" width="1300" height="372"></canvas></div>
       </div>
     </div>
@@ -229,7 +231,7 @@ function makeEngine(SIM){
         if (r.done){ out.push({stepped:false, outside:r.outside, minh:r.minh, done:true, reached:r.reached, ttf:r.ttf, x:r.x.slice()}); continue; }
         const outBefore = r.outside; const hStep = stepRunner(r, s); const c = r.c;
         out.push({stepped:true, x:r.x.slice(), prev:r.prev.slice(), subs:r.subs ? r.subs.map(v=>v.slice()) : null, hStep, outside:r.outside, minh:r.minh, done:r.done, reached:r.reached, ttf:r.ttf, hit: r.outside > outBefore,
-          stats:{ess:c.stats.ess, act:c.stats.act, vr:c.stats.var, sat:c.stats.sat}, row0:c.stats.row0, split:c.stats.split, prof: c.stats.actProfile ? Array.from(c.stats.actProfile) : null, thr:r.thr || null, gust: r.gust ? r.gust.slice() : null, fan: snapshotFan(c)});
+          stats:{ess:c.stats.ess, act:c.stats.act, vr:c.stats.var, sat:c.stats.sat}, row0:c.stats.row0, cert: c.stats.cert || null, split:c.stats.split, prof: c.stats.actProfile ? Array.from(c.stats.actProfile) : null, thr:r.thr || null, gust: r.gust ? r.gust.slice() : null, fan: snapshotFan(c)});
       }
       s.k++; return {k: s.k, runners: out};
     },
@@ -287,7 +289,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   function syncIvCtrl(){ const corr = sceneKind()==="corridor";
     $("ivctrl").hidden = !(corr && ivInPlay());
     $("budctrl").hidden = !(corr && kindInPlay("scbf_bud"));
-    $("obcard").hidden = !corr; $("lscard").hidden = !corr; }
+    $("obcard").hidden = !corr; $("lscard").hidden = !corr; $("ctcard").hidden = !corr; $("mxcard").hidden = !corr; }
   function raceKinds(){ return [...$("racechecks").querySelectorAll("input:checked")].map(c=>c.value).slice(0,4); }
   function opts(){
     const K = +$("K").value, seed = +$("seed").value, delta = DELTAS[+$("delta").value], mult = +$("noise").value;
@@ -332,8 +334,8 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   }
   // ---------------------------------------------------------------- state on the main thread: shells of every runner, filled from the engine's frames
   function shellRunner(kind, o, sc){
-    if (sc==="corridor"){ const env = new SIM.Corridor(false); return {kind, env, x:[0,0.5,0], prev:[0,0.5,0], path:[[0,0.5]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null}; }
-    const H = SIM.harbour(o.scenario); return {kind, H, x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], path:[[0,0]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null};
+    if (sc==="corridor"){ const env = new SIM.Corridor(false); return {kind, env, x:[0,0.5,0], prev:[0,0.5,0], path:[[0,0.5]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null, cert:{n0:0,e0:0,n1:0,e1:0}}; }
+    const H = SIM.harbour(o.scenario); return {kind, H, x:[0,0,0,1.5,0,0], prev:[0,0,0,1.5,0,0], path:[[0,0]], outside:0, minh:Infinity, done:false, ttf:null, reached:false, ess:[], act:[], vr:[], sat:[], hmin:[], subs:null, planned:false, gust:null, row0:null, split:null, thr:null, prof:null, fan:null, cert:{n0:0,e0:0,n1:0,e1:0}};
   }
   function newState(){
     const o = opts(); const sc = sceneKind(); const mode = $("mode").value;
@@ -347,11 +349,12 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
     const s = state; if (hover) { hover = null; $("tip").hidden = true; }
     f.runners.forEach((fr, i) => { const r = s.runners[i];
       if (fr.stepped){ r.prev = fr.prev; r.x = fr.x; r.subs = fr.subs; r.path.push([fr.x[0], fr.x[1]]); r.hmin.push(fr.hStep); r.ess.push(fr.stats.ess); r.act.push(fr.stats.act); r.vr.push(fr.stats.vr); r.sat.push(fr.stats.sat);
+        if (fr.cert){ r.cert.n0 += fr.cert.n0; r.cert.e0 += fr.cert.e0; r.cert.n1 += fr.cert.n1; r.cert.e1 += fr.cert.e1; }
         r.row0 = fr.row0; r.split = fr.split; r.thr = fr.thr; r.gust = fr.gust; r.prof = fr.prof; r.fan = fr.fan; r.planned = true; }
       r.outside = fr.outside; r.minh = fr.minh; r.done = fr.done; r.reached = fr.reached; r.ttf = fr.ttf; });
     s.k = f.k; s.lastHits = s.runners.filter((r,i)=>f.runners[i].hit);
     if ($("t_pause").checked && running && s.lastHits.length) s.pauseHit = true;
-    s.frames.push({k: s.k, x: s.runners.map(r=>r.x.slice()), fan: s.runners.map((r,i)=> f.runners[i].stepped ? r.fan : null), row0: s.runners.map(r=>r.row0), split: s.runners.map(r=>r.split), prof: s.runners.map(r=>r.prof), thr: s.runners.map(r=>r.thr), gust: s.runners.map(r=>r.gust ? r.gust.slice() : null),
+    s.frames.push({k: s.k, x: s.runners.map(r=>r.x.slice()), fan: s.runners.map((r,i)=> f.runners[i].stepped ? r.fan : null), row0: s.runners.map(r=>r.row0), cert: s.runners.map(r=>({n0:r.cert.n0,e0:r.cert.e0,n1:r.cert.n1,e1:r.cert.e1})), split: s.runners.map(r=>r.split), prof: s.runners.map(r=>r.prof), thr: s.runners.map(r=>r.thr), gust: s.runners.map(r=>r.gust ? r.gust.slice() : null),
       st: s.runners.map(r=>({out:r.outside, minh:r.minh, ess:r.ess[r.ess.length-1], act:r.act[r.act.length-1], vr:r.vr[r.vr.length-1], sat:r.sat.length?r.sat[r.sat.length-1]:NaN, done:r.done, reached:r.reached, ttf:r.ttf, dist:goalDist(r, s)}))});
     if (story) storyOnStep(s);
     if (s.runners.every(r=>r.done)) finishRun();
@@ -627,7 +630,7 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
       for (const r of s.runners) drawAgent(m, s, r, frac, col(r.kind));
     }
     drawBadges(m, s, tAbs, replay);
-    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac); drawObstruction(replay); drawLogSplit(replay);
+    drawRowView(replay, replay ? 1 : frac); drawGauges(replay, replay ? 1 : frac); drawObstruction(replay); drawLogSplit(replay); drawCertificate(replay); drawMixture();
   }
   function drawSparks(cursorK){
     const s = state; if (!s) return;
@@ -846,6 +849,102 @@ if (typeof window !== "undefined") window.makeEngine = makeEngine;
   // log p/q = sum_t[-(1/2)((m+s xi)/s0)^2 - log s0] + sum_t[(1/2)xi^2] + sum_t[log s], and only variation
   // ACROSS samples can select.  Plain MPPI must show a total spread of exactly zero -- with m = 0 and
   // s = s0 the three terms cancel -- which is the arithmetic check that the split is the right one.
+  // THE CERTIFICATE PANEL.  A barrier row is a per-step SUFFICIENT condition, so satisfying it is enough
+  // for safety and violating it is on its own evidence of nothing.  Every rollout is scored twice and the
+  // counts accumulate over cycles, because the "no row violated" cell is rare and needs the sample.
+  // THE MIXTURE PANEL.  Section 2b prices the defensive-mixture escape and never asks whether the
+  // escaped estimator is right.  Swept over the mixing weight on a scalar problem with a known target:
+  // support comes back at an admissible weight, accuracy does not.  Computed once, lazily.
+  var mixCache = null, mixBusy = false;
+  function mixSweep(){
+    if (mixCache || mixBusy) return mixCache;
+    mixBusy = true;
+    const out = [0, 0.0015, 0.0049, 0.02, 0.10].map(function(w){
+      const r = SIM.mixtureRecovery({ w: w, dTail: 0.0015, nb: 90, K: 500, seed: 3 });
+      r.admissible = r.rate <= 0.003 * 1.001; return r; });
+    mixCache = out; mixBusy = false; return out;
+  }
+  function drawMixture(){
+    const s = state; if (!s || s.sc !== "corridor") return;
+    const c = $("mx"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return;
+    if (c.width !== cw*2 || c.height !== ch*2) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), bad = css("--bad"), good = css("--good");
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    const rows = mixCache;
+    if (!rows){ g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif";
+      g.fillText("computing the mixture sweep\u2026", 24, Hh/2);
+      setTimeout(function(){ mixSweep(); drawMixture(); }, 30); return; }
+    g.fillStyle = ink; g.font = "500 22px IBM Plex Sans, sans-serif";
+    g.fillText("Defensive mixture  q = w\u00b7p + (1\u2212w)\u00b7q_safe  \u00b7  exact target mean "
+               + rows[0].truth.toFixed(6) + "  \u00b7  " + rows[0].nb + " batches of K=" + rows[0].K, 24, 30);
+    const cols = [[24,"mixing weight w"],[300,"admissible?"],[560,"batches reaching the class"],[1120,"estimate"],[1400,"RMSE"]];
+    g.font = "500 16px IBM Plex Sans, sans-serif"; g.fillStyle = muted;
+    cols.forEach(function(cc){ g.fillText(cc[1], cc[0], 66); });
+    rows.forEach(function(r, j){
+      const y = 104 + j*44;
+      g.font = "500 19px IBM Plex Mono, monospace"; g.fillStyle = ink;
+      g.fillText(r.w.toFixed(4), 24, y);
+      g.fillStyle = r.admissible ? good : bad; g.font = "500 17px IBM Plex Sans, sans-serif";
+      g.fillText(r.admissible ? "within the cap" : "over the cap", 300, y);
+      const bx = 560, bw = 430;
+      g.fillStyle = line; g.globalAlpha = 0.35; g.beginPath(); g.roundRect(bx, y-16, bw, 24, 5); g.fill(); g.globalAlpha = 1;
+      g.fillStyle = r.admissible ? good : bad;
+      if (r.cover > 0){ g.beginPath(); g.roundRect(bx, y-16, Math.max(3, bw*r.cover), 24, 5); g.fill(); }
+      g.fillStyle = ink; g.font = "500 17px IBM Plex Mono, monospace";
+      g.fillText((100*r.cover).toFixed(0) + "%", bx + bw + 14, y);
+      g.fillText(r.est.toFixed(4), 1120, y);
+      g.fillText(r.rmse.toFixed(4), 1400, y);
+    });
+    $("mxtext").innerHTML = "<b>Support returns, accuracy does not.</b> The chance constraint caps the " +
+      "mixing weight. Below the cap the class the safe proposal could not reach does come back \u2014 about " +
+      "half the batches now contain one \u2014 and the estimate stays near <b>0.06</b> against a true " +
+      "<b>0.4944</b>, with the RMSE <i>worse</i> than with no mixture at all, because the rare nominal draws " +
+      "arrive carrying enormous weight. The mean only returns around w = 0.10, roughly ten times the cap. " +
+      "That is section 2b's 188-to-250 price, measured. This is a constructed scalar problem, because the " +
+      "corridor's own target is not knowable (<code>tests/mixture_recovery.py</code>, FINDINGS.md \u00a72b).";
+  }
+  function drawCertificate(replay){
+    const s = state; if (!s || s.sc !== "corridor") return;
+    const c = $("ct"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return;
+    if (c.width !== cw*2 || c.height !== ch*2) { c.width = cw*2; c.height = ch*2; }
+    const g = c.getContext("2d"); const W = c.width, Hh = c.height; g.clearRect(0,0,W,Hh);
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), bad = css("--bad"), good = css("--good");
+    const i = rvRunnerIndex(s); const r = s.runners[i];
+    const q = replay ? (replay.cert ? replay.cert[i] : null) : r.cert;
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    if (!q || (q.n0 + q.n1) === 0){ g.fillStyle = muted; g.font = "22px IBM Plex Sans, sans-serif";
+      g.fillText("step or run: every rollout is scored for row violations and for leaving the safe set", 24, Hh/2);
+      $("cttext").innerHTML = ""; return; }
+    const tot = q.n0 + q.n1, p0 = q.n0 ? q.e0/q.n0 : NaN, p1 = q.n1 ? q.e1/q.n1 : NaN;
+    g.fillStyle = ink; g.font = "500 22px IBM Plex Sans, sans-serif";
+    g.fillText(SHORT[r.kind] + " \u00b7 " + tot.toLocaleString() + " rollouts scored so far", 24, 32);
+    const rows = [["no row violated   M = 0", q.n0, q.e0, p0, good],
+                  ["a row violated    M \u2265 1", q.n1, q.e1, p1, bad]];
+    const bx = 460, bw = W - bx - 320, hiP = Math.max(0.05, isNaN(p1)?0:p1, isNaN(p0)?0:p0);
+    rows.forEach(function(rw, j){
+      const y = 96 + j*78;
+      g.fillStyle = muted; g.font = "500 19px IBM Plex Mono, monospace"; g.fillText(rw[0], 24, y+6);
+      g.fillStyle = line; g.globalAlpha = 0.35; g.beginPath(); g.roundRect(bx, y-18, bw, 30, 6); g.fill(); g.globalAlpha = 1;
+      const frac = isNaN(rw[3]) ? 0 : Math.min(1, rw[3]/hiP);
+      if (frac > 0){ g.fillStyle = rw[4]; g.beginPath(); g.roundRect(bx, y-18, Math.max(3, bw*frac), 30, 6); g.fill(); }
+      g.fillStyle = ink; g.font = "500 19px IBM Plex Mono, monospace";
+      g.fillText(isNaN(rw[3]) ? "\u2014" : rw[3].toFixed(4), bx+bw+18, y+6);
+      g.fillStyle = muted; g.font = "17px IBM Plex Sans, sans-serif";
+      g.fillText(rw[2].toLocaleString() + " of " + rw[1].toLocaleString() + " left the safe set", 24, y+32);
+    });
+    const sound = isNaN(p0) ? "\u2014" : (q.e0 === 0 ? "0 of " + q.n0.toLocaleString() : p0.toFixed(5));
+    $("cttext").innerHTML = "<b>What this says.</b> For this controller a row violation is a genuine safety " +
+      "event " + (isNaN(p1) ? "\u2014" : (100*p1).toFixed(1) + "%") + " of the time, and of the rollouts that " +
+      "violate nothing, " + sound + " leave the safe set anyway. In Python over 64 seeds the pair is " +
+      "<b>0.000545</b> and <b>0.2779</b> for plain MPPI \u2014 sound, but three quarters of what it refuses " +
+      "would have been fine \u2014 and <b>0.0605</b> against <b>0.0273</b> for the corrected filter, where it " +
+      "<b>inverts</b>. The filter steers onto the barrier boundary, the row holds there because the solver " +
+      "put it there, and a continuous-time condition imposed at discrete steps on a curved wall does not " +
+      "give discrete invariance. Soundness belongs to the certificate <i>and</i> the distribution it is " +
+      "scored on (<code>tests/certificate_conservatism.py</code>, FINDINGS.md \u00a74b). The browser scores " +
+      "far fewer rollouts \u2014 read the shape, not the last digit.";
+  }
   function drawLogSplit(replay){
     const s = state; if (!s || s.sc !== "corridor") return;
     const c = $("ls"); const cw = c.clientWidth, ch = c.clientHeight; if (!cw) return;

@@ -91,6 +91,8 @@
     const st = { ess: 0, act: 0, var: 1, sat: NaN, infeas: 0, wmax: 0, iv: 0, mu: isIv ? mu : NaN, split: null };
     const NS = 65;
     const actFlags = new Uint8Array(Kact * T);          // 1 where the barrier constraint was active for that (sample, step)
+    const cvM = new Int32Array(Kact);                   // per rollout: timesteps whose drawn control violates a row
+    const cvOut = new Uint8Array(Kact);                 // per rollout: did this trajectory ever leave the safe set
     function clipU(v, om) { if (!umax) return [v, om]; return [Math.max(-umax[0], Math.min(umax[0], v)), Math.max(-umax[1], Math.min(umax[1], om))]; }
     function rolloutAndCost(x0, sig_v, sig_om, lamUse, detCorr, record) {
       // draws eps, rolls out, returns S (with control terms); SCBF modifies the draws per timestep.
@@ -98,7 +100,7 @@
       // The barrier rows are evaluated for EVERY controller: for MPPI / deterministic MPPI they measure how often the
       // unmodified proposal would have violated the chance constraint, and how often its draw satisfies the row.
       const X = new Float64Array(Kact * 3);
-      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; lrShift[k] = 0; lrNoise[k] = 0; lrShrink[k] = 0; }
+      for (let k = 0; k < Kact; k++) { X[3 * k] = x0[0]; X[3 * k + 1] = x0[1]; X[3 * k + 2] = x0[2]; traj[k * (T + 1) * 2] = x0[0]; traj[k * (T + 1) * 2 + 1] = x0[1]; S[k] = 0; iv[k] = 0; lrShift[k] = 0; lrNoise[k] = 0; lrShrink[k] = 0; cvM[k] = 0; cvOut[k] = 0; }
       let nAct = 0, nInf = 0, varSum = 0, satN = 0, satOk = 0;
       const logq = new Float64Array(Kact);
       for (let t = 0; t < T; t++) {
@@ -202,6 +204,7 @@
           const uv = ubv + ev;
           const ok = (c1 * uv >= b1 - 1e-7 * (1 + Math.abs(b1))) && (c2 * uv >= b2 - 1e-7 * (1 + Math.abs(b2)));
           if (active) { satN++; if (ok) satOk++; }
+          if (!ok) cvM[k]++;                            // the CERTIFICATE test, scored for EVERY sample
           eps[(k * T + t) * 2] = ev; eps[(k * T + t) * 2 + 1] = eo;
           let [v, om] = clipU(ubv + ev, ubo + eo);
           const xn = x + v * Math.cos(th) * CDT, yn = y + v * Math.sin(th) * CDT, thn = th + om * CDT;
@@ -210,6 +213,7 @@
           // running cost
           const dx = xn - goal[0], dy = yn - goal[1];
           const inside = env.minh(xn, yn) > 0;
+          if (!inside) cvOut[k] = 1;
           S[k] += dx * dx + dy * dy + (inside ? 0 : penalty);
           if (!isDet) S[k] += ubv * Rv * ev + 0.5 * ubv * ubv * Rv + ubo * Rom * eo + 0.5 * ubo * ubo * Rom;
         }
@@ -237,6 +241,13 @@
                      corr: (sdc > 1e-12 && sdt > 1e-12) ? (cov / Math.max(Kact - 1, 1)) / (sdc * sdt) : NaN,
                      applied: isCorr, filtered: isScbf };
       }
+      // THE CERTIFICATE, SCORED.  A barrier row is a per-step SUFFICIENT condition: satisfying it is
+      // enough for safety, and violating it is on its own evidence of nothing.  Every rollout is
+      // therefore scored twice -- how many of its steps violate a row, and whether it ever actually
+      // leaves the safe set -- and the two conditionals are the certificate's soundness and precision.
+      { let n0 = 0, e0 = 0, n1 = 0, e1 = 0;
+        for (let k = 0; k < Kact; k++) { if (cvM[k] === 0) { n0++; if (cvOut[k]) e0++; } else { n1++; if (cvOut[k]) e1++; } }
+        st.cert = { n0: n0, e0: e0, n1: n1, e1: e1 }; }
       st.act = nAct / (Kact * T); st.infeas = nInf / (Kact * T); st.var = varSum / (Kact * T); st.sat = satN ? satOk / satN : NaN;
       if (record) { const prof = new Float32Array(T); for (let t = 0; t < T; t++) { let c = 0; for (let k = 0; k < Kact; k++) c += actFlags[k * T + t]; prof[t] = c / Kact; } st.actProfile = prof; }   // share of samples on which the row binds, per horizon step
       return logq;
@@ -627,5 +638,71 @@
     return { collision_rate: outside / n, collided: outside > 0, min_h: minh, ttf: ttf, reached: reached, ess: essSum / n, activation: actSum / n, var_ratio: varSum / n, multi: multiSum / n, sat_active: satN ? satSum / satN : NaN, steps: n, path: path };
   }
 
-  return { Rng, normPpf, Corridor, corridorMakeController, corridorEpisode, CDT, SG, harbour, obsCenter, minH, rowsHOCBF, solveRows, stepVessel, stepVesselSubs, stepVesselOU, clipInputs, bowCap, vesselMakeController, vesselEpisode };
+  // ============================================================================================
+  // THE MIXTURE PANEL.  A self-contained scalar problem whose MPPI target is exactly Gaussian, so
+  // an estimator can be graded against a known answer -- which the corridor's target cannot be, its
+  // probes having pooled an effective size of 1.17 out of two million draws.
+  //   x_{t+1} = x_t + 0.05 v_t,  x_0 = 0,  safe box [-0.5, 0.5],  goal 0.4,  T = 20,
+  //   nominal controls iid N(0,1),  cost sum_t (x_t - 0.4)^2 + (x_T - 0.4)^2,  lambda = 1.
+  // The rows are the discrete barrier h(x_+) >= (1 - alpha) h(x) at alpha = dt, a class-K gain of 1.
+  // q_safe restricts the nominal density to one of three regions per step, giving the two tails
+  // probability dTail each; the mixture picks a source per rollout and is weighted by the exact path
+  // density ratio, so every estimate is unbiased in K.  See tests/mixture_recovery.py.
+  const MIX_TRUTH = 0.4943900;     // exact first-control mean of the full target; xval checks it
+  function normCdf(z){             // erfc, Numerical Recipes form: ~1.2e-7 relative, ample here
+    const x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.5 * x);
+    const y = t * Math.exp(-x*x - 1.26551223 + t*(1.00002368 + t*(0.37409196 + t*(0.09678418 +
+      t*(-0.18628806 + t*(0.27886807 + t*(-1.13520398 + t*(1.48851587 + t*(-0.82215223 + t*0.17087277)))))))));
+    const e = z >= 0 ? y : 2 - y;  return 1 - 0.5 * e;
+  }
+  function mixtureRecovery(opt){
+    const N = 20, DT2 = 0.05, GOAL = 0.4, ALPHA = 0.05;
+    const w = opt.w, dT = opt.dTail === undefined ? 0.0015 : opt.dTail;
+    const nb = opt.nb || 400, K = opt.K || 500, rng = new Rng(opt.seed === undefined ? 3 : opt.seed);
+    const LOG2PI = Math.log(2 * Math.PI);
+    let sse = 0, sest = 0, nHit = 0, rateSum = 0, essSum = 0;
+    for (let b = 0; b < nb; b++){
+      const x = new Float64Array(K), lp = new Float64Array(K), lq = new Float64Array(K),
+            S = new Float64Array(K), M = new Int32Array(K), v1 = new Float64Array(K),
+            src = new Uint8Array(K);
+      for (let k = 0; k < K; k++) src[k] = rng.u() < w ? 1 : 0;
+      for (let t = 0; t < N; t++){
+        for (let k = 0; k < K; k++){
+          const u = 20*ALPHA*(0.5 - x[k]), l = -20*ALPHA*(0.5 + x[k]);
+          const Fu = normCdf(u), Fl = normCdf(l);
+          const mMid = Math.max(Fu - Fl, 1e-300), mLo = Math.max(Fl, 1e-300), mHi = Math.max(1 - Fu, 1e-300);
+          let v;
+          if (src[k]) v = rng.n();
+          else {
+            const r = rng.u(), U = rng.u();
+            const p = r < dT ? U*mLo : (r < 2*dT ? Fu + U*mHi : Fl + U*mMid);
+            v = normPpf(Math.min(Math.max(p, 1e-300), 1 - 1e-16));
+          }
+          const inLo = v < l, inHi = v > u, inMid = !(inLo || inHi);
+          const mass = inLo ? mLo : (inHi ? mHi : mMid), asg = inMid ? 1 - 2*dT : dT;
+          const lphi = -0.5*v*v - 0.5*LOG2PI;
+          lp[k] += lphi; lq[k] += lphi + Math.log(asg) - Math.log(mass);
+          if (!inMid){ M[k]++; rateSum += 1; }
+          if (t === 0) v1[k] = v;
+          x[k] += DT2 * v; S[k] += (x[k] - GOAL) * (x[k] - GOAL);
+        }
+      }
+      let lmax = -Infinity; const lw = new Float64Array(K);
+      const lwW = Math.log(Math.max(w, 1e-300)), lw1 = Math.log(1 - w);
+      for (let k = 0; k < K; k++){
+        S[k] += (x[k] - GOAL) * (x[k] - GOAL);                 // terminal counted twice
+        const a = lwW + lp[k], bq = lw1 + lq[k], mx = Math.max(a, bq);
+        const lqm = mx + Math.log(Math.exp(a - mx) + Math.exp(bq - mx));
+        lw[k] = -S[k] + lp[k] - lqm; if (lw[k] > lmax) lmax = lw[k];
+      }
+      let sum = 0; for (let k = 0; k < K; k++){ lw[k] = Math.exp(lw[k] - lmax); sum += lw[k]; }
+      let est = 0, s2 = 0, hit = false;
+      for (let k = 0; k < K; k++){ const ww = lw[k]/sum; est += ww*v1[k]; s2 += ww*ww; if (M[k] >= 4) hit = true; }
+      sest += est; sse += (est - MIX_TRUTH)*(est - MIX_TRUTH); essSum += 1/s2; if (hit) nHit++;
+    }
+    return { truth: MIX_TRUTH, est: sest/nb, rmse: Math.sqrt(sse/nb), cover: nHit/nb,
+             ess: essSum/nb, rate: rateSum/(nb*K*N*2), nb: nb, K: K, w: w, dTail: dT };
+  }
+
+  return { Rng, normPpf, Corridor, corridorMakeController, corridorEpisode, CDT, SG, harbour, obsCenter, minH, rowsHOCBF, solveRows, stepVessel, stepVesselSubs, stepVesselOU, clipInputs, bowCap, vesselMakeController, vesselEpisode, mixtureRecovery, MIX_TRUTH };
 });

@@ -316,27 +316,37 @@ Two different events are counted throughout this repository and they are not the
 enough for safety, and violating it is on its own evidence of nothing — so a sentence like "the sampler
 violated the row 8 % of the time" has carried no safety interpretation. The gap had never been measured.
 
-Scoring every rollout of a plain-MPPI episode twice — `M`, the number of horizon timesteps at which the
-drawn control violates a row, and whether that rollout's own trajectory ever leaves the safe set — over
-64 seeds and 4,033,000 rollouts:
+Every rollout is scored twice — `M`, the number of horizon timesteps at which the drawn control
+violates a row, and whether that rollout's own trajectory ever leaves the safe set — under **both**
+controllers, 64 seeds each:
 
-| event | probability |
-|---|---|
-| the rollout leaves the safe set | 0.2762 |
-| ... given `M = 0` | **0.000545** |
-| ... given `M >= 1` | **0.2779** |
-| ... given `M >= 2` | 0.2821 |
-| ... given `M >= 4` | 0.2992 |
-| ... given `M >= 8` | 0.3781 |
+| | plain MPPI, 4,033,000 rollouts | the corrected filter, 7,354,500 rollouts |
+|---|---|---|
+| `E[M]` out of 20 | 9.85 | 0.037 |
+| `Pr(leaves the safe set)` | 0.2762 | 0.0593 |
+| … given `M = 0` | **0.000545** | **0.0605** |
+| … given `M >= 1` | **0.2779** | **0.0273** |
+| … given `M >= 2` | 0.2821 | 0.0193 |
+| … given `M >= 8` | 0.3781 | no such rollout |
 
-The certificate is **sound**: of the rollouts that never violate a row, five in ten thousand leave the
-safe set. It is not **precise**: a violation is a genuine safety event 27.8 % of the time, so roughly
-three quarters of what the barrier refuses would have been fine. And it is graded — more violations do
-mean more risk, monotonically — so it is informative rather than arbitrary. That 72 % is the price of a
-sufficient condition, and it is what Algorithm 1's reshaped proposal is paying for. Plain MPPI is scored
-because under Algorithm 1 the row holds by construction, and with the covariance collapsed it holds
-deterministically, leaving almost nothing to score; the question is about the certificate, not about a
-controller. `python tests/certificate_conservatism.py`.
+Under the **unconstrained** proposal the certificate behaves as a certificate should. Of the rollouts that
+never violate a row, five in ten thousand leave the safe set, so it is **sound**; but a violation is a
+genuine safety event only 27.8 % of the time, so roughly three quarters of what the barrier refuses would
+have been fine. It is at least graded — more violations do mean more risk, monotonically.
+
+Under the **filter's own** trajectories the same certificate reads completely differently, and that is the
+half worth keeping. The row now holds almost everywhere, `E[M] = 0.037`, and among the rollouts satisfying
+every row **6.1 %** still leave the safe set — *more* than among those that violate one, at **2.7 %**. The
+conditional has inverted, so row satisfaction carries no safety information there at all. The mechanism is
+not mysterious: the filter steers onto the barrier boundary, where the row holds by construction because
+the solver put it there, and a continuous-time barrier condition imposed at discrete steps on a curved wall
+does not deliver discrete forward invariance. The rollouts that do violate a row are the ones the solver
+could not make feasible, and they sit elsewhere in the state space.
+
+So the honest statement is not "the certificate is sound". It is that **soundness and precision belong to
+the certificate together with the state distribution it is evaluated on**, and a filter that steers into
+the boundary is precisely the distribution on which a per-step sufficient condition stops being
+informative. `python tests/certificate_conservatism.py --seeds 64 --kind mppi` (or `--kind paper`).
 
 ## 5. Claims made during this work and withdrawn
 

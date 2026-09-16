@@ -661,15 +661,19 @@ it only by losing the support that exact correction needs.*
 ### Three measurements the external reviews prompted
 
 Each answers a question this repository had raised and then left open, and each ships the script that
-produces it.
+produces it. The first two are also live panels in the demo, cross-checked against the Python by
+`node live_demo/xval_certificate.js` and `node live_demo/xval_mixture.js` (the mixture panel's per-row
+violation rate agrees to `4.6e-5`, its coverage to 0.038 and its RMSE to 0.078).
 
 * **How much of a barrier-row violation is an actual collision?** `sat_active` counts violations of the
   row; `collision_rate` counts leaving the safe set; nothing here had ever related the two, so "the
-  sampler violated the row 8 % of the time" carried no safety meaning. Over 64 seeds and 4,033,000 scored
-  rollouts of plain MPPI, `Pr(leaves the safe set | M = 0) = 0.000545` — the certificate is **sound** —
-  while `Pr(leaves | M ≥ 1) = 0.2779`, so roughly three quarters of what the barrier refuses would have
-  been fine. It is at least graded, rising to 0.378 at `M ≥ 8`. FINDINGS.md §4b.
-  `python tests/certificate_conservatism.py`
+  sampler violated the row 8 % of the time" carried no safety meaning. Under plain MPPI the certificate is
+  **sound** and imprecise — `Pr(leaves the safe set | M = 0) = 0.000545`, `Pr(leaves | M ≥ 1) = 0.2779`, so
+  three quarters of what the barrier refuses would have been fine. Under the **filter's own** trajectories
+  the conditional **inverts**: 0.0605 against 0.0273, because the filter steers onto the boundary where the
+  row holds by construction and a continuous-time condition at discrete steps on a curved wall does not
+  give discrete invariance. Soundness is a property of the certificate *and* the distribution it is scored
+  on. FINDINGS.md §4b. `python tests/certificate_conservatism.py --seeds 64 --kind mppi`
 * **Does the mixture that escapes §2b's obstruction actually estimate anything?** No. At an admissible
   mixing weight the class the safe proposal could not reach reappears in **54 %** of batches, and the
   estimate stays at `0.060` against a true `0.494`, with the RMSE **worse** — `0.85` against `0.55`.

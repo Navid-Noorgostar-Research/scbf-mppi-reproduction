@@ -27,16 +27,18 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 
-from gpu_closed_loop import CFG, DT, inside, load_cupy, rows, step
+from gpu_closed_loop import CFG, DT, inside, load_cupy, rows, solve_paper, step
 
 
-def measure(cp, seeds, cfg=None):
+def measure(cp, seeds, kind="mppi", cfg=None):
     c_ = dict(CFG, **(cfg or {}))
     S, K, T = len(seeds), c_["K"], c_["T"]
     s0, s_om = c_["sigma_v"], c_["sigma_om"]
     lam, pen = c_["lam"], c_["penalty"]
     goal = cp.asarray(c_["goal"])
     R = cp.asarray(np.array([lam / s0 ** 2, lam / s_om ** 2]))
+    from scipy.stats import norm
+    z = float(norm.ppf(1.0 - c_["delta"]))
     prop = [np.random.default_rng(int(s)) for s in seeds]
     plant = [np.random.default_rng(10_000 + int(s)) for s in seeds]
 
@@ -55,7 +57,12 @@ def measure(cp, seeds, cfg=None):
         exit_ = cp.zeros((S, K), bool)
         for t in range(T):
             cc, bb = rows(cp, Xs, c_["sigma_env"])                 # rows at the rollout's own state
-            ev = s0 * xi[:, :, t, 0]
+            if kind == "paper":
+                ubk = cp.repeat(U[:, t, 0][:, None], K, axis=1)
+                mm, ss, _ = solve_paper(cp, ubk, cc, bb, s0, z, z, "std")
+                ev = mm + ss * xi[:, :, t, 0]
+            else:
+                ev = s0 * xi[:, :, t, 0]
             eps[:, :, t, 0] = ev
             eps[:, :, t, 1] = s_om * xi[:, :, t, 1]
             u_v = U[:, None, t, 0] + ev
@@ -89,9 +96,10 @@ def measure(cp, seeds, cfg=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=64)
+    ap.add_argument("--kind", default="mppi", choices=("mppi", "paper"))
     a = ap.parse_args()
     cp = load_cupy()
-    nM, nE = measure(cp, list(range(a.seeds)))
+    nM, nE = measure(cp, list(range(a.seeds)), kind=a.kind)
     tot, ext = nM.sum(), nE.sum()
     EM = float((np.arange(len(nM)) * nM).sum() / tot)
 
@@ -100,7 +108,7 @@ def main():
         d, n = nM[s].sum(), nE[s].sum()
         return (n / d if d else float("nan")), d
 
-    print(f"\nplain MPPI, {a.seeds} seeds, K={CFG['K']}, T={CFG['T']}: "
+    print(f"\n{a.kind}, {a.seeds} seeds, K={CFG['K']}, T={CFG['T']}: "
           f"{tot:,.0f} scored rollouts\n")
     print(f"  E[M], violating timesteps per rollout       {EM:10.4f} of {CFG['T']}")
     print(f"  Pr(rollout leaves the safe set)             {ext / tot:10.6f}")
