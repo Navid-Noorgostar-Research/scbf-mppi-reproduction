@@ -6,138 +6,309 @@
 <title>SCBF-MPPI reproduction — contents</title>
 <style>
   :root{
-    --bg:#fbfbf9; --surface:#fff; --ink:#15171a; --muted:#5d6570; --line:#dfe2e6;
-    --accent:#1f6f5c; --code:#f2f3f1;
+    --bg:#fcfcfa; --bg2:#f3f4f1; --surface:#fff; --ink:#14171a; --muted:#616974; --faint:#8b939d;
+    --line:#e2e5e8; --accent:#16705c; --accent2:#0e4f41; --code:#f4f5f2; --shadow:0 1px 2px rgba(16,20,24,.05),0 6px 18px rgba(16,20,24,.05);
   }
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-    --bg:#101214; --surface:#171a1d; --ink:#e8eaec; --muted:#98a0aa; --line:#282d32;
-    --accent:#5fb89e; --code:#1c2023;
+    --bg:#0e1013; --bg2:#14171b; --surface:#171b1f; --ink:#e9ebed; --muted:#9aa2ac; --faint:#6f7883;
+    --line:#252b31; --accent:#63bda3; --accent2:#8fd4be; --code:#1a1f24; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
   }}
   :root[data-theme="dark"]{
-    --bg:#101214; --surface:#171a1d; --ink:#e8eaec; --muted:#98a0aa; --line:#282d32;
-    --accent:#5fb89e; --code:#1c2023;
+    --bg:#0e1013; --bg2:#14171b; --surface:#171b1f; --ink:#e9ebed; --muted:#9aa2ac; --faint:#6f7883;
+    --line:#252b31; --accent:#63bda3; --accent2:#8fd4be; --code:#1a1f24; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.28);
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{background:var(--bg); color:var(--ink); margin:0;
-       font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-       padding-block:48px; padding-left:20px; padding-right:20px;}
-  .wrap{max-width:940px;margin:0 auto}
-  h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
-  .sub{color:var(--muted);margin:0 0 34px;font-size:15px}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
-     margin:38px 0 12px;font-weight:600}
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased; padding-block:0; padding-left:20px; padding-right:20px;}
+  .wrap{max-width:1080px;margin:0 auto}
+
+  /* ---- hero ---- */
+  header{padding:60px 0 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .eyebrow{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  h1{font-size:clamp(26px,4.2vw,40px);line-height:1.12;margin:0 0 14px;letter-spacing:-.022em;font-weight:650}
+  .lede{color:var(--muted);margin:0;font-size:17px;max-width:70ch}
+  nav{display:flex;flex-wrap:wrap;gap:6px 18px;margin:26px 0 30px;font-size:14px}
+  nav a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px}
+  nav a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* ---- sections ---- */
+  section{padding:34px 0;border-top:1px solid var(--line)}
+  section:first-of-type{border-top:0}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);
+     margin:0 0 6px;font-weight:650;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .blurb{color:var(--muted);font-size:14.5px;margin:0 0 20px;max-width:78ch}
   a{color:var(--accent)}
-  .hero{display:block;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
-        border-radius:10px;padding:20px 22px;text-decoration:none;color:inherit}
-  .hero:hover{border-color:var(--accent)}
-  .hero b{display:block;font-size:19px;margin-bottom:4px}
-  .hero span{color:var(--muted);font-size:14px}
-  ul.list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-  ul.list li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 15px}
-  ul.list a{text-decoration:none;font-weight:500}
+
+  /* ---- launch cards ---- */
+  .launch{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:18px}
+  .lc{position:relative;display:block;border-radius:14px;overflow:hidden;text-decoration:none;color:inherit;
+      border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:transform .16s,border-color .16s}
+  .lc:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .lc .shot{aspect-ratio:16/9;background:var(--bg2);overflow:hidden;display:block}
+  .lc .shot img{width:100%;height:100%;object-fit:cover;display:block}
+  .lc .body{padding:16px 18px 18px}
+  .lc b{display:block;font-size:18px;margin-bottom:5px;letter-spacing:-.01em}
+  .lc span{color:var(--muted);font-size:14px;line-height:1.5;display:block}
+  .tag{display:inline-block;font:600 11px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;
+       color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);
+       padding:5px 8px;border-radius:5px;margin-bottom:9px}
+
+  /* ---- image grid ---- */
+  .figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .fig{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:10px;
+       overflow:hidden;background:var(--surface);transition:border-color .16s,transform .16s}
+  .fig:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .fig .shot{aspect-ratio:4/3;background:#fff;display:block;overflow:hidden}
+  .fig .shot img{width:100%;height:100%;object-fit:contain;display:block}
+  .fig .cap{padding:9px 11px 11px;font-size:13px;line-height:1.42}
+  .fig .cap b{display:block;font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.06em;
+              color:var(--accent);margin-bottom:3px;text-transform:uppercase}
+  .fig .cap span{color:var(--muted)}
+  .vid .shot{aspect-ratio:16/9;background:var(--bg2)}
+  .vid .shot img{object-fit:cover}
+
+  /* ---- lists ---- */
+  ul.list{list-style:none;padding:0;margin:0;display:grid;gap:9px}
+  ul.list li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
+  ul.list a{text-decoration:none;font-weight:600}
   ul.list a:hover{text-decoration:underline}
-  ul.list em{display:block;color:var(--muted);font-style:normal;font-size:13.5px;margin-top:3px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-  .grid a{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
-          text-decoration:none;font-size:13.5px;display:block;word-break:break-word}
-  .grid a:hover{border-color:var(--accent)}
-  pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;
-      overflow-x:auto;font-size:13.5px;margin:0 0 10px}
+  ul.list em{display:block;color:var(--muted);font-style:normal;font-size:13.5px;margin-top:3px;line-height:1.5}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips a{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 11px;
+           text-decoration:none;font:500 13px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+           color:var(--muted);transition:border-color .16s,color .16s}
+  .chips a:hover{border-color:var(--accent);color:var(--accent)}
+
+  pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+      overflow-x:auto;font-size:13.5px;line-height:1.72;margin:0}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .note{color:var(--muted);font-size:13.5px;margin-top:10px}
-  footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  pre .c{color:var(--faint)}
+  .note{color:var(--muted);font-size:13.5px;margin-top:12px}
+  footer{padding:30px 0 60px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;margin-top:20px}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>Path integral methods with stochastic control barrier functions</h1>
-  <p class="sub">An independent reproduction and audit of arXiv:2206.11985 — corridor unicycle and
-     Solgenia harbour vessel. Everything on this page is served from the repository itself.</p>
+  <header>
+    <div class="eyebrow">Independent reproduction &amp; audit · arXiv:2206.11985</div>
+    <h1>Path integral methods with stochastic control barrier functions</h1>
+    <p class="lede">A from-scratch reproduction of Algorithm 1, on a curved-corridor unicycle and on the
+      Solgenia harbour vessel — with the experiments the paper does not run, every finding checked against
+      the literature, and the claims that did not survive marked as withdrawn. Everything below is served
+      from the repository itself.</p>
+    <nav>
+      <a href="#run">Interactive</a>
+      <a href="#how">Run it</a>
+      <a href="#docs">Documents</a>
+      <a href="#corridor">Corridor figures</a>
+      <a href="#vessel">Vessel figures</a>
+      <a href="#films">Recorded runs</a>
+      <a href="#xval">Cross-validation</a>
+      <a href="#data">Data</a>
+    </nav>
+  </header>
 
-  <h2>Start here</h2>
-  <a class="hero" href="live_demo/safety_bench.html">
-    <b>The live demo →</b>
-    <span>Both scenarios in the browser, controllers side by side, with the instrument panels:
-    the row the filter works on, whether any Gaussian can satisfy it, the log density ratio split into
-    its three parts, the ESS budget, the intervention penalty, and the certificate scored against what
-    actually happened.</span>
-  </a>
+  <section id="run">
+    <h2>Interactive</h2>
+    <p class="blurb">Two browser applications, both offline and self-contained.</p>
+    <div class="launch">
+      <a class="lc" href="live_demo/safety_bench.html">
+        <span class="shot"><img src="figures/anim_last_frame.png" alt="" loading="lazy"></span>
+        <span class="body">
+          <span class="tag">2-D bench</span>
+          <b>The safety bench</b>
+          <span>Both scenarios live, controllers racing side by side, with seven instrument panels: the row
+          the filter works on, whether any Gaussian can satisfy it, the log density ratio split into its
+          three parts, the ESS budget, the intervention penalty, whether a row violation is really a
+          collision, and whether a defensive mixture recovers the target.</span>
+        </span>
+      </a>
+      <a class="lc" href="live_demo/3d/viewer_3d.html">
+        <span class="shot"><img src="media/poster_webgl_ferry.png" alt="" loading="lazy"></span>
+        <span class="body">
+          <span class="tag">3-D viewer</span>
+          <b>The runs in three dimensions</b>
+          <span>One offline HTML file (Three.js, vendored) drawing the same runs as the figures — harbour
+          water, the hull, the barrier surfaces. Nothing here changes an experiment: every drawn quantity
+          is the 1-second state log of an exported run, and the 30-seed statistics in the titles are read
+          from the stored result files.</span>
+        </span>
+      </a>
+    </div>
+  </section>
 
-  <h2>Run it</h2>
-  <pre><code># serve this page and the demo (from the repository root)
-python -m http.server 8000        # any free port; 8000 may be taken
-# then open  http://localhost:8000/
+  <section id="how">
+    <h2>Run it</h2>
+    <pre><code><span class="c"># serve this page, the bench and the 3-D viewer, from the repository root</span>
+python -m http.server 8011          <span class="c"># any free port</span>
+<span class="c"># then open http://127.0.0.1:8011/</span>
 
-# the test suites
-python -m scbf_mppi.selftest              # corridor
-python -m scbf_mppi.vessel.selftest       # vessel
-python tests/test_regression.py check     # 12 shipped cases, bit for bit
+<span class="c"># the test suites</span>
+python -m scbf_mppi.selftest                  <span class="c"># corridor</span>
+python -m scbf_mppi.vessel.selftest           <span class="c"># vessel</span>
+python tests/test_regression.py check         <span class="c"># 12 shipped cases, bit for bit</span>
 
-# the measurements behind the findings
-python tests/certificate_conservatism.py --seeds 64 --kind mppi    # needs CUDA
+<span class="c"># the measurements behind the findings</span>
+python tests/certificate_conservatism.py --seeds 64 --kind mppi   <span class="c"># CUDA</span>
 python tests/mixture_recovery.py
-python tests/renyi_safe_gaussian.py --closed-loop                  # needs CUDA
-python tests/gpu_closed_loop.py --seeds 512                        # needs CUDA
+python tests/renyi_safe_gaussian.py --closed-loop                 <span class="c"># CUDA</span>
+python tests/logratio_decomposition.py
+python tests/gpu_closed_loop.py --seeds 512                       <span class="c"># CUDA</span>
+python tests/timing_deadline.py                                   <span class="c"># ~20 min</span>
 
-# rebuild the demo from its sources
-python live_demo/build.py</code></pre>
-  <p class="note">The GPU scripts need CuPy and a CUDA device; everything else is CPU-only.
-     <a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a> pins the versions and records what moved when
-     they moved.</p>
+<span class="c"># rebuild the browser applications from their sources</span>
+python live_demo/build.py
+python live_demo/3d/build3d.py
 
-  <h2>Documents</h2>
-  <ul class="list">
-    <li><a href="README.md">README.md</a><em>What was reproduced, how, and every equation the work uses
-        with its source.</em></li>
-    <li><a href="FINDINGS.md">FINDINGS.md</a><em>The findings, each with its own prior-art verdict —
-        including the ones withdrawn and the two defects found in this repository's own harness.</em></li>
-    <li><a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a><em>Pinned environment, measured version
-        drift, and the CUDA setup.</em></li>
-    <li><a href="RUN_IN_VSCODE.md">RUN_IN_VSCODE.md</a><em>Running the package from the editor.</em></li>
-  </ul>
-  <p class="note">Served over <code>http.server</code> these download as plain text; they render on the
-     repository page on GitHub.</p>
+<span class="c"># check every panel against the Python package</span>
+node live_demo/xval_certificate.js
+node live_demo/xval_mixture.js</code></pre>
+    <p class="note">The CUDA scripts need CuPy and an NVIDIA device; everything else is CPU-only.
+      <a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a> pins the versions and records what moved when
+      they moved.</p>
+  </section>
 
-  <h2>Recorded runs — corridor</h2>
-  <div class="grid">
-    <a href="figures/anim_mppi_vs_scbf.mp4">MPPI vs SCBF-MPPI</a>
-    <a href="figures/anim_corridor_three.mp4">Three forms side by side</a>
-    <a href="figures/anim3d_corridor_orbit.mp4">3-D orbit</a>
-    <a href="media/corridor_mppi_vs_scbf.gif">MPPI vs SCBF (gif)</a>
-    <a href="media/corridor_three_forms.gif">Three forms (gif)</a>
-  </div>
+  <section id="docs">
+    <h2>Documents</h2>
+    <ul class="list">
+      <li><a href="README.md">README.md</a><em>What was reproduced and how, the experiment tables, and every
+        equation the work uses with the source it came from.</em></li>
+      <li><a href="FINDINGS.md">FINDINGS.md</a><em>The findings one by one, each with its own prior-art
+        verdict — including the claims withdrawn during the work and the two defects found in this
+        repository's own harness.</em></li>
+      <li><a href="REPRODUCIBILITY.md">REPRODUCIBILITY.md</a><em>Pinned environment, measured version drift,
+        and the CUDA setup.</em></li>
+      <li><a href="RUN_IN_VSCODE.md">RUN_IN_VSCODE.md</a><em>Running the package from the editor.</em></li>
+      <li><a href="live_demo/3d/README_3D.md">live_demo/3d/README_3D.md</a><em>How the 3-D viewer is built
+        and what each drawn quantity is.</em></li>
+    </ul>
+    <p class="note">Over <code>http.server</code> these arrive as plain text; they render on the repository
+      page on GitHub.</p>
+  </section>
 
-  <h2>Recorded runs — Solgenia vessel</h2>
-  <div class="grid">
-    <a href="figures/anim_vessel_mppi_vs_scbf.mp4">MPPI vs SCBF-MPPI</a>
-    <a href="figures/anim_vessel_current.mp4">Unknown current</a>
-    <a href="figures/anim_vessel_current_ghosts.mp4">Unknown current, with ghosts</a>
-    <a href="figures/anim_vessel_rowspace.mp4">Inside one cycle, in row space</a>
-    <a href="figures/anim3d_ferry_chase.mp4">Crossing ferry, chase</a>
-    <a href="figures/anim3d_current_chase.mp4">Current, chase</a>
-    <a href="figures/anim3d_current_orbit.mp4">Current, orbit</a>
-    <a href="figures/anim3d_pathtraced_ferry_chase.mp4">Ferry, path traced</a>
-    <a href="figures/anim3d_pathtraced_current_chase.mp4">Current, path traced</a>
-    <a href="figures/anim3d_pathtraced_current_orbit.mp4">Orbit, path traced</a>
-    <a href="media/hero_crossing_ferry.gif">Crossing ferry (gif)</a>
-    <a href="media/vessel_crossing_ferry.gif">Crossing ferry, wide (gif)</a>
-    <a href="media/vessel_unknown_current.gif">Unknown current (gif)</a>
-    <a href="media/vessel_inside_one_cycle.gif">Inside one cycle (gif)</a>
-  </div>
+  <section id="corridor">
+    <h2>Corridor — the E series</h2>
+    <p class="blurb">The curved-corridor unicycle: reproducing the paper's own table, then the questions it
+      does not ask.</p>
+    <div class="figs">
+      <a class="fig" href="figures/fig_E1_table.png"><span class="shot"><img src="figures/fig_E1_table.png" alt="" loading="lazy"></span><span class="cap"><b>E1</b><span>Does Table I reproduce — as printed, and as corrected?</span></span></a>
+      <a class="fig" href="figures/fig_E1_trajectories.png"><span class="shot"><img src="figures/fig_E1_trajectories.png" alt="" loading="lazy"></span><span class="cap"><b>E1</b><span>The trajectories behind that table.</span></span></a>
+      <a class="fig" href="figures/fig_E2_sigma.png"><span class="shot"><img src="figures/fig_E2_sigma.png" alt="" loading="lazy"></span><span class="cap"><b>E2</b><span>Is the stated noise σ = I compatible with Table I?</span></span></a>
+      <a class="fig" href="figures/fig_E3_wallclock.png"><span class="shot"><img src="figures/fig_E3_wallclock.png" alt="" loading="lazy"></span><span class="cap"><b>E3</b><span>What Algorithm 1 costs in seconds — 10,000 SDPs per cycle.</span></span></a>
+      <a class="fig" href="figures/fig_E4_theorem2.png"><span class="shot"><img src="figures/fig_E4_theorem2.png" alt="" loading="lazy"></span><span class="cap"><b>E4</b><span>What probability the printed constraint actually delivers.</span></span></a>
+      <a class="fig" href="figures/fig_E5_braking.png"><span class="shot"><img src="figures/fig_E5_braking.png" alt="" loading="lazy"></span><span class="cap"><b>E5</b><span>Braking or steering? |v| and |ω| against distance to the wall.</span></span></a>
+      <a class="fig" href="figures/fig_E7_bridge.png"><span class="shot"><img src="figures/fig_E7_bridge.png" alt="" loading="lazy"></span><span class="cap"><b>E7</b><span>Do zero collisions at sample times mean the path stayed inside?</span></span></a>
+      <a class="fig" href="figures/fig_E8_mechanisms.png"><span class="shot"><img src="figures/fig_E8_mechanisms.png" alt="" loading="lazy"></span><span class="cap"><b>E8</b><span>Mean shift, variance reduction, or both — against deterministic MPPI at equal rollouts.</span></span></a>
+      <a class="fig" href="figures/fig_E9_clark.png"><span class="shot"><img src="figures/fig_E9_clark.png" alt="" loading="lazy"></span><span class="cap"><b>E9</b><span>Theorem 1 and the So–Clark–Fan counterexample, simulated.</span></span></a>
+      <a class="fig" href="figures/fig_E11_delta.png"><span class="shot"><img src="figures/fig_E11_delta.png" alt="" loading="lazy"></span><span class="cap"><b>E11</b><span>Other confidence levels — the exploration/safety trade-off.</span></span></a>
+      <a class="fig" href="figures/fig_E12_printed.png"><span class="shot"><img src="figures/fig_E12_printed.png" alt="" loading="lazy"></span><span class="cap"><b>E12</b><span>The printed barriers put the goal outside the safe set.</span></span></a>
+    </div>
+  </section>
 
-  <h2>Data</h2>
-  <ul class="list">
-    <li><a href="results/">results/</a><em>Every experiment's raw output as JSON — the corridor closed-loop
-        sweeps, the vessel scenarios, the deadline study, the delta and gain ablations.</em></li>
-    <li><a href="results_shipped_2026_09_12/">results_shipped_2026_09_12/</a><em>The frozen set the
+  <section id="vessel">
+    <h2>Vessel — the V series</h2>
+    <p class="blurb">The Solgenia, a 3-DOF Fossen model with second-order barrier rows, a 700 N azimuth
+      force disk and a speed-dependent bow thruster.</p>
+    <div class="figs">
+      <a class="fig" href="figures/fig_V1_printed.png"><span class="shot"><img src="figures/fig_V1_printed.png" alt="" loading="lazy"></span><span class="cap"><b>V1</b><span>As printed, relative degree 1 — identical to MPPI?</span></span></a>
+      <a class="fig" href="figures/fig_V2_map.png"><span class="shot"><img src="figures/fig_V2_map.png" alt="" loading="lazy"></span><span class="cap"><b>V2</b><span>Harbour transit under white noise — the map.</span></span></a>
+      <a class="fig" href="figures/fig_V2_traces.png"><span class="shot"><img src="figures/fig_V2_traces.png" alt="" loading="lazy"></span><span class="cap"><b>V2</b><span>The same transit, as traces.</span></span></a>
+      <a class="fig" href="figures/fig_V2_table.png"><span class="shot"><img src="figures/fig_V2_table.png" alt="" loading="lazy"></span><span class="cap"><b>V2</b><span>Six controllers over 30 seeds.</span></span></a>
+      <a class="fig" href="figures/fig_V3_disturbance.png"><span class="shot"><img src="figures/fig_V3_disturbance.png" alt="" loading="lazy"></span><span class="cap"><b>V3</b><span>White noise vs a 5 s gust vs gust plus unknown current.</span></span></a>
+      <a class="fig" href="figures/fig_V4_crossing.png"><span class="shot"><img src="figures/fig_V4_crossing.png" alt="" loading="lazy"></span><span class="cap"><b>V4</b><span>The crossing ferry.</span></span></a>
+      <a class="fig" href="figures/fig_V4_crossing_b.png"><span class="shot"><img src="figures/fig_V4_crossing_b.png" alt="" loading="lazy"></span><span class="cap"><b>V4</b><span>The crossing, second view.</span></span></a>
+      <a class="fig" href="figures/fig_V5_wallclock.png"><span class="shot"><img src="figures/fig_V5_wallclock.png" alt="" loading="lazy"></span><span class="cap"><b>V5</b><span>Wall-clock per control cycle.</span></span></a>
+      <a class="fig" href="figures/fig_V6_gains.png"><span class="shot"><img src="figures/fig_V6_gains.png" alt="" loading="lazy"></span><span class="cap"><b>V6</b><span>The barrier gains α₁, α₂.</span></span></a>
+      <a class="fig" href="figures/fig_V7_delta.png"><span class="shot"><img src="figures/fig_V7_delta.png" alt="" loading="lazy"></span><span class="cap"><b>V7</b><span>The confidence level δ.</span></span></a>
+      <a class="fig" href="figures/fig_V8_det.png"><span class="shot"><img src="figures/fig_V8_det.png" alt="" loading="lazy"></span><span class="cap"><b>V8</b><span>Deterministic MPPI — λ₀, ν and schedule sweep.</span></span></a>
+      <a class="fig" href="figures/fig_V9_heading.png"><span class="shot"><img src="figures/fig_V9_heading.png" alt="" loading="lazy"></span><span class="cap"><b>V9</b><span>The heading term the cost does not have.</span></span></a>
+      <a class="fig" href="figures/fig_V10_filter.png"><span class="shot"><img src="figures/fig_V10_filter.png" alt="" loading="lazy"></span><span class="cap"><b>V10</b><span>The barrier in the sampler, or on the output.</span></span></a>
+      <a class="fig" href="figures/fig_V10b_filter_observer.png"><span class="shot"><img src="figures/fig_V10b_filter_observer.png" alt="" loading="lazy"></span><span class="cap"><b>V10b</b><span>The same, with the observer in the loop.</span></span></a>
+      <a class="fig" href="figures/fig_V11_observer.png"><span class="shot"><img src="figures/fig_V11_observer.png" alt="" loading="lazy"></span><span class="cap"><b>V11</b><span>The observer.</span></span></a>
+      <a class="fig" href="figures/fig_V12_ess.png"><span class="shot"><img src="figures/fig_V12_ess.png" alt="" loading="lazy"></span><span class="cap"><b>V12</b><span>The effective sample size the correction destroys.</span></span></a>
+      <a class="fig" href="figures/fig_V14_deadline.png"><span class="shot"><img src="figures/fig_V14_deadline.png" alt="" loading="lazy"></span><span class="cap"><b>V14</b><span>The deadline, which a median does not describe.</span></span></a>
+    </div>
+  </section>
+
+  <section id="films">
+    <h2>Recorded runs</h2>
+    <p class="blurb">Thirteen films. The 3-D ones are rendered from the same state logs the viewer reads;
+      the path-traced ones are offline Blender renders of the identical runs.</p>
+    <div class="figs">
+      <a class="fig vid" href="figures/anim_mppi_vs_scbf.mp4"><span class="shot"><img src="figures/anim_last_frame.png" alt="" loading="lazy"></span><span class="cap"><b>Corridor</b><span>MPPI against SCBF-MPPI.</span></span></a>
+      <a class="fig vid" href="figures/anim_corridor_three.mp4"><span class="shot"><img src="figures/anim_corridor_three_last.png" alt="" loading="lazy"></span><span class="cap"><b>Corridor</b><span>Three forms side by side.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_corridor_orbit.mp4"><span class="shot"><img src="media/poster_webgl_corridor.png" alt="" loading="lazy"></span><span class="cap"><b>Corridor · 3-D</b><span>Orbiting the corridor.</span></span></a>
+      <a class="fig vid" href="figures/anim_vessel_mppi_vs_scbf.mp4"><span class="shot"><img src="figures/anim_vessel_last_frame.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel</b><span>MPPI against SCBF-MPPI.</span></span></a>
+      <a class="fig vid" href="figures/anim_vessel_current.mp4"><span class="shot"><img src="figures/anim_vessel_current_last.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel</b><span>An unknown current.</span></span></a>
+      <a class="fig vid" href="figures/anim_vessel_current_ghosts.mp4"><span class="shot"><img src="figures/anim_vessel_current_ghosts_last.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel</b><span>The same, with the rollout ghosts drawn.</span></span></a>
+      <a class="fig vid" href="figures/anim_vessel_rowspace.mp4"><span class="shot"><img src="figures/anim_vessel_rowspace_last.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel</b><span>Inside one cycle, in row space.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_ferry_chase.mp4"><span class="shot"><img src="media/poster_webgl_ferry.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel · 3-D</b><span>Crossing ferry, chase camera.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_current_chase.mp4"><span class="shot"><img src="media/poster_webgl_current.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel · 3-D</b><span>Unknown current, chase camera.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_current_orbit.mp4"><span class="shot"><img src="media/poster_webgl_orbit.png" alt="" loading="lazy"></span><span class="cap"><b>Vessel · 3-D</b><span>Unknown current, orbiting.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_pathtraced_ferry_chase.mp4"><span class="shot"><img src="media/poster_pathtraced_ferry.png" alt="" loading="lazy"></span><span class="cap"><b>Path traced</b><span>Crossing ferry, chase.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_pathtraced_current_chase.mp4"><span class="shot"><img src="media/poster_pathtraced_current.png" alt="" loading="lazy"></span><span class="cap"><b>Path traced</b><span>Unknown current, chase.</span></span></a>
+      <a class="fig vid" href="figures/anim3d_pathtraced_current_orbit.mp4"><span class="shot"><img src="media/poster_pathtraced_orbit.png" alt="" loading="lazy"></span><span class="cap"><b>Path traced</b><span>Unknown current, orbiting.</span></span></a>
+    </div>
+    <p class="note">Animated gifs of the same runs, for slides:
+      <a href="media/corridor_mppi_vs_scbf.gif">corridor</a>,
+      <a href="media/corridor_three_forms.gif">three forms</a>,
+      <a href="media/hero_crossing_ferry.gif">crossing ferry</a>,
+      <a href="media/vessel_crossing_ferry.gif">ferry wide</a>,
+      <a href="media/vessel_unknown_current.gif">unknown current</a>,
+      <a href="media/vessel_inside_one_cycle.gif">inside one cycle</a>.</p>
+  </section>
+
+  <section id="xval">
+    <h2>Cross-validation</h2>
+    <p class="blurb">Every panel in the bench is checked against the Python package, and the log of each
+      check is kept. This is what makes the browser numbers quotable.</p>
+    <div class="chips">
+      <a href="live_demo/xval_certificate.log">xval_certificate.log</a>
+      <a href="live_demo/xval_mixture.log">xval_mixture.log</a>
+      <a href="live_demo/xval_obstruction.log">xval_obstruction.log</a>
+      <a href="live_demo/xval_logsplit.log">xval_logsplit.log</a>
+      <a href="live_demo/xval_intervention.log">xval_intervention.log</a>
+      <a href="live_demo/xval_budget.log">xval_budget.log</a>
+      <a href="live_demo/xval_solver.log">xval_solver.log</a>
+      <a href="live_demo/xval_same.log">xval_same.log</a>
+      <a href="live_demo/xval_corridor_v3.log">xval_corridor_v3.log</a>
+      <a href="live_demo/xval_vessel_v3_30.log">xval_vessel_v3_30.log</a>
+      <a href="live_demo/xval_vessel_v6_30.log">xval_vessel_v6_30.log</a>
+      <a href="live_demo/solver_xval/solver_xval.log">solver_xval.log</a>
+      <a href="live_demo/robust.log">robust.log</a>
+      <a href="live_demo/xval_same_v5.log">xval_same_v5.log</a>
+      <a href="live_demo/xval_vessel_v3.log">xval_vessel_v3.log</a>
+      <a href="live_demo/xval_vessel2.log">xval_vessel2.log</a>
+      <a href="live_demo/story_scan.log">story_scan.log</a>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>Data and source</h2>
+    <ul class="list">
+      <li><a href="results/">results/</a><em>Every experiment's raw output as JSON — the corridor sweeps, the
+        vessel scenarios, the deadline study, the δ and gain ablations. <a href="results/vessel_summary.txt">vessel_summary.txt</a>
+        lists every number.</em></li>
+      <li><a href="results_shipped_2026_09_12/">results_shipped_2026_09_12/</a><em>The frozen set the
         regression test reproduces bit for bit.</em></li>
-    <li><a href="live_demo/">live_demo/</a><em>The browser core, the build script, and the
-        cross-validation logs that check each panel against the Python package.</em></li>
-  </ul>
+      <li><a href="live_demo/">live_demo/</a><em>The browser core (<code>sim.js</code>), the build script and
+        every cross-validation harness.</em></li>
+      <li><a href="live_demo/3d/">live_demo/3d/</a><em>The 3-D viewer, its scene data, the Blender renderer
+        and the mp4 capture script.</em></li>
+      <li><a href="tests/">tests/</a><em>The measurement scripts: the certificate, the mixture, the
+        sample-efficient Gaussian, the log-ratio split, the GPU closed loop, the deadline study.</em></li>
+      <li><a href="scbf_mppi/">scbf_mppi/</a><em>The package itself — corridor, vessel, solver, the ESS
+        budget, and the extensions.</em></li>
+    </ul>
+  </section>
 
   <footer>
     Directory links need a server that lists directories — <code>python -m http.server</code> does.
+    Reproduction and audit; the original method is that of Tao, Yoon, Kim, Hovakimyan and Voulgaris.
   </footer>
 
 </div>
