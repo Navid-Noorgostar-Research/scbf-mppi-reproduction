@@ -658,6 +658,29 @@ it only by losing the support that exact correction needs.*
   (`xval_logsplit.log`) records all five, beside the Python figures from
   `tests/logratio_decomposition.py`.
 
+### Three measurements the external reviews prompted
+
+Each answers a question this repository had raised and then left open, and each ships the script that
+produces it.
+
+* **How much of a barrier-row violation is an actual collision?** `sat_active` counts violations of the
+  row; `collision_rate` counts leaving the safe set; nothing here had ever related the two, so "the
+  sampler violated the row 8 % of the time" carried no safety meaning. Over 64 seeds and 4,033,000 scored
+  rollouts of plain MPPI, `Pr(leaves the safe set | M = 0) = 0.000545` — the certificate is **sound** —
+  while `Pr(leaves | M ≥ 1) = 0.2779`, so roughly three quarters of what the barrier refuses would have
+  been fine. It is at least graded, rising to 0.378 at `M ≥ 8`. FINDINGS.md §4b.
+  `python tests/certificate_conservatism.py`
+* **Does the mixture that escapes §2b's obstruction actually estimate anything?** No. At an admissible
+  mixing weight the class the safe proposal could not reach reappears in **54 %** of batches, and the
+  estimate stays at `0.060` against a true `0.494`, with the RMSE **worse** — `0.85` against `0.55`.
+  Support returns; accuracy does not. `python tests/mixture_recovery.py`
+* **What does the sample-efficient safe Gaussian choose in flight?** The `β* = 1.63 … 4.28` table in §2 is
+  evaluated at four chosen slack values and shipped no solver. Solved at the states Algorithm 1 actually
+  visits — 160 million sample-timesteps — it wants a mean `β` of **1.15**, against the **0.12** mean
+  `s/σ₀` that (8) returns. The widening is real at tight slack and largely absent in flight; what
+  separates the two programs on a real trajectory is the collapse.
+  `python tests/renyi_safe_gaussian.py --closed-loop`
+
 `live_demo/xval_obstruction.js` checks the panel against this section: run at the default start state it
 reproduces every figure in the table above — the interval `[-1/π, 1/π]`, the cap, the floor, the
 full-target threshold and the factor of six — to 5·10⁻⁷, reading the rows from the browser core rather

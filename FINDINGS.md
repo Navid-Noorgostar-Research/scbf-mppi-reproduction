@@ -91,6 +91,17 @@ Neither half of this is new mathematics: the closed form is the Renyi-2 divergen
 (Liese and Vajda 1987; van Erven and Harremoes 2014), and the comparison is a numerical minimisation, not
 a theorem. It is an observation about the paper's own program.
 
+**What it chooses in flight, which is the question the table does not answer.** Those four rows are
+evaluated at four chosen slack values. Solving *both* programs at every state Algorithm 1 actually
+reaches — same rows, same nominal plan, same `delta`, 64 seeds and 160 million sample-timesteps — the
+barrier is active 95.7 % of the time, and the divergence-optimal proposal then wants a mean `beta` of
+**1.15**, against the **0.12** mean `s/sigma_0` that (8) returns. Only 8.4 % of active samples want
+`beta > 1.5`, and 1.8 % want `beta > 2`. So the two- to four-fold widening is real at tight slack and
+largely absent in flight: what separates the two programs on a real trajectory is the collapse, not the
+inflation, and the contrast above is a statement about particular states rather than a design rule.
+`python tests/renyi_safe_gaussian.py --closed-loop` reproduces both halves — and the table itself, which
+until now had no solver behind it.
+
 ## 2b. Stronger than the collapse: at the corridor's own start state, no Gaussian works at all
 
 Section 2 says the *optimiser* collapses the covariance. A sharper statement holds at the default start
@@ -144,6 +155,18 @@ violation probability is `delta0 = 0.750250` — which is exactly the two tail m
 `187.69`. The mixture therefore turns an infinity into a number between **188 and 250**: it escapes the
 obstruction and pays section 3's price instead, which is the same thing said twice. Asymptotically that is
 `ESS/K <= 1/187.69`, or 2.66 of 500.
+
+**The escape buys support, not accuracy.** That bound prices the mixture; it does not say whether the
+mixture then estimates anything correctly. Answering that needs a target whose value is known, which the
+corridor's is not — the probes at this state pooled an effective size of `1.17` out of two million draws
+— so it is measured on a constructed scalar problem whose target is exactly Gaussian. A mixture of
+*path* measures is not a per-step mixture of kernels: along a prefix that has already violated, the
+posterior over sources reverts to the nominal component, so the mixture meets the *marginal* per-step cap
+while breaking the *conditional* one. At an admissible weight the missing class duly reappears — in
+**54 %** of batches, against **0.15 %** without it — and the estimate does not move: `0.060` against a
+true `0.494`, with the RMSE **worse**, `0.85` against `0.55`, because the rare nominal draws arrive
+carrying enormous weight. The mean comes back only near `w = 0.10`, whose per-row violation rate is about
+ten times the cap. `python tests/mixture_recovery.py`.
 
 ## 3. A sample-efficiency bound, with its limits
 
@@ -284,6 +307,36 @@ not monotone in `mu` — across `mu` = 0, 0.1, 0.2, 0.3, 0.5, 1, 3 the counts ar
 tail is unresolved at this seed count.
 The typical-case statistics move smoothly with `mu`; the tail does not, and a safety argument rests on
 the tail.
+
+## 4b. How much of a barrier-row violation is an actual collision
+
+Two different events are counted throughout this repository and they are not the same. `sat_active` and
+`delivered Pr(a u >= b)` count violations of the barrier **row**, the per-step sufficient condition;
+`collision_rate` and `min_h` count the trajectory actually leaving the safe set. Satisfying the row is
+enough for safety, and violating it is on its own evidence of nothing — so a sentence like "the sampler
+violated the row 8 % of the time" has carried no safety interpretation. The gap had never been measured.
+
+Scoring every rollout of a plain-MPPI episode twice — `M`, the number of horizon timesteps at which the
+drawn control violates a row, and whether that rollout's own trajectory ever leaves the safe set — over
+64 seeds and 4,033,000 rollouts:
+
+| event | probability |
+|---|---|
+| the rollout leaves the safe set | 0.2762 |
+| ... given `M = 0` | **0.000545** |
+| ... given `M >= 1` | **0.2779** |
+| ... given `M >= 2` | 0.2821 |
+| ... given `M >= 4` | 0.2992 |
+| ... given `M >= 8` | 0.3781 |
+
+The certificate is **sound**: of the rollouts that never violate a row, five in ten thousand leave the
+safe set. It is not **precise**: a violation is a genuine safety event 27.8 % of the time, so roughly
+three quarters of what the barrier refuses would have been fine. And it is graded — more violations do
+mean more risk, monotonically — so it is informative rather than arbitrary. That 72 % is the price of a
+sufficient condition, and it is what Algorithm 1's reshaped proposal is paying for. Plain MPPI is scored
+because under Algorithm 1 the row holds by construction, and with the covariance collapsed it holds
+deterministically, leaving almost nothing to score; the question is about the certificate, not about a
+controller. `python tests/certificate_conservatism.py`.
 
 ## 5. Claims made during this work and withdrawn
 
